@@ -1,0 +1,29 @@
+#!/bin/sh
+
+#Debian .deb postinstall script used by checkinstall#
+
+INSTALLDIR="/usr/local/bigbrother"
+
+groupadd cctvwriters
+groupadd cctvviewers
+useradd -M bigbrother -g cctvwriters
+chown bigbrother:cctvwriters $INSTALLDIR
+chmod 755 $INSTALLDIR
+chown bigbrother:cctvwriters  $INSTALLDIR/README.txt
+chmod 644 $INSTALLDIR/README.txt
+chown bigbrother:cctvwriters  $INSTALLDIR/License.txt
+chmod 644 $INSTALLDIR/License.txt
+chown bigbrother:cctvwriters  $INSTALLDIR/bblogger
+chmod 750 $INSTALLDIR/bblogger
+chown bigbrother:cctvwriters  $INSTALLDIR/bigbrother.conf
+chmod 660 $INSTALLDIR/bigbrother.conf
+chown bigbrother:cctvwriters  $INSTALLDIR/bigbrother_camera.conf
+chmod 660 $INSTALLDIR/bigbrother_camera.conf
+chown bigbrother:cctvwriters  $INSTALLDIR/bigbrotherd
+chmod 750 $INSTALLDIR/bigbrotherd
+chown bigbrother:cctvwriters  $INSTALLDIR/*.sh
+chmod 750 $INSTALLDIR/*.sh
+chown -R bigbrother:cctvviewers  $INSTALLDIR/mirrorwebroot
+chmod 750 $INSTALLDIR/mirrorwebroot
+chmod 640 $INSTALLDIR/mirrorwebroot/*
+
