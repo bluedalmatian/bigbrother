@@ -1,0 +1,123 @@
+name: "bigbrother";
+version: "0.5";
+origin: "multimedia/bigbrother";
+comment: "BigBrother CCTV recording & mirroring system";
+abi = "FreeBSD:10:*";
+arch = "freebsd:10:*";
+www: "http://www.simple.org/bigbrother";
+maintainer: aw@simple.org;
+licenselogic: "or";
+licenses: ["GPLv3"];
+flatsize: 60000;
+users: ["bigbrother"];
+groups: ["cctvviewers", "cctvwriters"];
+prefix: "/usr/local";
+desc: <<EOD
+  BigBrother is a wrapper for ffmpeg
+  which configures it to do IP CCTV
+  recording & mirroring.
+
+  It is licensed under the GNU Public license (GPL) version 3
+  (for the full license see www.gnu.org/licenses/gpl-3.0.en.html)
+
+  It offers the following features:
+
+        *Recording of a live stream from an IP camera in any codec format supported by ffmpeg
+	 in an MPEG4 container. Will record sound if camera delivers it.
+
+                *Recording files are automatically segmented into one file per hour
+                with the start time of each file automatically aligned to zero minutes
+                past.
+
+                *Ability to organise files by day (with files kept until the same day
+                next week) or by groups of cameras in their own folder each of which
+                could if needed be mounted on a separate disk.
+
+                *Access to recorded files can be provided using a third party file server
+                (Samba is recommended) and instructions are provided on how to do this.
+                This will allow the recorded files to be viewed using the standard
+                file browser on Windows, Mac OS X or most Linux desktop GUIs such as
+                Gnome.
+
+                *If a camera stream becomes unavaiable due to a network issue or the
+                camera being rebooted, BigBrother will keep trying it until it comes
+                back up.
+
+        *Live viewing of cameras using streaming over HTTP and a web browser interface
+        The live viewing is referred to as mirroring because it can mirror a camera
+        stream from one network to another if desired, for example from a private
+        LAN to a WAN for remote viewing.
+
+                *HTTP Live Streaming (HLS) format output.
+                
+		*Requires third party web server software with PHP support (such as
+                Apache HTTPD, Nginx or Lighttpd) to be running on the same host
+
+        *Support for the number of cameras, simultaneous recordings and mirroring
+        is limited only by hardware and network capacity.
+
+	*Runs on Unix-like operating systems with a Bourne Shell, Python run time
+        and (optionally) a webserver supporting PHP if you want to do mirroring.
+        Also requires an intallation of the ffmpeg command line program.
+
+ 
+EOD
+categories: ["multimedia"]
+deps: {
+  ffmpeg: {origin: "multimedia/ffmpeg", version: "2.8"};
+  python: {origin: "lang/python", version: "2.7"};
+}
+files: {
+ /usr/local/bigbrother/README.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 644};
+ /usr/local/bigbrother/License.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 644};
+ /usr/local/bigbrother/bblogger: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/bigbrother.conf: {uname: 'bigbrother', gname: 'cctvwriters',perm: 660};
+ /usr/local/bigbrother/bigbrother_camera.conf: {uname: 'bigbrother', gname: 'cctvwriters',perm: 660};
+ /usr/local/bigbrother/bigbrotherd: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/mirror_hls.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/rc.bigbrother: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/record_bycamera.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/record_byday.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/extract.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/mirrorwebroot/bb.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/ffmpeg.jpg: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/hup.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/i-blue.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/i-green.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/i-orange.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/i-red.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/index.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.simple.bigbrother.Camera.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.simple.bigbrother.cameraoutput_allcameras.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.simple.bigbrother.cameraoutput_namedcameras.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.simple.bigbrother.cameraoutput_namedcameras_namedgroups.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.simple.bigbrother.cameraoutput_namedgroups.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.simple.bigbrother.functions.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+
+}
+
+scripts: {
+	pre-install = <<EOD
+pw groupadd cctvwriters
+pw groupadd cctvviewers
+pw adduser bigbrother -g cctvwriters -d /nonexistent -s /usr/sbin/nologin -c "bigbrotherd user"
+EOD;	
+
+
+	post-install =  <<EOD
+ln -s /usr/local/bigbrother/rc.bigbrother /usr/local/etc/rc.d/bigbrother
+echo 'To start BigBrother at boot time add bigbrotherd_enable="YES and bigbrotherd_conf="/path/to/conf.file" to /etc/rc.conf'
+chown -R bigbrother:cctvwriters /usr/local/bigbrother
+chown -R bigbrother:cctvviewers /usr/local/bigbrother/mirrorwebroot
+EOD;
+
+	post-deinstall = <<EOD
+rm /usr/local/etc/rc.d/bigbrother
+echo "You will need to manually remove the log file and config files if they were not in /usr/local/bigbrother"
+echo "and also any bigbrotherd_ entries in /etc/rc.conf"
+pw userdel bigbrother
+pw groupdel cctvwriters
+pw groupdel cctvviewers
+EOD;
+}
+

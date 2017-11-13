@@ -1,0 +1,18 @@
+MODIFICATIONS / FUTURE FEATURES TO BE ADDED (IN ORDER)
+======================================================
+
+Release blocker		Bugfixes / new features
+---------------		-----------------------
+			Logfile is chown'ed to bb user after being created but group not changed, would need specifying in global conf file - should be same as webservers group?
+			Review & refactor recording dir:
+				Look at record by camera - can it be refactored?
+				shell script given 2 args: -d /dir & -o user:group creates recording dirs inder /dir and sets owner to user:group 
+				Having a group directory under record by day dirs?
+			HUP (web interface has button but no backend implementation)
+			Extract segment from recording web interface
+			Web interface to filter cameras shown on mirror page rather than user having to edit URL manually
+
+
+			Packaging
+			--------
+			Debian .deb	

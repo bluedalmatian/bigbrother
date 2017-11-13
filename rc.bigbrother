@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# PROVIDE: bigbrotherd
+# REQUIRE: NETWORKING ffserver
+# KEYWORD: shutdown
+# Add these lines to /etc/rc.conf.local or /etc/rc.conf
+# to enable this service:
+#
+# bigbrotherd_enable="YES"
+# bigbrotherd_conf="path/to/conf/file"
+#
+
+. /etc/rc.subr
+
+name=bigbrotherd
+rcvar=bigbrotherd_enable
+load_rc_config $name
+: ${bigbrotherd_conf=/usr/local/etc/bigbrother.conf}
+
+
+bigbrotherd_start()
+{
+        /usr/local/bigbrother/bigbrotherd -f $bigbrotherd_conf &
+	echo $! > $pidfile
+}
+
+
+command="/usr/local/bigbrother/${name}"
+command_interpreter="/usr/local/bin/python"
+command_args="-f $bigbrotherd_conf"
+###start_cmd=${name}_start
+run_rc_command "$1"
