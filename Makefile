@@ -33,5 +33,3 @@ rpm:
 
 
 
-#Make a FreeBSD pkgng  .txz
-freebsd: +MANIFEST
