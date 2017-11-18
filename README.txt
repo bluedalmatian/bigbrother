@@ -421,7 +421,7 @@ APPENDIX B - Building from source
 
 A FreeBSD pkgng package can be build by cd'ing to the source directory and running
 
-pkg create -M ./+MANIFEST
+pkg create -M ./+MANIFEST -r .
 
 A Debian .deb package can be built by cd'ing to the source directory and running
 make deb
