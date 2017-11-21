@@ -4,7 +4,6 @@ CHECKINSTALLOPTIONS = --pkgname=org.simple.bigbrother -A all --pkggroup=Video \
 INSTALLDIR = /usr/local/bigbrother
 
 
-linux: org.simple.bigbrother.deb org.simple.bigbrother.rpm
 
 
 installbinary:
