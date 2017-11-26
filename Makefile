@@ -25,10 +25,10 @@ deb:
 
 
 
-#Use checkinstall to make a .rpm
 rpm:
-        #Use checkinstall to make a deb package
-	checkinstall -R --install=no $(CHECKINSTALLOPTIONS) make installbinary
 
-
-
+	tar cf ./bigbrother.tar  ./*.sh ./bigbrotherd ./mirrorwebroot ./bblogger ./bigbrother.conf ./bigbrother_camera.conf ./bigbrotherd.service ./License.txt ./README.txt
+	gzip ./bigbrother.tar
+	mv ./bigbrother.tar.gz ./RPM/SOURCES/org.simple.bigbrother.tar.gz	
+	rpmbuild -v -bb --clean ./RPM/SPECS/bigbrother.spec
+	echo "RPM is in ./RPM/RPMS/noarch/"
