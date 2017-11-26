@@ -428,3 +428,5 @@ make deb
 
 To build a Debian package you will need checkinstall which can be installed using apt-get
 and GNU Make
+
+To build an RPM cd to the source directory and run make rpm
