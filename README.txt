@@ -118,6 +118,8 @@ A default installation using the package will create a user called bigbrother an
 cctvviewers and cctvwriters. The ownership of all the recording directory tree
 shown above should be bigbrother:cctvviewers with mode 750 (rwxr-x---).
 
+You should also set the set group id (chmod g+s) on all of these directories
+
 The software itself is installed under /usr/local/bigbrother
 You should not rename, or remove anything under this main directory.
 
@@ -397,6 +399,12 @@ but instead uses its own password database as the encryption used by SMB is diff
 smbpasswd -a username
 
 Remember that the Samba password and the Unix password are then separate.
+
+Also note if your OS is using SELinix (for example RHEL or CentOS) then you may need to
+run the following command before any users can access the Samba share:
+
+chcon -R -t samba_share_t /cctvrecordings/
+
 
 TIP: You can scan through a recording on 'fast forward' using VLC.
 You can start VLC from the command line with the --rate option. Using --rate 20
