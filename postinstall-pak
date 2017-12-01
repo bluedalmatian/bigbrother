@@ -25,5 +25,6 @@ chown bigbrother:cctvwriters  $INSTALLDIR/*.sh
 chmod 750 $INSTALLDIR/*.sh
 chown -R bigbrother:cctvviewers  $INSTALLDIR/mirrorwebroot
 chmod 750 $INSTALLDIR/mirrorwebroot
+chmod g+xs  $INSTALLDIR/mirrorwebroot
 chmod 640 $INSTALLDIR/mirrorwebroot/*
 
