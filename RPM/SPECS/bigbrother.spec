@@ -7,7 +7,7 @@ Summary:        simple.org BigBrother
 License:        GPL
 Name:           %{name}
 Version:        %{version}
-Release:        1
+Release:        2
 Source:         %{name}.tar.gz
 Prefix:         /usr
 Group:          System Environment/Daemons
@@ -38,7 +38,7 @@ cp -r ./* $RPM_BUILD_ROOT/usr/local/bigbrother
 cp ./bigbrotherd.service  $RPM_BUILD_ROOT/etc/systemd/system
 
 %files
-%attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/
+%attr (755,bigbrother,cctvwriters) /usr/local/bigbrother/
 %attr (644,bigbrother,cctvwriters) /usr/local/bigbrother/README.txt
 %attr (644,bigbrother,cctvwriters) /usr/local/bigbrother/License.txt
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bblogger
