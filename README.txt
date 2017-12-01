@@ -281,6 +281,8 @@ pass files with names ending .php to the PHP interpreter.
 Secondly the username the webserver is running as must have permission to read 
 BigBrothers mirrorwebroot directory and be configured to serve it. 
 You should add the webserver username to the cctvviewers group to allow this.
+You will also need to add the webserver username to the cctvwriters group to allow
+it to read the global and camera config files.
 
 If there is already an HTTP server on the machine you can configure a virtual site
 with its own hostname e.g bigbrother.mydomain.local 
