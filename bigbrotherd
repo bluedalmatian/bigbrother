@@ -21,7 +21,7 @@
 
 
 #TO CHANGE VERSION NO ALTER bbversion VARIABLE BELOW ONLY
-#BUT YOU WILL HAVE TO SET IT IN THE  pkg/deb PACKAGE AS WELL
+#BUT YOU WILL HAVE TO SET IT IN THE  pkg/deb/rpm PACKAGE AS WELL
 
 
 
@@ -36,7 +36,7 @@ class ParseException(Exception):
 #######################################
 #System wide knobs
 
-bbversion=0.6 ##only change version no here and in no other file
+bbversion=0.7 ##only change version no here and in no other file
 exedir=os.path.dirname(os.path.realpath(__file__)) ##gives dir with no trailing /
 globalconffile=exedir+"/bigbrother.conf"
 dashfspecified=False
@@ -404,7 +404,7 @@ def readConfig():
 		lines=conffile.readlines()
 		conffile.close()
 	except IOError:
-		print "Could not open camera conf file "+conffile
+		print "Could not open camera conf file "+conffilepath
 		exit(1)
 	lineno=0
 	for line in lines:
