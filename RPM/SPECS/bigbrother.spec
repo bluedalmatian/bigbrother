@@ -1,13 +1,13 @@
 %define _topdir		%(pwd)/RPM
 %define name            org.simple.bigbrother
-%define version		0.6
+%define version		0.7
 
 
 Summary:        simple.org BigBrother
 License:        GPL
 Name:           %{name}
 Version:        %{version}
-Release:        2
+Release:        1
 Source:         %{name}.tar.gz
 Prefix:         /usr
 Group:          System Environment/Daemons
@@ -36,7 +36,7 @@ mkdir $RPM_BUILD_ROOT/etc/systemd
 mkdir $RPM_BUILD_ROOT/etc/systemd/system
 cp -r ./* $RPM_BUILD_ROOT/usr/local/bigbrother
 cp ./bigbrotherd.service  $RPM_BUILD_ROOT/etc/systemd/system
-chmod g+s r $RPM_BUILD_ROOT/usr/local/bigbrother/mirrorwebroot
+chmod g+s $RPM_BUILD_ROOT/usr/local/bigbrother/mirrorwebroot
 
 %files
 %attr (755,bigbrother,cctvwriters) /usr/local/bigbrother/
