@@ -36,6 +36,7 @@ mkdir $RPM_BUILD_ROOT/etc/systemd
 mkdir $RPM_BUILD_ROOT/etc/systemd/system
 cp -r ./* $RPM_BUILD_ROOT/usr/local/bigbrother
 cp ./bigbrotherd.service  $RPM_BUILD_ROOT/etc/systemd/system
+chmod g+s r $RPM_BUILD_ROOT/usr/local/bigbrother/mirrorwebroot
 
 %files
 %attr (755,bigbrother,cctvwriters) /usr/local/bigbrother/
