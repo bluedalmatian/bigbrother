@@ -1,5 +1,5 @@
 name: "bigbrother";
-version: "0.6";
+version: "0.7";
 origin: "multimedia/bigbrother";
 comment: "BigBrother CCTV recording & mirroring system";
 abi = "FreeBSD:10:*";
