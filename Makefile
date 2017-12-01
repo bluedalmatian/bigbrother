@@ -32,3 +32,8 @@ rpm:
 	mv ./bigbrother.tar.gz ./RPM/SOURCES/org.simple.bigbrother.tar.gz	
 	rpmbuild -v -bb --clean ./RPM/SPECS/bigbrother.spec
 	echo "RPM is in ./RPM/RPMS/noarch/"
+
+clean:
+	rm -rf ./RPM/RPMS/*
+	rm -rf ./*.deb
+	rm -rf ./RPM/SOURCES/*
