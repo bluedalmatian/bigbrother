@@ -109,6 +109,9 @@ ln -s /usr/local/bigbrother/rc.bigbrother /usr/local/etc/rc.d/bigbrother
 echo 'To start BigBrother at boot time add bigbrotherd_enable="YES and bigbrotherd_conf="/path/to/conf.file" to /etc/rc.conf'
 chown -R bigbrother:cctvwriters /usr/local/bigbrother
 chown -R bigbrother:cctvviewers /usr/local/bigbrother/mirrorwebroot
+chmod 755 /usr/local/bigbrother
+chmod 751 /usr/local/bigbrother/mirrorwebroot
+chmod g+x /usr/local/bigbrother/mirrowebroot
 EOD;
 
 	post-deinstall = <<EOD
