@@ -13,6 +13,3 @@ Release blocker		Bugfixes / new features
 			Web interface to filter cameras shown on mirror page rather than user having to edit URL manually
 
 
-			Packaging
-			--------
-			Debian .deb	
