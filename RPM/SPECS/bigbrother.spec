@@ -38,6 +38,9 @@ cp -r ./* $RPM_BUILD_ROOT/usr/local/bigbrother
 cp ./bigbrotherd.service  $RPM_BUILD_ROOT/etc/systemd/system
 chmod g+s $RPM_BUILD_ROOT/usr/local/bigbrother/mirrorwebroot
 
+%post
+systemctl daemon-reload
+
 %files
 %attr (755,bigbrother,cctvwriters) /usr/local/bigbrother/
 %attr (644,bigbrother,cctvwriters) /usr/local/bigbrother/README.txt
