@@ -8,7 +8,6 @@ Release blocker		Bugfixes / new features
 				Look at record by camera - can it be refactored?
 				shell script given 2 args: -d /dir & -o user:group creates recording dirs inder /dir and sets owner to user:group 
 				Having a group directory under record by day dirs?
-			HUP (web interface has button but no backend implementation)
 			Extract segment from recording web interface
 			Web interface to filter cameras shown on mirror page rather than user having to edit URL manually
 
