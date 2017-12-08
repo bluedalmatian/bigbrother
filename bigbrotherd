@@ -2,9 +2,9 @@
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016-2017 Andrew Wood                                       #
+# Copyright 2016-2017 Andrew Wood                                  #
 #                                                                  #
-# The main bigbrother daemon. This double forks a child process to # 
+# The main bigbrother daemon. This double forks a child process to #
 # return to shell 						   #
 #                                                                  #
 # www.simple.org/bigbrother                                        #
@@ -36,7 +36,7 @@ class ParseException(Exception):
 #######################################
 #System wide knobs
 
-bbversion=0.7 ##only change version no here and in no other file
+bbversion=0.8 ##only change version no here and in no other file
 exedir=os.path.dirname(os.path.realpath(__file__)) ##gives dir with no trailing /
 globalconffile=exedir+"/bigbrother.conf"
 dashfspecified=False
@@ -119,19 +119,31 @@ def readGlobalConfig():
                         exit(1)
 ############################################
 
-pids=[] #List of PIDs of each action subprocess
+pids=[] #List of PIDs of each (all) action subprocess
+recordingpids=[] #List of PIDs of recording (only) subprocesses
 cameras=[] #List of dictionaries of the configs of each cam
 
 ############################################
 def handler(signum, frame):
-        #forward SIGINT to subprocesses
-        Log("Got signal "+str(signum))
-	for cpid in pids:
-		Log("Forwarding signal to OS PID: "+str(cpid))
-                os.kill(cpid, signal.SIGINT)
-	cleanup()
-        Log(" bigbrotherd finished handling signal, exiting")
-	sys.exit()
+        if signum==signal.SIGHUP:
+		#forward SIGHUP to record subprocesses only
+		#and only if allownewfilefromweb==True
+		if (allownewfilefromweb==False):
+			 Log("Got SIGHUP but allownewfilefromweb is set to False, ignoring")
+			 return
+		Log("Got signal "+str(signum))
+		for cpid in recordingpids:
+                        Log("Forwarding signal to OS PID: "+str(cpid))
+                        os.kill(cpid, signal.SIGHUP)		
+	else:
+		#forward SIGINT to all subprocesses
+        	Log("Got signal "+str(signum))
+		for cpid in pids:
+			Log("Forwarding signal to OS PID: "+str(cpid))
+                	os.kill(cpid, signal.SIGINT)
+		cleanup()
+        	Log(" bigbrotherd finished handling signal, exiting")
+		sys.exit()
 #############################################
 
 #############################################
@@ -213,6 +225,7 @@ def work():
 				L.append(cameraconf['container'])
 				cpid = os.spawnv(os.P_NOWAIT, exedir+'/record_bycamera.sh', L)
        				pids.append(cpid)
+				recordingpids.append(cpid)
 				Log("P3 started camera recording process OS PID:"+str(cpid))
 
 			elif (cameraconf['recordmode']=="D"):
@@ -233,6 +246,7 @@ def work():
                                 L.append(cameraconf['container'])
                                 cpid = os.spawnv(os.P_NOWAIT, exedir+'/record_byday.sh', L)
                                 pids.append(cpid)
+				recordingpids.append(cpid)
 				Log("P3 started camera recording process OS PID:"+str(cpid))
 
 
@@ -263,7 +277,7 @@ def work():
         signal.signal(signal.SIGINT, handler)
         signal.signal(signal.SIGTERM, handler)
         signal.signal(signal.SIGQUIT, handler)
-	
+	signal.signal(signal.SIGHUP,handler)
 	
 	pid=os.getpid()
 	Log("P3 is process ID "+str(pid)+", writing it to PID file at "+pidfilepath)
@@ -457,7 +471,8 @@ def mirroringInit():
 		mirrorcontrolfile.write("$DAEMONPID="+str(os.getpid())+";\n")
                 mirrorcontrolfile.write("$GLOBALCONFFILEPATH='"+globalconffile+"';\n")
                 mirrorcontrolfile.write("$BBVERSION="+str(bbversion)+";\n")
-                mirrorcontrolfile.write("?>\n") 
+                mirrorcontrolfile.write("$ALLOWNEWFILEFROMWEB="+str(allownewfilefromweb)+";\n")
+		mirrorcontrolfile.write("?>\n") 
                 mirrorcontrolfile.close()
 	except:
 		Log("P3 could not initialise "+mirrorcontrolfilepath+" mirroring will not work");
