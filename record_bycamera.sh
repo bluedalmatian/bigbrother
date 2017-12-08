@@ -2,7 +2,7 @@
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016 Andrew Wood                                       #
+# Copyright 2016-2017 Andrew Wood                                  #
 #                                                                  #
 # record_bycamera.sh Bourne shell script to perform recording for  #
 # each camera. Launched by bigbrotherd                             #
@@ -21,7 +21,7 @@
 
 
 usagestring="Syntax error.  Usage: $0 -cam proto://camera/url:port -name CameraName -group GroupName -folder /path/to/ -log /path/to/log/file -cmd /path/to/ffmpeg -container TypeCode"
-copyrightstring="Simple BigBrother Copyright Andrew Wood 2016"
+copyrightstring="Simple BigBrother Copyright Andrew Wood 2016-2017"
 
 
 echoUsage()
@@ -60,6 +60,12 @@ processSIGQUIT()
 }
 
 
+processSIGHUP()
+{
+        echo "Got SIGHUP"
+        echo "$0 Got SIGHUP forwarding SIGINT to OS PID $pid" | $bblogger $logfile
+        kill -INT $pid
+}
 
 
 if [ $# -ne 14 ]
@@ -247,8 +253,10 @@ fi
 if [ -d $folder/bycamera/$group ]
 then
 	#do nothing, dir exists
+	echo "$group exists as a directory under $folder/bycamera so all OK" | $bblogger $logfile
 else
 	echo "Error: Group Name $group must exist as a directory under $folder/bycamera"
+	echo "Error: Group Name $group must exist as a directory under $folder/bycamera" | $bblogger $logfile
 	echoUsage
 	exit 1
 fi
@@ -271,6 +279,7 @@ pid=0 #dont match anything at startup
 trap processSIGINT INT
 trap processSIGTERM TERM
 trap processSIGQUIT QUIT
+trap processSIGHUP HUP
 keepGoing=1;
 
 echo "$0 $1 $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} started" | $bblogger $logfile
@@ -296,16 +305,17 @@ do
 	echo "It is $minspast minutes past the hour, recording for $secs seconds to align with next hour"
 
 	#check if $folder/bycamera/$group/$camname--$day--$todaysdate--$timenow.$container exits
-        #if so it could be because clock has gone back for DST, in which case append -1 afer time
-        if [ -f  $folder/bycamera/$group/$camname--$day--$todaysdate--$timenow.$container ]
-        then
-                dstadjustment="-1"
-                echo "$0 has detected clock may have gone back, creating file $folder/bycamera/$group/$camname--$day--$todaysdate--$timenow$dstadjustment.$container so as not to overwrite previous file" | $bblogger $logfile
-        else
-                dstadjustment=""
-        fi
+        #if so it could be because clock has gone back for DST or multiple HUPs recently, in which case append -1,-2 etc afer time
 
-	
+	dstadjustment=""
+        dstadjustmentno=0
+        while [ -f $folder/bycamera/$group/$camname--$day--$todaysdate--$timenow$dstadjustment.$container ]
+        do
+                dstadjustmentno=$(expr $dstadjustmentno \+ 1)
+                dstadjustment="-"$dstadjustmentno
+                echo "$0 has detected clock may have gone back or HUP signalled, testing for presence of file "$folder/bycamera/$group/$camname--$day--$todaysdate--$timenow$dstadjustment.$container | $bblogger $logfile
+        done
+
 	
 	$ffmpegcommand -loglevel fatal -y -t $secs -i $sourceurl -acodec copy -vcodec copy -metadata title="$camname--$todaysdate--$timenow" $folder/bycamera/$group/$camname--$day--$todaysdate--$timenow$dstadjustment.$container  &
 	pid=$!
