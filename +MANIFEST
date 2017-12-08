@@ -1,5 +1,5 @@
 name: "bigbrother";
-version: "0.7";
+version: "0.8";
 origin: "multimedia/bigbrother";
 comment: "BigBrother CCTV recording & mirroring system";
 abi = "FreeBSD:10:*";
@@ -93,7 +93,7 @@ files: {
  /mirrorwebroot/org.simple.bigbrother.cameraoutput_namedcameras_namedgroups.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /mirrorwebroot/org.simple.bigbrother.cameraoutput_namedgroups.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /mirrorwebroot/org.simple.bigbrother.functions.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
-
+ /mirrorwebroot/org.simple.bigbrother.hup.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
 }
 
 scripts: {
