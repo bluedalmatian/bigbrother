@@ -139,6 +139,7 @@
 			else
 			{
 				$allownewfilefromweb=false;
+
 			}
 		}
 		else if ($elements[0]=="cameraconf")
@@ -234,6 +235,10 @@ p {
 var msgareastring = "";
 var groupNotFound = false;
 var cameraNotFound = false;
+
+
+var hup_xhr = new XMLHttpRequest();
+
 
 function detectBrowser()
 {
@@ -352,10 +357,34 @@ function handleHUPRequest()
 
 	if (hupok==true)
 	{
-                clobberMsg("<p><img src=i-green.png width=32 height=32 align=middle valign=middle>All recordings restarted</p>");
-
+		//OK button pressed
+		clobberMsg("<p><img src=i-orange.png width=32 height=32 align=middle valign=middle>Processing please wait...</p>");
+		var url = "org.simple.bigbrother.hup.php";
+    		hup_xhr.open('GET',url,true);
+    		hup_xhr.onreadystatechange=processHUPResponse; //callback when response comes
+    		hup_xhr.send(null);
 	}
 	
+}
+
+function processHUPResponse()
+{
+    
+    if (hup_xhr.status==418)
+    {
+       //PHP script will only return 418 if it needs to give an error msg to user
+	 clobberMsg("<p><img src=i-red.png width=32 height=32 align=middle valign=middle>Error creating new recordings, error was: "+hup_xhr.responseText+"</p>");
+    }
+    else if (hup_xhr.status==201)
+    {
+       //PHP script will only return 201 if it has processed everyting OK. There is no response body and JavaScript is resposnsible for generating the OK msg to the user
+       clobberMsg("<p><img src=i-green.png width=32 height=32 align=middle valign=middle>All recordings restarted</p>");    
+    }
+    else
+    {
+	clobberMsg("<p><img src=i-red.png width=32 height=32 align=middle valign=middle>Error creating new recordings, error was: "+hup_xhr.responseText+"</p>");       
+    }
+
 }
 
 function onLoad()
