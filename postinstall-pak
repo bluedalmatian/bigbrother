@@ -28,3 +28,4 @@ chmod 750 $INSTALLDIR/mirrorwebroot
 chmod g+xs  $INSTALLDIR/mirrorwebroot
 chmod 640 $INSTALLDIR/mirrorwebroot/*
 
+systemctl daemon-reload
