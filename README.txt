@@ -323,6 +323,33 @@ http://server/index.php?groupName[]=Group1&groupName[]=Group2&cameraName[]=Camer
 
 If no parameters are specified all cameras setup in the config file for mirroring will be shown
 
+An optional parameter allownewfilefromweb can be specified in the global config file:
+allownewfilefromweb=True
+
+If it is set to true then a button will be displayed on the mirroring webpage which will cause all recording files
+to be closed early and new ones started immediatey, rather than having to wait until the next hour.
+This can be useful if you have spotted something suspicious on the live mirroring display and want to review the
+recording straight away.
+
+By default allownewfilefromweb will be assumed to be false if not present.
+
+In order for this feature to work, the webserver process must have permission to send a hangup signal (SIGHUP)
+to bigbrotherd. Unix security requires that a signal can only be sent from one process to another if they are
+both running under the same username/id, you therefore need to take an additional step to make it work:
+
+	1. Copy the systems kill command from its location (run 'which kill' to locate it) to a file called sendSIG in
+	the bigbrother directory:
+
+		cp /bin/kill /usr/local/bigbrother/sendSIG
+
+	2. Change the ownership and permissions on it as follows:
+		chown bigbrother:cctvwriters sendSIG
+		chmod 750 sendSIG
+		chmod u+s sendSIG
+
+	3. Put the webservers username into the cctvwriters group
+
+
 ====================================================
 APPENDIX A - Remote access to recordings using Samba
 ====================================================
