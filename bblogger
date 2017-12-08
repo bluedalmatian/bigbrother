@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
