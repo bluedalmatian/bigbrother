@@ -1,6 +1,6 @@
 %define _topdir		%(pwd)/RPM
 %define name            org.simple.bigbrother
-%define version		0.7
+%define version		0.8
 
 
 Summary:        simple.org BigBrother
