@@ -3,8 +3,8 @@ CHECKINSTALLOPTIONS = --pkgname=org.simple.bigbrother -A all --pkggroup=Video \
 --requires=ffmpeg,python
 INSTALLDIR = /usr/local/bigbrother
 
-
-
+default:
+	echo "Run make deb|rpm|pkgng|clean"
 
 installbinary:
 	mkdir $(INSTALLDIR)
@@ -33,7 +33,11 @@ rpm:
 	rpmbuild -v -bb --clean ./RPM/SPECS/bigbrother.spec
 	echo "RPM is in ./RPM/RPMS/noarch/"
 
+pkgng:
+	pkg create -M ./+MANIFEST -r .
+
 clean:
 	rm -rf ./RPM/RPMS/*
 	rm -rf ./*.deb
 	rm -rf ./RPM/SOURCES/*
+	rm -rf ./*.txz
