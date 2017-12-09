@@ -111,7 +111,7 @@ chown -R bigbrother:cctvwriters /usr/local/bigbrother
 chown -R bigbrother:cctvviewers /usr/local/bigbrother/mirrorwebroot
 chmod 755 /usr/local/bigbrother
 chmod 751 /usr/local/bigbrother/mirrorwebroot
-chmod g+x /usr/local/bigbrother/mirrowebroot
+chmod g+s /usr/local/bigbrother/mirrowebroot
 EOD;
 
 	post-deinstall = <<EOD
