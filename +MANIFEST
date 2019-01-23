@@ -1,11 +1,11 @@
 name: "bigbrother";
-version: "0.8";
+version: "0.9";
 origin: "multimedia/bigbrother";
 comment: "BigBrother CCTV recording & mirroring system";
 abi = "FreeBSD:10:*";
 arch = "freebsd:10:*";
-www: "http://www.simple.org/bigbrother";
-maintainer: aw@simple.org;
+www: "http://www.bigbrothercctv.org/bigbrother";
+maintainer: awood@comms.org.uk;
 licenselogic: "or";
 licenses: ["GPLv3"];
 flatsize: 60000;
@@ -87,13 +87,13 @@ files: {
  /mirrorwebroot/i-orange.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /mirrorwebroot/i-red.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /mirrorwebroot/index.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/org.simple.bigbrother.Camera.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/org.simple.bigbrother.cameraoutput_allcameras.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/org.simple.bigbrother.cameraoutput_namedcameras.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/org.simple.bigbrother.cameraoutput_namedcameras_namedgroups.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/org.simple.bigbrother.cameraoutput_namedgroups.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/org.simple.bigbrother.functions.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/org.simple.bigbrother.hup.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /mirrorwebroot/org.bigbrothercctv.bigbrother.Camera.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_allcameras.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_namedcameras.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_namedcameras_namedgroups.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_namedgroups.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /mirrorwebroot/org.bigbrothercctv.bigbrother.functions.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /mirrorwebroot/org.bigbrothercctv.bigbrothercctv.bigbrother.hup.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
 }
 
 scripts: {
