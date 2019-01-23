@@ -4,10 +4,10 @@
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
 # Copyright 2016 Andrew Wood                                       #
 #                                                                  #
-# UI code to display named cameras defined for mirroring as        #
-# specified in an HTTP GET variable                                #
+# UI code to display named cameras & cameras in named groups       #
+# defined for mirroring  as specified in an HTTP GET variable      #
 #                                                                  #
-# www.simple.org/bigbrother                                        #
+# www.bigbrothercctv.org                                           #
 #                                                                  #
 # Licensed under the GNU Public License v 3                        #
 # The full license can be read at www.gnu.org/licenses/gpl-3.0.txt #
@@ -21,34 +21,63 @@
 
 
 
+
+	include("org.bigbrothercctv.bigbrother.cameraoutput_namedgroups.php");
 	set_error_handler(NULL);
-	if (sizeof($camnamesToShow)>0)
+
+    	if (sizeof($camnamesToShow)>0)
         {
                 echo("<table cellspacing=10 cellpadding=0 border=0 bordercolor=black bgcolor=gray style='margin:5px;'>");
                  $camsprinted=0;
-            
+
         }
 
 
 
         foreach ($camnamesToShow as $camname)
         {
+		$camDone=False;
 
-		$camera=NULL;
-		foreach ($allCameras as $candidateCam)
+		foreach ($groupnamesToShow as $groupName)
 		{
-			if ($candidateCam->GetCameraName()==$camname)
+			if (array_key_exists($groupName,$groupsByName))
 			{
-				$camera=$candidateCam;
+				$groupCameras=$groupsByName[$groupName];
+			
+
+				foreach($groupCameras as $candidateCam)
+				{
+					if ($candidateCam->GetCameraName()==$camname)
+					{	
+						$camDone=True;
+					}
+				}
 			}
+
 		}
 
-		if ($camera==NULL)
+
+
+		if ($camDone)
 		{
-			echo("<script language=JavaScript>cameraNotFound=true;</script>");
 			continue;
 		}
-		
+
+		$camera=NULL;
+                foreach ($allCameras as $candidateCam)
+                {
+                        if ($candidateCam->GetCameraName()==$camname)
+                        {
+                                $camera=$candidateCam;
+                        }
+                }
+
+                if ($camera==NULL)
+                {
+                        echo("<script language=JavaScript>cameraNotFound=true;</script>");
+                        continue;
+                }
+
 
                 if ($camsprinted==0)
                 {
@@ -60,7 +89,7 @@
 
                 $camsprinted++;
 
-                if ($camsprinted==$camsPerTR)
+		if ($camsprinted==$camsPerTR)
                 {
                         echo("</tr>");
                         echo("<tr><td colspan=".$camsPerTR." bgcolor=gray height=10 width=100%>&nbsp;</td></tr>");

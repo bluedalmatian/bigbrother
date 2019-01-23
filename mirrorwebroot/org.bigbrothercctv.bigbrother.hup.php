@@ -1,7 +1,7 @@
 <?php
 ob_start();
 
-include_once("./org.simple.bigbrother.bigbrotherd.php");
+include_once("./org.bigbrothercctv.bigbrother.bigbrotherd.php");
 global $DAEMONPID;
 global $ALLOWNEWFILEFROMWEB;
 
