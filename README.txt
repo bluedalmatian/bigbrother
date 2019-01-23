@@ -2,7 +2,7 @@
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #		         	
 # Copyright 2016-2019 Andrew Wood     	                           #
 # 					                           #
-# www.bigbrother.org			                           #
+# www.bigbrothercctv.org			                           #
 #                                                                  #
 # Licensed under the GNU Public License v 3			   #
 # The full license can be read at www.gnu.org/licenses/gpl-3.0.txt #
