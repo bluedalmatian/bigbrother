@@ -6,7 +6,7 @@
 #                                                                  #
 # Camera class represents a camera as defined in the config file   #
 #                                                                  #
-# www.simple.org/bigbrother                                        #
+# www.bigbrothercctv.org                                           #
 #                                                                  #
 # Licensed under the GNU Public License v 3                        #
 # The full license can be read at www.gnu.org/licenses/gpl-3.0.txt #
