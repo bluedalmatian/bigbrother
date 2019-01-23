@@ -1,5 +1,5 @@
 %define _topdir		%(pwd)/RPM
-%define name            org.simple.bigbrother
+%define name            org.bigbrothercctv.bigbrother
 %define version		0.9
 
 
