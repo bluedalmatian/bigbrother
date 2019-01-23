@@ -1,5 +1,5 @@
 <?php
-	//CONVENTION: Any variable name in $CAPITALS is declared in the mirror control file (org.simple.bigbrother.bigbrotherd.php)
+	//CONVENTION: Any variable name in $CAPITALS is declared in the mirror control file (org.bigbrothercctv.bigbrother.bigbrotherd.php)
 	
 
 	function controlFileIncludeFail($errno, $errstr, $errfile, $errline)
@@ -16,12 +16,12 @@
 	}
 
 	set_error_handler("controlFileIncludeFail");
-	include_once("./org.simple.bigbrother.bigbrotherd.php");
+	include_once("./org.bigbrothercctv.bigbrother.bigbrotherd.php");
 
 	set_error_handler("requiredIncludeFail");
-	include_once("./org.simple.bigbrother.functions.php");
+	include_once("./org.bigbrothercctv.bigbrother.functions.php");
 	set_error_handler(NULL); //clear custom error handler as it will cause a false failure, this is probably a bug in PHP???
-	include_once("./org.simple.bigbrother.Camera.php");
+	include_once("./org.bigbrothercctv.bigbrother.Camera.php");
 	set_error_handler(NULL);
 
 	//System wide knobs to be read from global config file
@@ -359,7 +359,7 @@ function handleHUPRequest()
 	{
 		//OK button pressed
 		clobberMsg("<p><img src=i-orange.png width=32 height=32 align=middle valign=middle>Processing please wait...</p>");
-		var url = "org.simple.bigbrother.hup.php";
+		var url = "org.bigbrothercctv.bigbrother.hup.php";
     		hup_xhr.open('GET',url,true);
     		hup_xhr.onreadystatechange=processHUPResponse; //callback when response comes
     		hup_xhr.send(null);
@@ -451,22 +451,22 @@ function onLoad()
 	if ( (sizeof($camnamesToShow)==0)  &&  (sizeof($groupnamesToShow)==0) )
 	{
 		 set_error_handler("requiredIncludeFail");
-		include("org.simple.bigbrother.cameraoutput_allcameras.php");
+		include("org.bigbrothercctv.bigbrother.cameraoutput_allcameras.php");
 	}
 	else if ((sizeof($camnamesToShow)>0)  &&  (sizeof($groupnamesToShow)>0))
 	{
 		   set_error_handler("requiredIncludeFail");
-		  include("org.simple.bigbrother.cameraoutput_namedcameras_namedgroups.php"); 
+		  include("org.bigbrothercctv.bigbrother.cameraoutput_namedcameras_namedgroups.php"); 
 	} 
 	else if ( (sizeof($camnamesToShow)==0)  &&  (sizeof($groupnamesToShow)>0) )
 	{
 		   set_error_handler("requiredIncludeFail");
-		  include("org.simple.bigbrother.cameraoutput_namedgroups.php"); 
+		  include("org.bigbrothercctv.bigbrother.cameraoutput_namedgroups.php"); 
 	}
 	else
 	{
 		   set_error_handler("requiredIncludeFail");
-		  include("org.simple.bigbrother.cameraoutput_namedcameras.php"); 
+		  include("org.bigbrothercctv.bigbrother.cameraoutput_namedcameras.php"); 
 	}
 
 

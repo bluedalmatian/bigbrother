@@ -2,12 +2,12 @@
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016-2017 Andrew Wood                                  #
+# Copyright 2016-2019 Andrew Wood                                  #
 #                                                                  #
 # The main bigbrother daemon. This double forks a child process to #
 # return to shell 						   #
 #                                                                  #
-# www.simple.org/bigbrother                                        #
+# bigbrothercctv.org	                                           #
 #                                                                  #
 # Licensed under the GNU Public License v 3                        #
 # The full license can be read at www.gnu.org/licenses/gpl-3.0.txt #
@@ -36,7 +36,7 @@ class ParseException(Exception):
 #######################################
 #System wide knobs
 
-bbversion=0.8 ##only change version no here and in no other file
+bbversion=0.9 ##only change version no here and in no other file
 exedir=os.path.dirname(os.path.realpath(__file__)) ##gives dir with no trailing /
 globalconffile=exedir+"/bigbrother.conf"
 dashfspecified=False
@@ -444,7 +444,7 @@ def mirroringCleanup():
 	Log("P3 removing old control file from webroot")
 	time.sleep(10)
 	try:
-		controlfile=mirrorwebroot+"/org.simple.bigbrother.bigbrotherd.php"
+		controlfile=mirrorwebroot+"/org.bigbrothercctv.bigbrother.bigbrotherd.php"
                 subprocess.call("rm "+controlfile,shell=True)
         except: #all exceptions
                 Log("P3 could not cleanup "+controlfile)
@@ -462,7 +462,7 @@ def mirroringCleanup():
 def mirroringInit():
 	Log("P3 cleaning up webroot in case last run was not cleanly shut down")
 	mirroringCleanup()
-	mirrorcontrolfilepath=mirrorwebroot+"/org.simple.bigbrother.bigbrotherd.php"
+	mirrorcontrolfilepath=mirrorwebroot+"/org.bigbrothercctv.bigbrother.bigbrotherd.php"
 	Log("P3 generating "+mirrorcontrolfilepath)
 	try:
 		mirrorcontrolfile=open(mirrorcontrolfilepath,"w")

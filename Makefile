@@ -1,5 +1,5 @@
-CHECKINSTALLOPTIONS = --pkgname=org.simple.bigbrother -A all --pkggroup=Video \
---pkglicense=GPL --nodoc --maintainer='simple.org/bigbrother' \
+CHECKINSTALLOPTIONS = --pkgname=org.bigbrothercctv.bigbrother -A all --pkggroup=Video \
+--pkglicense=GPL --nodoc --maintainer='bigbrothercctv.org' \
 --requires=ffmpeg,python
 INSTALLDIR = /usr/local/bigbrother
 
@@ -29,7 +29,7 @@ rpm:
 
 	tar cf ./bigbrother.tar  ./*.sh ./bigbrotherd ./mirrorwebroot ./bblogger ./bigbrother.conf ./bigbrother_camera.conf ./bigbrotherd.service ./License.txt ./README.txt
 	gzip ./bigbrother.tar
-	mv ./bigbrother.tar.gz ./RPM/SOURCES/org.simple.bigbrother.tar.gz	
+	mv ./bigbrother.tar.gz ./RPM/SOURCES/org.bigbrothercctv.bigbrother.tar.gz	
 	rpmbuild -v -bb --clean ./RPM/SPECS/bigbrother.spec
 	echo "RPM is in ./RPM/RPMS/noarch/"
 

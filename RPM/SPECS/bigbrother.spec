@@ -1,9 +1,9 @@
 %define _topdir		%(pwd)/RPM
 %define name            org.simple.bigbrother
-%define version		0.8
+%define version		0.9
 
 
-Summary:        simple.org BigBrother
+Summary:        bigbrothercctv.org BigBrother
 License:        GPL
 Name:           %{name}
 Version:        %{version}
