@@ -17,7 +17,7 @@ if ($ALLOWNEWFILEFROMWEB==False)
 
 $sigstatus=-100;
 $sigstdout=Array();
-exec( "../sendSIG -s HUP ".$DAEMONPID." 2>&1", $sigstdout, $sigstatus);
+exec( "../kill -s HUP ".$DAEMONPID." 2>&1", $sigstdout, $sigstatus);
 
 if ($sigstatus==0)
 {

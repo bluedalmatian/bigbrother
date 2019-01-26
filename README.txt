@@ -1,8 +1,10 @@
 ####################################################################
-# BigBrother  CCTV Recording & Live Viewing (mirroring) software   #		         	
-# Copyright 2016-2019 Andrew Wood     	                           #
-# 					                           #
-# www.bigbrothercctv.org			                           #
+# BigBrother  CCTV Recording & Live Viewing (mirroring) software   #		      
+# Copyright 2016-2019 Andrew Wood                                  #
+#                                                                  #
+#This copy of the README file relates to version 0.10		   #
+#                                                                  #
+# www.bigbrothercctv.org			                   #
 #                                                                  #
 # Licensed under the GNU Public License v 3			   #
 # The full license can be read at www.gnu.org/licenses/gpl-3.0.txt #
@@ -11,7 +13,7 @@
 #	                                                           #
 # BigBrother is free open source software but if you find it       #                                
 # useful please consider making a donation to the Communications   #
-# Museum Trust at www.comms.org.uk/donate   			   #
+# Museum Trust at www.comms.org.uk/donate                          #
 ####################################################################
 
 
@@ -75,11 +77,14 @@ INSTALLATION & CONFIGURATION
 
 Installation
 ------------
-A FreeBSD pkgng and Debian deb package is provided for installation which sets up the necessary
+A Debian deb and RedHat/CentOS RPM package is provided for installation which sets up the necessary
 users and associated ownwersip & permissions. However you are responsible for
 creating the directory where you want the recorded files to be placed. This has to
 contain certain subdirectories and have appropriate permissions set so this will
 be described below.
+
+The makefile in the source tree supports generating a FreeBSD pkgng package but at the moment
+an 'offical' pkgng is not published on bigbrothercctv.org
 
 This directory can be placed anywhere on the filesystem and is specified on a per camera
 basis which means you can share one directory amoungst all or several cameras or have
@@ -103,7 +108,7 @@ This MUST contain the following subdirectories:
 		      |
 		      |	
 		      -bycamera
-		      	      |
+		              |
 			      -GroupName
 
 where GroupName is a directory for EACH group you define in the camera config file
@@ -153,7 +158,7 @@ discussed later in this document.
 
 The init script accepts the standard start|stop|restart arguments
 
-For Debian a SystemD unit file is provided and installed to /etc/systemd/system
+For Debian and CentOS a SystemD unit file is provided and installed to /etc/systemd/system
 The software can then be controlled using systemctl command bigbrotherd
 where command is start|stop|restart|status|enable|disable
 
@@ -337,15 +342,15 @@ In order for this feature to work, the webserver process must have permission to
 to bigbrotherd. Unix security requires that a signal can only be sent from one process to another if they are
 both running under the same username/id, you therefore need to take an additional step to make it work:
 
-	1. Copy the systems kill command from its location (run 'which kill' to locate it) to a file called sendSIG in
+	1. Copy the systems kill command from its location (run 'which kill' to locate it) to
 	the bigbrother directory:
 
-		cp /bin/kill /usr/local/bigbrother/sendSIG
+		cp /bin/kill /usr/local/bigbrother/kill
 
 	2. Change the ownership and permissions on it as follows:
-		chown bigbrother:cctvwriters sendSIG
-		chmod 750 sendSIG
-		chmod u+s sendSIG
+		chown bigbrother:cctvwriters kill
+		chmod 750 kill
+		chmod u+s kill
 
 	3. Put the webservers username into the cctvwriters group
 
