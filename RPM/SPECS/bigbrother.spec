@@ -1,6 +1,6 @@
 %define _topdir		%(pwd)/RPM
 %define name            org.bigbrothercctv.bigbrother
-%define version		0.9
+%define version		0.10
 
 
 Summary:        bigbrothercctv.org BigBrother
