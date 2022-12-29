@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016-2019 Andrew Wood                                  #
+# Copyright 2016-2022 Andrew Wood                                  #
 #                                                                  #
 # The main bigbrother daemon. This double forks a child process to #
 # return to shell 						   #
@@ -36,16 +36,16 @@ class ParseException(Exception):
 #######################################
 #System wide knobs
 
-bbversion=0.10 ##only change version no here and in no other file
+bbversion=0.30 ##only change version no here and in no other file
 exedir=os.path.dirname(os.path.realpath(__file__)) ##gives dir with no trailing /
 globalconffile=exedir+"/bigbrother.conf"
 dashfspecified=False
 pidfilepath=exedir+"/pid"
-print "Given "+str((len(sys.argv)))+" args"
+print ("Given "+str((len(sys.argv)))+" args")
 if ( (len(sys.argv)==3) and (sys.argv[1]=="-f") ):
-        globalconffile=sys.argv[2]
+	globalconffile=sys.argv[2]
 	dashfspecified=True
-	print "-f specified "
+	print ("-f specified ")
 
 ##following knobs to be read from config file
 conffilepath=""	#this is the camera conf file
@@ -66,7 +66,7 @@ mirroringconfigvalid=False
 #######################################
 def cleanup():
 	Log("Cleaning up "+mirrorwebroot)
-        mirroringCleanup()
+	mirroringCleanup()
 #######################################
 
 
@@ -84,39 +84,39 @@ def readGlobalConfig():
         	lines=conffile.readlines()
         	conffile.close()
 	except IOError:
-		print "Could not open global conf file "+globalconffile
+		print ("Could not open global conf file "+globalconffile)
 		exit(1)
-        lineno=0
-        for line in lines:
-                lineno=lineno+1
-                if line[0]=='#':
-                        continue
-                if line[0]=='\n':
-                        continue
-                try:
-                       cols=line.split()
-		       if (cols[0]=="cameraconf"):
+	lineno=0
+	for line in lines:
+		lineno=lineno+1
+		if line[0]=='#':
+			continue
+		if line[0]=='\n':
+			continue
+		try:
+			cols=line.split()
+			if (cols[0]=="cameraconf"):
 				conffilepath=cols[1]
-		       elif (cols[0]=="ffmpegcommand"):
+			elif (cols[0]=="ffmpegcommand"):
 				ffmpegcommand=cols[1]
-		       elif (cols[0]=="logfile"):
+			elif (cols[0]=="logfile"):
 				logfilepath=cols[1]
-		       elif (cols[0]=="user"):
+			elif (cols[0]=="user"):
 				user=cols[1]
-		       elif (cols[0]=="allownewfilefromweb"):
+			elif (cols[0]=="allownewfilefromweb"):
 				cols[1]=cols[1].lower()
 				if (cols[1]=="true"):
 					allownewfilefromweb=True
 				else:
 					allownewfilefromweb=False
-		       else:
-				raise ParseException,"unknown keyword "+cols[0]
+			else:
+				raise ParseException("unknown keyword "+cols[0])
 
-                except ParseException,e:
-                        print "Syntax error in "+globalconffile+" on line "+str(lineno)
-                        print "\n"
-                        print e.msg
-                        exit(1)
+		except ParseException(e):
+			print ("Syntax error in "+globalconffile+" on line "+str(lineno))
+			print ("\n")
+			print (e.msg)
+			exit(1)
 ############################################
 
 pids=[] #List of PIDs of each (all) action subprocess
@@ -125,7 +125,7 @@ cameras=[] #List of dictionaries of the configs of each cam
 
 ############################################
 def handler(signum, frame):
-        if signum==signal.SIGHUP:
+	if signum==signal.SIGHUP:
 		#forward SIGHUP to record subprocesses only
 		#and only if allownewfilefromweb==True
 		if (allownewfilefromweb==False):
@@ -137,18 +137,18 @@ def handler(signum, frame):
                         os.kill(cpid, signal.SIGHUP)		
 	else:
 		#forward SIGINT to all subprocesses
-        	Log("Got signal "+str(signum))
+		Log("Got signal "+str(signum))
 		for cpid in pids:
 			Log("Forwarding signal to OS PID: "+str(cpid))
-                	os.kill(cpid, signal.SIGINT)
+			os.kill(cpid, signal.SIGINT)
 		cleanup()
-        	Log(" bigbrotherd finished handling signal, exiting")
+		Log(" bigbrotherd finished handling signal, exiting")
 		sys.exit()
 #############################################
 
 #############################################
 def Log(str,throw=False):
-        try:
+       	try:
                 now=datetime.datetime.now()
                 datestr=now.strftime("%Y-%m-%d %H:%M")
                 file=open(logfilepath,'a')
@@ -163,11 +163,11 @@ def Log(str,throw=False):
                         str=str+"\n"
                 file.write(datestr+" "+str)
                 file.close()
-        except IOError,e:
+        except IOError(e):
                 if (throw):
                         raise e
                 else:
-                        print "ERROR: Could not open Log file an IOError was thrown, ignoring"
+                        print ("ERROR: Could not open Log file an IOError was thrown, ignoring")
 ###############################################
 
 ###############################################
@@ -176,7 +176,7 @@ def directoryIsWritable(path):
         testfile = tempfile.TemporaryFile(dir = path)
         testfile.close()
     except OSError as e:
-	return False
+        return False
     return True
 ###############################################
 
@@ -218,34 +218,34 @@ def work():
 				L.append("-folder")
 				L.append(cameraconf['folder'])
 				L.append("-log")
-                                L.append(logfilepath)
-                                L.append("-cmd")
-                                L.append(ffmpegcommand)
+				L.append(logfilepath)
+				L.append("-cmd")
+				L.append(ffmpegcommand)
 				L.append("-container")
 				L.append(cameraconf['container'])
 				cpid = os.spawnv(os.P_NOWAIT, exedir+'/record_bycamera.sh', L)
-       				pids.append(cpid)
+				pids.append(cpid)
 				recordingpids.append(cpid)
 				Log("P3 started camera recording process OS PID:"+str(cpid))
 
 			elif (cameraconf['recordmode']=="D"):
 				#by day
 				L=[]
-                                L.append(exedir+"/record_byday.sh")
-                                L.append("-cam")
-                                L.append(cameraconf['url'])
-                                L.append("-name")
-                                L.append(cameraconf['cam'])
-                                L.append("-folder")
-                                L.append(cameraconf['folder'])
+				L.append(exedir+"/record_byday.sh")
+				L.append("-cam")
+				L.append(cameraconf['url'])
+				L.append("-name")
+				L.append(cameraconf['cam'])
+				L.append("-folder")
+				L.append(cameraconf['folder'])
 				L.append("-log")
 				L.append(logfilepath)
 				L.append("-cmd")
 				L.append(ffmpegcommand)
 				L.append("-container")
-                                L.append(cameraconf['container'])
-                                cpid = os.spawnv(os.P_NOWAIT, exedir+'/record_byday.sh', L)
-                                pids.append(cpid)
+				L.append(cameraconf['container'])
+				cpid = os.spawnv(os.P_NOWAIT, exedir+'/record_byday.sh', L)
+				pids.append(cpid)
 				recordingpids.append(cpid)
 				Log("P3 started camera recording process OS PID:"+str(cpid))
 
@@ -254,29 +254,29 @@ def work():
 
 		if (cameraconf['mirrormode']=="HLS"):
 			#mirroring using HLS
-			 L=[]
-                         L.append(exedir+"/mirror_hls.sh")
-                         L.append("-cam")
-                         L.append(cameraconf['url'])
-                         L.append("-name")
-                         L.append(cameraconf['cam'])
-			 L.append("-log")
-			 L.append(logfilepath)
-			 L.append("-cmd")
-			 L.append(ffmpegcommand)
-			 L.append("-webroot")
-			 L.append(mirrorwebroot)
-                         cpid = os.spawnv(os.P_NOWAIT, exedir+'/mirror_hls.sh', L)
-                         pids.append(cpid)
-			 Log("P3 started camera mirroring process OS PID:"+str(cpid))
+			L=[]
+			L.append(exedir+"/mirror_hls.sh")
+			L.append("-cam")
+			L.append(cameraconf['url'])
+			L.append("-name")
+			L.append(cameraconf['cam'])
+			L.append("-log")
+			L.append(logfilepath)
+			L.append("-cmd")
+			L.append(ffmpegcommand)
+			L.append("-webroot")
+			L.append(mirrorwebroot)
+			cpid = os.spawnv(os.P_NOWAIT, exedir+'/mirror_hls.sh', L)
+			pids.append(cpid)
+			Log("P3 started camera mirroring process OS PID:"+str(cpid))
 
 
 
 
 	Log("P3 setting up signal handlers")
-        signal.signal(signal.SIGINT, handler)
-        signal.signal(signal.SIGTERM, handler)
-        signal.signal(signal.SIGQUIT, handler)
+	signal.signal(signal.SIGINT, handler)
+	signal.signal(signal.SIGTERM, handler)
+	signal.signal(signal.SIGQUIT, handler)
 	signal.signal(signal.SIGHUP,handler)
 	
 	pid=os.getpid()
@@ -290,8 +290,8 @@ def work():
     		Log("P3 unable to write PID file")
 
 	Log("P3 sleeping")
-        while (1):
-                time.sleep(4200)
+	while (1):
+		time.sleep(4200)
 ###########################################
 
 ##########################################
@@ -299,86 +299,86 @@ def parseLine(line):
 	cols=line.split()
 	if (len(cols)!=7):
 		errstr="Each camera action definition (line) needs 7 parameters, separated by spaces"
-		raise ParseException,errstr
+		raise ParseException(errstr)
 	action={}
 	action['cam']=cols[0]
 	action['url']=cols[1]
 	action['group']=cols[2]
- 	action['recordmode']=cols[3]
- 	action['mirrormode']=cols[4]
- 	action['folder']=cols[5]
+	action['recordmode']=cols[3]
+	action['mirrormode']=cols[4]
+	action['folder']=cols[5]
 	action['container']=cols[6]
 
 	if ( (action['folder']=="*") and (action['recordmode']!="*")):
-		raise ParseException,"To do recording you must specify a folder"
+		raise ParseException("To do recording you must specify a folder")
 
 	if ( (action['folder']!="*") ):
 
 		if(  containsDotsOrStars(action['folder'])  and (action['recordmode']!="*") ):
-			raise ParseException,"Folder must be a literal Unix style folder path with no . or * characters"
+			raise ParseException("Folder must be a literal Unix style folder path with no . or * characters")
 	
 		foldername=action['folder']
 		lastidx=len(foldername)-1
 	
 		if ( (foldername[0]!="/") or (foldername[lastidx]=="/") ):
-			raise ParseException,"Folder must be a literal Unix style folder path with no trailing /"
+			raise ParseException("Folder must be a literal Unix style folder path with no trailing /")
 
 
 	if (onlyContainsLettersOrNumbers(action['cam'])==False):
-		raise ParseException,"Camera Name must only contain letters and or numbers"
+		raise ParseException("Camera Name must only contain letters and or numbers")
 
 	if ( (action['recordmode']!="D") and  (action['recordmode']!="C") and  (action['recordmode']!="*") ):
-		raise ParseException,"Record Mode must be D, C or *"
+		raise ParseException("Record Mode must be D, C or *")
 	
 	if ( (action['container']!="MP4") and  (action['container']!="*") ):
-		raise ParseException,"Container Format must be MP4 or *"
+		raise ParseException("Container Format must be MP4 or *")
 		
 	if ( ( (action['container']=="*") and  (action['recordmode']!="*") ) or ( (action['container']!="*") and (action['recordmode']=="*") ) ):
-		raise ParseException,"To record you must specify both a record mode and a container format"
+		raise ParseException("To record you must specify both a record mode and a container format")
 
 	action['container']=(action['container'].lower())
 
 	if ( (action['mirrormode']!="HLS") and  (action['mirrormode']!="*") ):		
-		 raise ParseException,"Mirror Mode must be HLS or *"
+		 raise ParseException("Mirror Mode must be HLS or *")
 
 	if ( (action['mirrormode']!="*") and mirroringconfigvalid==False ):
-		raise ParseException, "Mirroring requested, but mirroring config (in global config file) is not valid, check the global config file"
+		raise ParseException("Mirroring requested, but mirroring config (in global config file) is not valid, check the global config file")
 
 	if ( (action['recordmode']=="C") and (action['group']=="*") ):
-		raise ParseException,"Record mode is C but you have not specified a Group Name"
+		raise ParseException("Record mode is C but you have not specified a Group Name")
 
 	if (action['group']!="*"):
 		if (onlyContainsLettersOrNumbers(action['group'])==False):
-                	raise ParseException,"Group Name must only contain letters and or numbers"
+                	raise ParseException("Group Name must only contain letters and or numbers")
 
 	
 	if (action['recordmode']!="*"):
 		#folder must exist
 		if (os.path.isdir(action['folder'])==False):
-                        raise ParseException,action['folder']+" must exist"
+                        raise ParseException(action['folder']+" must exist")
 		if (os.path.isdir(action['folder']+"/bycamera")==False):
-                        raise ParseException,action['folder']+" must contain a bycamera folder"
+                        raise ParseException(action['folder']+" must contain a bycamera folder")
 
 		if ( (os.path.isdir(action['folder']+"/byday/Monday")==False) or (os.path.isdir(action['folder']+"/byday/Tuesday")==False) or (os.path.isdir(action['folder']+"/byday/Thursday")==False) or (os.path.isdir(action['folder']+"/byday/Wednesday")==False) or (os.path.isdir(action['folder']+"/byday/Friday")==False) or (os.path.isdir(action['folder']+"/byday/Saturday")==False) or (os.path.isdir(action['folder']+"/byday/Sunday")==False)  ):
-                        raise ParseException,action['folder']+" must contain a byday folder with subfolders for each day"
+                        raise ParseException(action['folder']+" must contain a byday folder with subfolders for each day")
 
 		if (directoryIsWritable(action['folder']+"/byday/Monday")==False):
-			raise ParseException,action['folder']+"/byday/Monday is not writable"
+			raise ParseException(action['folder']+"/byday/Monday is not writable")
 
 		if (directoryIsWritable(action['folder']+"/byday/Tuesday")==False):
-                        raise ParseException,action['folder']+"/byday/Tuesday is not writable"
+                        raise ParseException(action['folder']+"/byday/Tuesday is not writable")
 
 		if (directoryIsWritable(action['folder']+"/byday/Wednesday")==False):
-                        raise ParseException,action['folder']+"/byday/Wednesday is not writable"
+                        raise ParseException(action['folder']+"/byday/Wednesday is not writable")
 		
 		if (directoryIsWritable(action['folder']+"/byday/Thursday")==False):
-                        raise ParseException,action['folder']+"/byday/Thursday is not writable"
+                        raise ParseException(action['folder']+"/byday/Thursday is not writable")
 
 		if (directoryIsWritable(action['folder']+"/byday/Friday")==False):
-                        raise ParseException,action['folder']+"/byday/Friday is not writable"
+                        raise ParseException(action['folder']+"/byday/Friday is not writable")
 
 		if (directoryIsWritable(action['folder']+"/byday/Saturday")==False):
-                        raise ParseException,action['folder']+"/byday/Saturday is not writable"
+                        raise ParseException(action['folder']+"/byday/Saturday is not writable")
 
 
 
@@ -386,14 +386,14 @@ def parseLine(line):
 	if (action['recordmode']=="C"):
 		#need to check group folder exists & we can write to it
 		if (os.path.isdir(action['folder']+"/bycamera/"+action['group'])==False):
-			raise ParseException,"Group Name must exist as a folder under "+action['folder']+"/bycamera"
+			raise ParseException("Group Name must exist as a folder under "+action['folder']+"/bycamera")
 
 		if (directoryIsWritable(action['folder']+"/bycamera/"+action['group'])==False):
-			raise ParseException,action['folder']+"/bycamera/"+action['group']+" is not writable"
+			raise ParseException(action['folder']+"/bycamera/"+action['group']+" is not writable")
 		
 	
 	#passed
-	print "Found "+str(action)
+	print ("Found "+str(action))
 	return action
 ############################################
 
@@ -403,7 +403,7 @@ def checkForDuplicates(key,descrip):
 	for cameradict in cameras:
 		totest=cameradict[key].upper()
 		if totest in L:
-			raise ParseException,"Duplicate entry for "+descrip+" "+cameradict[key]+" (case insensitive)"
+			raise ParseException("Duplicate entry for "+descrip+" "+cameradict[key]+" (case insensitive)")
 	
 		else:
 			toadd=cameradict[key].upper()
@@ -418,7 +418,7 @@ def readConfig():
 		lines=conffile.readlines()
 		conffile.close()
 	except IOError:
-		print "Could not open camera conf file "+conffilepath
+		print ("Could not open camera conf file "+conffilepath)
 		exit(1)
 	lineno=0
 	for line in lines:
@@ -431,10 +431,10 @@ def readConfig():
 			cameras.append(parseLine(line))
 			checkForDuplicates("cam","Camera Name")
 			checkForDuplicates("url","URL")
-		except ParseException,e:
-			print "Syntax error in "+conffilepath+" on line "+str(lineno)
-			print "\n"
-			print e.msg
+		except ParseException(e):
+			print ("Syntax error in "+conffilepath+" on line "+str(lineno))
+			print ("\n")
+			print (e.msg)
 			exit(1)
 ###########################################
 
@@ -445,9 +445,9 @@ def mirroringCleanup():
 	time.sleep(10)
 	try:
 		controlfile=mirrorwebroot+"/org.bigbrothercctv.bigbrother.bigbrotherd.php"
-                subprocess.call("rm "+controlfile,shell=True)
-        except: #all exceptions
-                Log("P3 could not cleanup "+controlfile)
+		subprocess.call("rm "+controlfile,shell=True)
+	except: #all exceptions
+		Log("P3 could not cleanup "+controlfile)
 
 	Log("P3 removing old video files from webroot")
 	videofilestodelete=["*.m3u8","*.ts"] #when new mirror video formats are supported add them to here
@@ -466,14 +466,14 @@ def mirroringInit():
 	Log("P3 generating "+mirrorcontrolfilepath)
 	try:
 		mirrorcontrolfile=open(mirrorcontrolfilepath,"w")
-                mirrorcontrolfile.write("<?php\n");
-                mirrorcontrolfile.write("##THIS FILE IS GENERATED AUTOMATICALLY BY bigbrotherd##\n")
+		mirrorcontrolfile.write("<?php\n");
+		mirrorcontrolfile.write("##THIS FILE IS GENERATED AUTOMATICALLY BY bigbrotherd##\n")
 		mirrorcontrolfile.write("$DAEMONPID="+str(os.getpid())+";\n")
-                mirrorcontrolfile.write("$GLOBALCONFFILEPATH='"+globalconffile+"';\n")
-                mirrorcontrolfile.write("$BBVERSION="+str(bbversion)+";\n")
-                mirrorcontrolfile.write("$ALLOWNEWFILEFROMWEB="+str(allownewfilefromweb)+";\n")
+		mirrorcontrolfile.write("$GLOBALCONFFILEPATH='"+globalconffile+"';\n")
+		mirrorcontrolfile.write("$BBVERSION="+str(bbversion)+";\n")
+		mirrorcontrolfile.write("$ALLOWNEWFILEFROMWEB="+str(allownewfilefromweb)+";\n")
 		mirrorcontrolfile.write("?>\n") 
-                mirrorcontrolfile.close()
+		mirrorcontrolfile.close()
 	except:
 		Log("P3 could not initialise "+mirrorcontrolfilepath+" mirroring will not work");
 ##########################################
@@ -485,17 +485,17 @@ def mirroringInit():
 #MAIN PROGRAM
 ##################################################
 readGlobalConfig()
-print "Working with following config directives from "+globalconffile+":"
-print "ffmpegcommand="+ffmpegcommand
-print "cameraconf="+conffilepath
-print "logfile="+logfilepath
-print "user="+user
-print "allownewfilefromweb="+str(allownewfilefromweb)
+print ("Working with following config directives from "+globalconffile+":")
+print ("ffmpegcommand="+ffmpegcommand)
+print ("cameraconf="+conffilepath)
+print ("logfile="+logfilepath)
+print ("user="+user)
+print ("allownewfilefromweb="+str(allownewfilefromweb))
 
-print "Mirroring web root folder is: "+mirrorwebroot
+print ("Mirroring web root folder is: "+mirrorwebroot)
 
 if ( (conffilepath=="") or (logfilepath=="") or (ffmpegcommand=="") or (user=="") ):
-        print "Error initialising configuration options from "+globalconffile
+        print ("Error initialising configuration options from "+globalconffile)
         exit(1)
 
 
@@ -526,10 +526,10 @@ try:
 	##need to chown of log file to specified user, as if we created it in 1st call
 	##to Log() then it will not have correct ownership after we switch user
 	os.chown(logfilepath,userid,-1)
-        os.setuid(userid)
+	os.setuid(userid)
 except OSError:
-        Log("Could not switch user to user id "+str(userid)+". Fatal. P1 Exiting")
-        exit(1)
+	Log("Could not switch user to user id "+str(userid)+". Fatal. P1 Exiting")
+	exit(1)
 
 try:
 	Log("Switched user successfully to "+user+" ("+str(userid)+")",True)  
@@ -559,30 +559,28 @@ if (pid==0):
 	pid=os.fork()
 	if (pid==0):
 		#daemons work
-		   Log("P3 closing FDs")
-		   # Iterate through and close all file descriptors.
-		   for fd in range(0, 1024):
-     			 try:
-         			os.close(fd)
-      			 except OSError:	# ERROR, fd wasn't open to begin with (ignored)
-         			pass
+		Log("P3 closing FDs")
+		# Iterate through and close all file descriptors.
+		for fd in range(0, 1024):
+			try:
+				os.close(fd)
+			except OSError:	# ERROR, fd wasn't open to begin with (ignored)
+				pass
 
    		   # Redirect the standard I/O file descriptors to /dev/null. 
 
    		   # This call to open is guaranteed to return the lowest file descriptor,
    		   # which will be 0 (stdin), since it was closed above.
-   		   os.open("/dev/null", os.O_RDWR)	# standard input (0)
-
-   		   # Duplicate standard input to standard output and standard error.
-   		   os.dup2(0, 1)			# standard output (1)
-   		   os.dup2(0, 2)			# standard error (2)
-		 
-		   Log("P3 initialising "+mirrorwebroot)
-	 	   mirroringInit()
-		   Log("P3 calling work()")
-		   work()
-		   Log("P3 returned from work()")
-		   #we never get here usually because sig handler calls exit
+		os.open("/dev/null", os.O_RDWR)	# standard input (0)
+		# Duplicate standard input to standard output and standard error.
+		os.dup2(0, 1)			# standard output (1)
+		os.dup2(0, 2)			# standard error (2)
+		Log("P3 initialising "+mirrorwebroot)
+		mirroringInit()
+		Log("P3 calling work()")
+		work()
+		Log("P3 returned from work()")
+		#we never get here usually because sig handler calls exit
 		#end daemons work
 	else:
 		Log("P2 exiting")
@@ -590,11 +588,3 @@ if (pid==0):
 else:
 	Log("P1 exiting")
 	exit(0)
-
-
-
-
-
-
-
-
