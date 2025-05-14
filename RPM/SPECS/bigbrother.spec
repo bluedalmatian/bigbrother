@@ -1,6 +1,6 @@
 %define _topdir		%(pwd)/RPM
 %define name            org.bigbrothercctv.bigbrother
-%define version		0.10
+%define version		1.0
 
 
 Summary:        bigbrothercctv.org BigBrother
@@ -50,6 +50,7 @@ systemctl daemon-reload
 %attr (660,bigbrother,cctvwriters) /usr/local/bigbrother/bigbrother_camera.conf
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bigbrotherd
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/mirror_hls.sh
+%attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/mirror_mjpg.sh
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/record_bycamera.sh
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/record_byday.sh
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/extract.sh

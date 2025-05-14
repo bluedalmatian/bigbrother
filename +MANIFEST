@@ -75,6 +75,7 @@ files: {
  /bigbrother_camera.conf: {uname: 'bigbrother', gname: 'cctvwriters',perm: 660};
  /bigbrotherd: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /mirror_hls.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /mirror_mjpg.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /rc.bigbrother: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /record_bycamera.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /record_byday.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
