@@ -2,7 +2,7 @@
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016 Andrew Wood                                       #
+# Copyright 2016-2025 Andrew Wood                                  #
 #                                                                  #
 # mirror_hls.sh Bourne shell script to perform mirroring for each  #
 # camera. Launched by bigbrotherd                                  #
@@ -220,6 +220,7 @@ do
 	###ffmpeg options:
 	###	 -strict -2	 (needed on some versions of ffmpeg to use aac audio codec)
 	###	 -b:a		 (audio bitrate)
+	###	 -preset ultrafast (prioritise fast processing over compression)
 	###	 -framerate 10   (frames per sec)
 	###	 -s 640x480	 (resolution)
 	###	 -b:v 1000k	 (try to maintain this average bit rate)
@@ -230,7 +231,7 @@ do
 	### 	 -f hls		(output format)
 
 
-	$ffmpegcommand -loglevel fatal -i $sourceurl -vcodec libx264 -preset ultrafast  -tune zerolatency -acodec aac -strict -2 -b:a 16k -framerate 10 -s 720x480 -b:v 10000k -bufsize 500k -g 100 -segment_list_size 100 -hls_wrap 100 -f hls -metadata title="$camname" $webroot/$camname.m3u8  &
+	$ffmpegcommand -loglevel fatal -i $sourceurl -vcodec libx264 -preset ultrafast  -tune zerolatency -acodec aac -strict -2 -b:a 16k -framerate 20 -s 720x480 -b:v 10000k -bufsize 10000k -g 10 -segment_list_size 10 -hls_wrap 10 -f hls -metadata title="$camname" $webroot/$camname.m3u8  &
 	
 
 	pid=$!
