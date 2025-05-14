@@ -1,13 +1,13 @@
-#!/bin/sh
+#! /usr/bin/env bash
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016 Andrew Wood                                       #
+# Copyright 2016-2025 Andrew Wood                                  #
 #                                                                  #
-# mirror_mjpg.sh Bourne shell script to perform mirroring for each  #
+# mirror_mjpg.sh Bourne shell script to perform mirroring for each #
 # camera. Launched by bigbrotherd                                  #
 #                                                                  #
-# www.simple.org/bigbrother                                        #
+# www.bigbrothercctv.org                                           #
 #                                                                  #
 # Licensed under the GNU Public License v 3                        #
 # The full license can be read at www.gnu.org/licenses/gpl-3.0.txt #
@@ -16,13 +16,13 @@
 #                                                                  #
 # BigBrother is free open source software but if you find it       #
 # useful please consider making a donation to the Communications   #
-# Museum Trust at www.comms.org.uk/donate                          #
+# Museum Trust at www.communicationsmuseum.org.uk/donate           #
 ####################################################################
 
 
 
 usagestring="Syntax error.  Usage: $0 -cam proto://camera/url:port -name CameraName -log /path/to/log/file -cmd /path/to/ffmpeg -webroot /path/to/webroot"
-copyrightstring="Simple BigBrother Copyright Andrew Wood 2016"
+copyrightstring="BigBrother Copyright Andrew Wood 2016-2025"
 
 
 echoUsage()
@@ -217,9 +217,14 @@ do
 
 	###2>&1 redirect std error to std output so both can be piped as one (not used as it doesnt work well)
 
+	###ffmpeg options:
+	###	 
+	###	 -b:a		 (audio bitrate)
+	###	 -r  20   (frames per sec)
+	###	 -s 640x480	 (resolution)
+	###	-q:v 2 set quality of JPEG output (1-32) lower number is better
 
-	$ffmpegcommand -y -loglevel fatal -i  $sourceurl -vcodec mjpeg  -s 640x480 -metadata title="$camname" -framerate 10  $webroot/$camname.mjpg  &
-
+        $ffmpegcommand -y -loglevel fatal -i $sourceurl -c:v mjpeg -s 720x640 -metadata title="$camname" -keyint_min 10 -g 10 -sc_threshold 0 -b_strategy 0 -use_timeline 1 -use_template 1 -window_size 5 -r 10 -q:v 2 -f dash $webroot/$camname.mpd &
 
 	pid=$!
 	echo "$0 started ffmpeg OS PID $pid" | $bblogger $logfile
@@ -229,3 +234,4 @@ done
 exit 0
 
 
+ 
