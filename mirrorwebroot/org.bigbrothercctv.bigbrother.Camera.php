@@ -2,7 +2,7 @@
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016 Andrew Wood                                       #
+# Copyright 2016-2025 Andrew Wood                                  #
 #                                                                  #
 # Camera class represents a camera as defined in the config file   #
 #                                                                  #
@@ -80,7 +80,7 @@ class Camera
 	
 		if ($this->mirror=="HLS")
 		{
-			echo("<video width=640 height=480 controls autoplay muted>");
+			echo("<video class='video-js vjs-default-skin' width=640 height=480 controls autoplay muted data-setup='{}'>");
 
     			echo("<source src='".$this->name.".m3u8' type='application/x-mpegURL'>");
 
@@ -90,6 +90,7 @@ class Camera
 		}
 		
 	}
+
 	function GetCameraName()
 	{
 		return $this->name;

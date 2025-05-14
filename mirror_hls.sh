@@ -7,7 +7,7 @@
 # mirror_hls.sh Bourne shell script to perform mirroring for each  #
 # camera. Launched by bigbrotherd                                  #
 #                                                                  #
-# www.simple.org/bigbrother                                        #
+# www.bigbrothercctv.org       	                                   #
 #                                                                  #
 # Licensed under the GNU Public License v 3                        #
 # The full license can be read at www.gnu.org/licenses/gpl-3.0.txt #
@@ -16,13 +16,13 @@
 #                                                                  #
 # BigBrother is free open source software but if you find it       #
 # useful please consider making a donation to the Communications   #
-# Museum Trust at www.comms.org.uk/donate                          #
+# Museum Trust at www.communicationsmuseum.org.uk/donate           #
 ####################################################################
 
 
 
 usagestring="Syntax error.  Usage: $0 -cam proto://camera/url:port -name CameraName -log /path/to/log/file -cmd /path/to/ffmpeg -webroot /path/to/webroot"
-copyrightstring="Simple BigBrother Copyright Andrew Wood 2016"
+copyrightstring="BigBrother Copyright Andrew Wood 2016"
 
 
 echoUsage()
@@ -230,7 +230,7 @@ do
 	### 	 -f hls		(output format)
 
 
-	$ffmpegcommand -loglevel fatal -i $sourceurl -vcodec libx264  -preset fast -acodec aac -strict -2 -b:a 16k -framerate 10 -s 640x480 -b:v 1000k -bufsize 1000k -g 20 -segment_list_size 10 -hls_wrap 10 -f hls -metadata title="$camname" $webroot/$camname.m3u8  &
+	$ffmpegcommand -loglevel fatal -i $sourceurl -vcodec libx264 -preset ultrafast  -tune zerolatency -acodec aac -strict -2 -b:a 16k -framerate 10 -s 720x480 -b:v 10000k -bufsize 500k -g 100 -segment_list_size 100 -hls_wrap 100 -f hls -metadata title="$camname" $webroot/$camname.m3u8  &
 	
 
 	pid=$!

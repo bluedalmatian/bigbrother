@@ -2,12 +2,12 @@
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016 Andrew Wood                                       #
+# Copyright 2016-2025 Andrew Wood                                  #
 #                                                                  #
 # bblogger is the BigBrother logging program  used by the various  #
 # subprocesses to write to the logfile in a consistent format      #
 #								   #
-# www.simple.org/bigbrother                                        #
+# www.bigbrothercctv.org                                           #
 #                                                                  #
 # Licensed under the GNU Public License v 3                        #
 # The full license can be read at www.gnu.org/licenses/gpl-3.0.txt #
@@ -16,7 +16,7 @@
 #                                                                  #
 # BigBrother is free open source software but if you find it       #
 # useful please consider making a donation to the Communications   #
-# Museum Trust at www.comms.org.uk/donate                          #
+# Museum Trust at www.communicationsmuseums.org.uk/donate          #
 ####################################################################
 
 
@@ -24,7 +24,7 @@
 import sys, os, datetime
 
 if (len(sys.argv) != 2):
-	print "Usage: "+sys.argv[0]+" /path/to/logfile"
+	print ("Usage: "+sys.argv[0]+" /path/to/logfile")
 	exit(1)
 
 logfilepath=sys.argv[1]
@@ -40,8 +40,8 @@ def Log(str):
                         str=str+"\n"
                 file.write(datestr+" "+str)
                 file.close()
-        except IOError,e:
-                        print "ERROR: Could not open Log file an IOError was thrown"
+        except IOError as e:
+                        print ("ERROR: Could not open Log file an IOError was thrown")
 ###########
 
 notEOF=True

@@ -2,7 +2,7 @@
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016-2022 Andrew Wood                                  #
+# Copyright 2016-2025 Andrew Wood                                  #
 #                                                                  #
 # The main bigbrother daemon. This double forks a child process to #
 # return to shell 						   #
@@ -16,7 +16,7 @@
 #                                                                  #
 # BigBrother is free open source software but if you find it       #
 # useful please consider making a donation to the Communications   #
-# Museum Trust at www.comms.org.uk/donate                          #
+# Museum Trust at www.communicationsmuseum.org.uk/donate           #
 ####################################################################
 
 
@@ -36,7 +36,7 @@ class ParseException(Exception):
 #######################################
 #System wide knobs
 
-bbversion=0.30 ##only change version no here and in no other file
+bbversion=1.0 ##only change version no here and in no other file
 exedir=os.path.dirname(os.path.realpath(__file__)) ##gives dir with no trailing /
 globalconffile=exedir+"/bigbrother.conf"
 dashfspecified=False
@@ -270,8 +270,23 @@ def work():
 			pids.append(cpid)
 			Log("P3 started camera mirroring process OS PID:"+str(cpid))
 
-
-
+		elif (cameraconf['mirrormode']=="MJPG"):
+			#mirroring using MJPG over DASH
+			L=[]
+			L.append(exedir+"/mirror_mjpg.sh")
+			L.append("-cam")
+			L.append(cameraconf['url'])
+			L.append("-name")
+			L.append(cameraconf['cam'])
+			L.append("-log")
+			L.append(logfilepath)
+			L.append("-cmd")
+			L.append(ffmpegcommand)
+			L.append("-webroot")
+			L.append(mirrorwebroot)
+			cpid = os.spawnv(os.P_NOWAIT, exedir+'/mirror_mjpg.sh', L)
+			pids.append(cpid)
+			Log("P3 started camera mirroring process OS PID:"+str(cpid))
 
 	Log("P3 setting up signal handlers")
 	signal.signal(signal.SIGINT, handler)
@@ -338,8 +353,8 @@ def parseLine(line):
 
 	action['container']=(action['container'].lower())
 
-	if ( (action['mirrormode']!="HLS") and  (action['mirrormode']!="*") ):		
-		 raise ParseException("Mirror Mode must be HLS or *")
+	if ( (action['mirrormode']!="HLS") and  (action['mirrormode']!="*") and  (action['mirrormode']!="MJPG") ):		
+		 raise ParseException("Mirror Mode must be HLS or MJPG or *")
 
 	if ( (action['mirrormode']!="*") and mirroringconfigvalid==False ):
 		raise ParseException("Mirroring requested, but mirroring config (in global config file) is not valid, check the global config file")
@@ -450,7 +465,7 @@ def mirroringCleanup():
 		Log("P3 could not cleanup "+controlfile)
 
 	Log("P3 removing old video files from webroot")
-	videofilestodelete=["*.m3u8","*.ts"] #when new mirror video formats are supported add them to here
+	videofilestodelete=["*.m3u8","*.ts","*.m4s","*.m4s.tmp","*.mpd"] #when new mirror video formats are supported add them to here (.ts & .m3u8 are HLS, .m4s & .mpd are DASH)
 	for file in videofilestodelete:
 		try:
        	 		subprocess.call("rm -f "+mirrorwebroot+"/"+file,shell=True)

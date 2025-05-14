@@ -1,11 +1,11 @@
 name: "bigbrother";
-version: "0.30";
+version: "1.00";
 origin: "multimedia/bigbrother";
 comment: "BigBrother CCTV recording & mirroring system";
 abi = "FreeBSD:10:*";
 arch = "freebsd:10:*";
 www: "http://www.bigbrothercctv.org/bigbrother";
-maintainer: awood@comms.org.uk;
+maintainer: awood@communicationsmuseum.org.uk;
 licenselogic: "or";
 licenses: ["GPLv3"];
 flatsize: 60000;
@@ -87,6 +87,8 @@ files: {
  /mirrorwebroot/i-orange.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /mirrorwebroot/i-red.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /mirrorwebroot/index.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /mirrorwebroot/video.js: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /mirrorwebroot/video-js.css: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /mirrorwebroot/org.bigbrothercctv.bigbrother.Camera.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_allcameras.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_namedcameras.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};

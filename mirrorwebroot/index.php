@@ -290,7 +290,8 @@ function detectBrowser()
 
 	if (supportedbrowser==false)
 	{
-		appendMsg(msg);
+		//Disabled as now using video.js all browsers should work
+		//appendMsg(msg);
 	}
 }	
 
@@ -395,8 +396,18 @@ function onLoad()
 
 
 </script>
+
+
+<link href="video-js.css" rel="stylesheet">
+<script src="video.js"></script>
+
+
+
+
+
 <body onload='onLoad();' style="margin: 0px;">
 
+<?php $formattedversion=number_format($BBVERSION,1);?>
 
 <table cellspacing=0 cellpadding=5 border=0 id=toolbar width=100%>
 	<tr>
@@ -405,7 +416,7 @@ function onLoad()
 		 <tr>
                         <td>
 				<p><img src=bb.png width=20 style="margin: 2px;" align=middle valign=middle>
-				<?php  echo " BigBrother ".$BBVERSION; $date = date('Y-m-d H:i:s'); echo " Page loaded: ".$date." (server time)"; ?> 
+				<?php  echo " BigBrother ".$formattedversion; $date = date('Y-m-d H:i:s'); echo " Page loaded: ".$date." (server time)"; ?> 
 				<div id=msgarea></div>
 			</td>
                 </tr>
