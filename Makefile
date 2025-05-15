@@ -1,6 +1,6 @@
 CHECKINSTALLOPTIONS = --pkgname=org.bigbrothercctv.bigbrother -A all --pkggroup=Video \
 --pkglicense=GPL --nodoc --maintainer='bigbrothercctv.org' \
---requires=ffmpeg,python
+--requires=ffmpeg,python3
 INSTALLDIR = /usr/local/bigbrother
 
 default:
