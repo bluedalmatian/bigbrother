@@ -54,6 +54,6 @@ systemctl daemon-reload
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/record_bycamera.sh
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/record_byday.sh
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/extract.sh
-%attr(750,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot
-%attr(640,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot/*
+%attr (750,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot
+%attr (640,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot/*
 %attr (644,root,root)/etc/systemd/system/bigbrotherd.service
