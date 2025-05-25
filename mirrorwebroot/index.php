@@ -206,7 +206,7 @@
 ?>
 <html>
 <head>
-<link rel="icon" type="image/png" href="bb.png">
+<link rel="icon" type="image/png" href="bbsimple.png">
 <title>CCTV Cameras Live (BigBrother)</title>
 <style>
 
@@ -415,7 +415,7 @@ function onLoad()
 		<table cellspacing=0 cellpadding=0 border=0 width=100%>
 		 <tr>
                         <td>
-				<p><img src=bb.png width=20 style="margin: 2px;" align=middle valign=middle>
+				<p><img src=bb.png width=100 style="margin: 2px;" align=middle valign=middle>
 				<?php  echo " BigBrother ".$formattedversion; $date = date('Y-m-d H:i:s'); echo " Page loaded: ".$date." (server time)"; ?> 
 				<div id=msgarea></div>
 			</td>
@@ -493,11 +493,11 @@ function onLoad()
 	<td colspan=5><center><p>Powered by:</p></center></td>
 </tr>
 <tr>
-	<td><img src=ffmpeg.jpg width=32></td>
+	<td><img src=ffmpeg.jpg width=50></td>
 	<td valign=center><p>FFMPEG</p></td>
 	<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
 
-	<td><img src=bb.png width=32></td>
+	<td><img src=bb.png width=100></td>
         <td valign=center><p>BigBrother</p></td>
 
 
