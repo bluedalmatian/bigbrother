@@ -409,8 +409,8 @@ function showParamHelp()
 {
 	var msg="<p><b><img src=i-blue.png width=32 height=32 align=middle valign=middle>Optional parameters which can be passed to webpage using using ? at end of URL, separate parameters with &</b></p>";
 	msg=msg+"<p>perRow=n (show n cameras per horizonal row)</p>";
-	msg=msg+"<p>cameraName=xyz (show named cameras only, this parameter can be specified multiple times to display a selection of cameras)</p>";
-	msg=msg+"<p>groupName=xyz (show named group only, this parameter can be specified multiple times to display a selection of groups)</p>";
+	msg=msg+"<p>cameraName=xyz (show named cameras only, this parameter can be specified multiple times to display a selection of cameras, if specifying multiple times it must be written as cameraName[])</p>";
+	msg=msg+"<p>groupName=xyz (show named group only, this parameter can be specified multiple times to display a selection of groups, if specifying mutliple times it must be written as groupName[])</p>";
 	appendMsg(msg);
 }
 
