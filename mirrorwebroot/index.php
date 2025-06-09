@@ -1,3 +1,5 @@
+
+
 <?php
 	//CONVENTION: Any variable name in $CAPITALS is declared in the mirror control file (org.bigbrothercctv.bigbrother.bigbrotherd.php)
 	
@@ -215,16 +217,31 @@ p {
 }
 
 #toolbar{
-	background-color:#e3e1e1;
+	
 }
 
 .toolbarbutton{
-	background-color:#e3e1e1;
+	
 	margin:4px;
 	cursor:pointer;
 	padding:4px;
+	border-width: 1px;
+	border-color: white;
+	border-style: solid;
 }
 
+body {
+  background-color: black;
+  background-image: linear-gradient( rgba(255,0,0,0), rgba(71,71,71,1));
+}
+
+p,h1,h2,h3 {
+	color: white;
+}
+
+#cameragrid {
+	background-color:#484848;
+}
 
 </style>
 
@@ -349,7 +366,7 @@ function mouseOverButton(obj)
 function mouseOutButton(obj)
 {
 	var td=document.getElementById(obj.id);
-        td.style.backgroundColor="#e3e1e1";
+        td.style.backgroundColor="#000000";
 }
 
 function handleHUPRequest()
@@ -388,10 +405,19 @@ function processHUPResponse()
 
 }
 
+function showParamHelp()
+{
+	var msg="<p><b><img src=i-blue.png width=32 height=32 align=middle valign=middle>Optional parameters which can be passed to webpage using using ? at end of URL, separate parameters with &</b></p>";
+	msg=msg+"<p>perRow=n (show n cameras per horizonal row)</p>";
+	msg=msg+"<p>cameraName=xyz (show named cameras only, this parameter can be specified multiple times to display a selection of cameras)</p>";
+	msg=msg+"<p>groupName=xyz (show named group only, this parameter can be specified multiple times to display a selection of groups)</p>";
+	appendMsg(msg);
+}
+
 function onLoad()
 {
         detectBrowser();
-	displayPendingMessages();
+		displayPendingMessages();
 }
 
 
@@ -415,9 +441,9 @@ function onLoad()
 		<table cellspacing=0 cellpadding=0 border=0 width=100%>
 		 <tr>
                         <td>
-				<p><img src=bb.png width=100 style="margin: 2px;" align=middle valign=middle>
+				<p><font size=-1><img src=bb.png width=100 style="margin: 2px;" align=middle valign=middle>
 				<?php  echo " BigBrother ".$formattedversion; $date = date('Y-m-d H:i:s'); echo " Page loaded: ".$date." (server time)"; ?> 
-				<div id=msgarea></div>
+				</p></font><div id=msgarea></div>
 			</td>
                 </tr>
 		<tr height=1 width=100%>
@@ -428,9 +454,16 @@ function onLoad()
 	</tr>
 	<tr>
 	  <td>
-		<table cellspacing=0 cellpadding=0 border=0>
+		<table cellspacing=4 cellpadding=0 border=0>
 		<tr>
+			<!Param help button>
+			<td class=toolbarbutton id=paramhelpbutton onclick='showParamHelp();' onmouseover='mouseOverButton(this);' onmouseout='mouseOutButton(this);'>
+			<p><img src=questionmark-blue.png width=32 align=middle valign=middle>Show optional parameters</p></td>
+			
+		
 		<?php
+		
+		
 			//HUP Button
 			 //only display UI for sending HUP if configured to do so
 	                if ($allownewfilefromweb)
@@ -505,11 +538,15 @@ function onLoad()
 </table>
 <table cellspacing=0 cellpadding=0 border=0>
 <tr>
-	<td align=center><font size=-1><p>BigBrother &copy; Copyright Andrew Wood 2016-<?php printCurrentYear();?></p></font></td>
+	<td align=center><font size=-1><p>BigBrother &copy; Copyright Andrew Wood 2016-<?php printCurrentYear();?>. Licensed under the GNU Public License 3</p></font></td>
 </tr>
 <tr>
         <td align=center><font size=-1><p>FFMPEG &copy; Copyright The FFMPEG Developers 2000-<?php printCurrentYear();?>. FFMPEG 
 is a trademark of Fabrice Bellard</p></font></td>
+</tr>
+
+<tr>
+        <td align=center><font size=-1><p>This version of BigBrother contains software from video.js licensed under the Apache License 2.0</p></font></td>
 </tr>
 
 </table>

@@ -16,7 +16,7 @@
 #                                                                  #
 # BigBrother is free open source software but if you find it       #
 # useful please consider making a donation to the Communications   #
-# Museum Trust at www.comms.org.uk/donate                          #
+# Museum Trust at www.communicationsmuseum.org.uk/donate           #
 ####################################################################
 
 
@@ -27,7 +27,7 @@
 
     	if (sizeof($camnamesToShow)>0)
         {
-                echo("<table cellspacing=10 cellpadding=0 border=0 bordercolor=black bgcolor=gray style='margin:5px;'>");
+                echo("<table cellspacing=10 cellpadding=0 border=0 style='margin:5px;' id=cameragrid>");
                  $camsprinted=0;
 
         }
@@ -83,7 +83,7 @@
                 {
                         echo("<tr>");
                 }
-                echo("<td valign=top bgcolor=white width=640>");
+                echo("<td valign=top width=640>");
                 $camera->GenerateHTML();
                 echo("</td>");
 
@@ -92,7 +92,7 @@
 		if ($camsprinted==$camsPerTR)
                 {
                         echo("</tr>");
-                        echo("<tr><td colspan=".$camsPerTR." bgcolor=gray height=10 width=100%>&nbsp;</td></tr>");
+                        echo("<tr><td colspan=".$camsPerTR." height=10 width=100%>&nbsp;</td></tr>");
 
                         $camsprinted=0;
                 }
