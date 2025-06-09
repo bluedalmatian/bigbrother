@@ -1,17 +1,17 @@
 name: "bigbrother";
-version: "1.00";
+version: "1.0";
 origin: "multimedia/bigbrother";
 comment: "BigBrother CCTV recording & mirroring system";
-abi = "FreeBSD:10:*";
-arch = "freebsd:10:*";
-www: "http://www.bigbrothercctv.org/bigbrother";
+abi = "FreeBSD:*:*";
+arch = "freebsd:*:*";
+www: "http://www.bigbrothercctv.org";
 maintainer: awood@communicationsmuseum.org.uk;
 licenselogic: "or";
 licenses: ["GPLv3"];
-flatsize: 60000;
+flatsize: 1000000;
 users: ["bigbrother"];
 groups: ["cctvviewers", "cctvwriters"];
-prefix: "/usr/local";
+prefix: "/usr/local/bigbrother";
 desc: <<EOD
   BigBrother is a wrapper for ffmpeg
   which configures it to do IP CCTV
@@ -68,35 +68,35 @@ deps: {
   python: {origin: "lang/python", version: "3.0"};
 }
 files: {
- /README.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 644};
- /License.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 644};
- /bblogger: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
- /bigbrother.conf: {uname: 'bigbrother', gname: 'cctvwriters',perm: 660};
- /bigbrother_camera.conf: {uname: 'bigbrother', gname: 'cctvwriters',perm: 660};
- /bigbrotherd: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
- /mirror_hls.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
- /mirror_mjpg.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
- /rc.bigbrother: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
- /record_bycamera.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
- /record_byday.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
- /extract.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
- /mirrorwebroot/bb.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/ffmpeg.jpg: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/hup.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/i-blue.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/i-green.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/i-orange.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/i-red.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/index.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/video.js: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/video-js.css: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/org.bigbrothercctv.bigbrother.Camera.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_allcameras.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_namedcameras.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_namedcameras_namedgroups.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_namedgroups.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/org.bigbrothercctv.bigbrother.functions.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /mirrorwebroot/org.bigbrothercctv.bigbrothercctv.bigbrother.hup.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/README.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 644};
+ /usr/local/bigbrother/License.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 644};
+ /usr/local/bigbrother/bblogger: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/bigbrother.conf: {uname: 'bigbrother', gname: 'cctvwriters',perm: 660};
+ /usr/local/bigbrother/bigbrother_camera.conf: {uname: 'bigbrother', gname: 'cctvwriters',perm: 660};
+ /usr/local/bigbrother/bigbrotherd: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/mirror_hls.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/mirror_mjpg.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/rc.bigbrother: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/record_bycamera.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/record_byday.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/extract.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/mirrorwebroot/bb.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/ffmpeg.jpg: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/hup.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/i-blue.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/i-green.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/i-orange.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/i-red.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/index.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/video.js: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/video-js.css: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.Camera.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_allcameras.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_namedcameras.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_namedcameras_namedgroups.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_namedgroups.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.functions.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.hup.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
 }
 
 scripts: {
@@ -114,7 +114,7 @@ chown -R bigbrother:cctvwriters /usr/local/bigbrother
 chown -R bigbrother:cctvviewers /usr/local/bigbrother/mirrorwebroot
 chmod 755 /usr/local/bigbrother
 chmod 751 /usr/local/bigbrother/mirrorwebroot
-chmod g+s /usr/local/bigbrother/mirrowebroot
+chmod g+s /usr/local/bigbrother/mirrorwebroot
 EOD;
 
 	post-deinstall = <<EOD

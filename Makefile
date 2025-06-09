@@ -34,10 +34,24 @@ rpm:
 	echo "RPM is in ./RPM/RPMS/noarch/"
 
 pkgng:
-	pkg create -M ./+MANIFEST -r .
+	rm -rf ./pkgng-tmp
+	mkdir ./pkgng-tmp
+	mkdir -p ./pkgng-tmp${INSTALLDIR}
+	cp ./*.sh  ./pkgng-tmp$(INSTALLDIR)
+	cp ./bigbrotherd  ./pkgng-tmp$(INSTALLDIR)
+	cp -R ./mirrorwebroot  ./pkgng-tmp$(INSTALLDIR)
+	cp ./bblogger  ./pkgng-tmp$(INSTALLDIR)
+	cp ./bigbrother.conf  ./pkgng-tmp$(INSTALLDIR)
+	cp ./bigbrother_camera.conf  ./pkgng-tmp$(INSTALLDIR)
+	cp ./rc.bigbrother ./pkgng-tmp$(INSTALLDIR)
+	cp ./License.txt  ./pkgng-tmp$(INSTALLDIR)
+	cp ./README.txt  ./pkgng-tmp$(INSTALLDIR)
+	pkg create -M ./+MANIFEST -r ./pkgng-tmp
 
 clean:
 	rm -rf ./RPM/RPMS/*
 	rm -rf ./*.deb
 	rm -rf ./RPM/SOURCES/*
 	rm -rf ./*.txz
+	rm -rf ./pkgng-tmp
+	rm -rf ./*.pkg
