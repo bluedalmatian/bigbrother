@@ -545,10 +545,6 @@ function onLoad()
 is a trademark of Fabrice Bellard</p></font></td>
 </tr>
 
-<tr>
-        <td align=center><font size=-1><p>This version of BigBrother contains software from video.js licensed under the Apache License 2.0</p></font></td>
-</tr>
-
 </table>
 </center>
 
