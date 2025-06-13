@@ -11,7 +11,7 @@ licenses: ["GPLv3"];
 flatsize: 1000000;
 users: ["bigbrother"];
 groups: ["cctvviewers", "cctvwriters"];
-prefix: "/usr/local/bigbrother";
+prefix: "/usr/local";
 desc: <<EOD
   BigBrother is a wrapper for ffmpeg
   which configures it to do IP CCTV
@@ -108,6 +108,7 @@ EOD;
 
 
 	post-install =  <<EOD
+mkdir -p /usr/local/etc/rc.d
 ln -s /usr/local/bigbrother/rc.bigbrother /usr/local/etc/rc.d/bigbrother
 echo 'To start BigBrother at boot time add bigbrotherd_enable="YES and bigbrotherd_conf="/path/to/conf.file" to /etc/rc.conf'
 chown -R bigbrother:cctvwriters /usr/local/bigbrother

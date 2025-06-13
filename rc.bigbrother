@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # PROVIDE: bigbrotherd
-# REQUIRE: NETWORKING ffserver
+# REQUIRE: NETWORKING
 # KEYWORD: shutdown
 # Add these lines to /etc/rc.conf.local or /etc/rc.conf
 # to enable this service:
