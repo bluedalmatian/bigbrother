@@ -34,6 +34,7 @@ rpm:
 	echo "RPM is in ./RPM/RPMS/noarch/"
 
 pkgng:
+	echo "Making pkgng package for FreeBSD"
 	rm -rf ./pkgng-tmp
 	mkdir ./pkgng-tmp
 	mkdir -p ./pkgng-tmp${INSTALLDIR}
