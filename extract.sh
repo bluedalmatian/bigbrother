@@ -1,4 +1,5 @@
-#! /usr/bin/env bash
+#!/bin/sh
+####! /usr/bin/env bash
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
@@ -16,7 +17,7 @@
 #                                                                  #
 # BigBrother is free open source software but if you find it       #
 # useful please consider making a donation to the Communications   #
-# Museum Trust at www.comms.org.uk/donate                          #
+# Museum Trust at www.communicationsmuseum.org.uk/donate           #
 ####################################################################
 
 

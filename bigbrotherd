@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
+#Requires Python 3.3 or later
+
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
 # Copyright 2016-2025 Andrew Wood                                  #
 #                                                                  #
 # The main bigbrother daemon. This double forks a child process to #
-# return to shell 						   #
+# return to shell 						                           #
 #                                                                  #
 # bigbrothercctv.org	                                           #
 #                                                                  #
@@ -25,7 +27,7 @@
 
 
 
-import sys, os, time, signal, tempfile, re, datetime, pwd, subprocess
+import sys, os, time, signal, tempfile, re, datetime, pwd, subprocess, shutil
 
 #######################################
 class ParseException(Exception):
@@ -36,7 +38,7 @@ class ParseException(Exception):
 #######################################
 #System wide knobs
 
-bbversion=1.0 ##only change version no here and in no other file
+bbversion=1.1 ##only change version no here and in no other file
 exedir=os.path.dirname(os.path.realpath(__file__)) ##gives dir with no trailing /
 globalconffile=exedir+"/bigbrother.conf"
 dashfspecified=False
@@ -67,6 +69,18 @@ mirroringconfigvalid=False
 def cleanup():
 	Log("Cleaning up "+mirrorwebroot)
 	mirroringCleanup()
+#######################################
+
+
+#######################################
+def fileIsExe(filepath):
+    path = shutil.which(filepath)
+    if path is None:
+        return False
+    else:
+        return True
+  
+
 #######################################
 
 
@@ -112,7 +126,7 @@ def readGlobalConfig():
 			else:
 				raise ParseException("unknown keyword "+cols[0])
 
-		except ParseException(e):
+		except ParseException as e:
 			print ("Syntax error in "+globalconffile+" on line "+str(lineno))
 			print ("\n")
 			print (e.msg)
@@ -163,7 +177,7 @@ def Log(str,throw=False):
                         str=str+"\n"
                 file.write(datestr+" "+str)
                 file.close()
-        except IOError(e):
+        except IOError as e:
                 if (throw):
                         raise e
                 else:
@@ -446,7 +460,7 @@ def readConfig():
 			cameras.append(parseLine(line))
 			checkForDuplicates("cam","Camera Name")
 			checkForDuplicates("url","URL")
-		except ParseException(e):
+		except ParseException as e:
 			print ("Syntax error in "+conffilepath+" on line "+str(lineno))
 			print ("\n")
 			print (e.msg)
@@ -512,6 +526,12 @@ print ("Mirroring web root folder is: "+mirrorwebroot)
 if ( (conffilepath=="") or (logfilepath=="") or (ffmpegcommand=="") or (user=="") ):
         print ("Error initialising configuration options from "+globalconffile)
         exit(1)
+        
+if fileIsExe(ffmpegcommand):
+    print ("ffmpegcommand appears to be executable");
+else:
+    print ("Error "+ffmpegcommand+" is not executable. Check path is correct and bigbrother user has execute permission")
+    exit(1)
 
 
 try:

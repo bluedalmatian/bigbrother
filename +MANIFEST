@@ -1,5 +1,5 @@
 name: "bigbrother";
-version: "1.0";
+version: "1.1";
 origin: "multimedia/bigbrother";
 comment: "BigBrother CCTV recording & mirroring system";
 abi = "FreeBSD:*:*";
@@ -65,7 +65,7 @@ EOD
 categories: ["multimedia"]
 deps: {
   ffmpeg: {origin: "multimedia/ffmpeg", version: "2.8"};
-  python: {origin: "lang/python", version: "3.0"};
+  python: {origin: "lang/python", version: "3.3"};
 }
 files: {
  /usr/local/bigbrother/README.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 644};
@@ -101,11 +101,21 @@ files: {
 
 scripts: {
 	pre-install = <<EOD
-pw groupadd cctvwriters
-pw groupadd cctvviewers
-pw adduser bigbrother -g cctvwriters -d /nonexistent -s /usr/sbin/nologin -c "bigbrotherd user"
-EOD;	
+if [ -z "$(getent group cctvwriters)" ];
+then
+       pw groupadd cctvwriters
+fi
 
+if [ -z "$(getent group cctvviewers)" ];
+then
+       pw groupadd cctvviewers
+fi
+
+if [ -z "$(getent passwd bigbrother)" ];
+then
+        pw adduser bigbrother -g cctvwriters -d /nonexistent -s /usr/sbin/nologin -c "bigbrotherd user"
+fi
+EOD;
 
 	post-install =  <<EOD
 mkdir -p /usr/local/etc/rc.d

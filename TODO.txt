@@ -10,5 +10,4 @@ Release blocker		Bugfixes / new features
 				Having a group directory under record by day dirs?
 			Extract segment from recording web interface
 			Web interface to filter cameras shown on mirror page rather than user having to edit URL manually
-
-
+			
