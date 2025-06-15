@@ -1,5 +1,4 @@
-#!/bin/sh
-###!/usr/bin/env bash
+#!/usr/bin/env bash
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
@@ -8,7 +7,7 @@
 # record_byday.sh Bourne shell script to perform recording for     #
 # each camera. Launched by bigbrotherd                             #
 #                                                                  #
-# www.simple.org/bigbrother                                        #
+# www.bigbrothercctv.org                                           #
 #                                                                  #
 # Licensed under the GNU Public License v 3                        #
 # The full license can be read at www.gnu.org/licenses/gpl-3.0.txt #
@@ -17,12 +16,12 @@
 #                                                                  #
 # BigBrother is free open source software but if you find it       #
 # useful please consider making a donation to the Communications   #
-# Museum Trust at www.comms.org.uk/donate                          #
+# Museum Trust at www.communicationsmuseum.org.uk/donate           #
 ####################################################################
 
 
 usagestring="Syntax error.  Usage: $0 -cam proto://camera/url:port -name CameraName -folder /path/to/ -log /path/to/log/file -cmd /path/to/ffmpeg -container TypeCode"
-copyrightstring="Simple BigBrother Copyright Andrew Wood 2016-2017"
+copyrightstring="BigBrother Copyright Andrew Wood 2016-2017"
 
 
 echoUsage()
