@@ -1,0 +1,6 @@
+MAJOR CHANGES FOR EACH VERSION
+======================================================================================================================================================================
+
+1.1	Updated mirror UI, FreeBSD compatability, bug fixes for Python 3 compatability, checks if ffmpegcommand option is valid executable
+
+1.0	Adopted video.js for HLS cross browser support improved HLS performance

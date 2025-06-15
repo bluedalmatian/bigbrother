@@ -1,4 +1,5 @@
-#! /usr/bin/env bash
+#!/bin/sh
+###! /usr/bin/env bash
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
