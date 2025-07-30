@@ -35,11 +35,13 @@ class Camera
 	var $initOK=false;
 
 	//Methods
-	function Camera($elements)
+	function __construct($elements)
 	{
 		$len=sizeof($elements);
 		if ($len< 5)
 		{
+			
+
 			$this->initOK=false;
 			return;
 		}
@@ -53,7 +55,7 @@ class Camera
 		$this->mirror=$elements[4];
 
 		$this->initOK=true;
-
+		
 
 	}
 	function initCheck()
@@ -78,7 +80,7 @@ class Camera
 			return;
 		}
 	
-		if ($this->mirror=="HLS")
+		if (  (strlen($this->mirror)>2) && (substr($this->mirror,0,3)=="HLS")  )
 		{
 			echo("<video class='video-js vjs-default-skin' width=640 height=480 controls autoplay muted data-setup='{}'>");
 

@@ -2,18 +2,18 @@
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #		      
 # Copyright 2016-2025 Andrew Wood                                  #
 #                                                                  #
-#This copy of the README file relates to version 0.30		   #
+#This copy of the README file relates to version 1.2		   #
 #                                                                  #
 # www.bigbrothercctv.org			                   #
 #                                                                  #
-# Licensed under the GNU Public License v 3			   #
+# Licensed under the GNU Public License v 3		           #
 # The full license can be read at www.gnu.org/licenses/gpl-3.0.txt #
 # and is included in the License.txt file included with this	   #
 # software.                                                        #
 #	                                                           #
 # BigBrother is free open source software but if you find it       #                                
 # useful please consider making a donation to the Communications   #
-# Museum Trust at www.comms.org.uk/donate                          #
+# Museum Trust at www.communicationsmuseum.org.uk/donate           #
 ####################################################################
 
 
@@ -48,12 +48,9 @@ It offers the following features:
 	stream from one network to another if desired, for example from a private
 	LAN to a WAN for remote viewing.
 
-		HTTP Live Streaming (HLS) format output which is currently compatible
-		with the following clients:
-			Microsoft Edge (Windows)
-			Apple Safari (Mac & iOS)
-			Google Chrome (Android)
-			VLC Media Player (Windows, Mac, Linux) can view a specific camera stream
+		Streaming uses the HTTP Live Streaming format (H.264 video). By default
+		the bitrate is 10Mbits/sec per camera. But this is customisable as detailed
+		later.
 
 		Requires third party web server software with PHP support (such as
 		Apache HTTPD, Nginx or Lighttpd) to be running on the same host
@@ -69,7 +66,7 @@ It offers the following features:
 	and (optionally) a webserver supporting PHP if you want to do mirroring.
 	Also requires an intallation of the ffmpeg command line program.
 
-	A rcNG init script is provided for FreeBSD
+	A rcNG init script is provided for FreeBSD and a SystemD unit file for Linux.
 
 =================================
 INSTALLATION & CONFIGURATION
@@ -77,7 +74,7 @@ INSTALLATION & CONFIGURATION
 
 Installation
 ------------
-A Debian deb and RedHat/CentOS RPM package is provided for installation which sets up the necessary
+A Debian deb, RedHat/RockyLinux RPM and FreeBSD pkgng package is provided for installation which sets up the necessary
 users and associated ownwersip & permissions. However you are responsible for
 creating the directory where you want the recorded files to be placed. This has to
 contain certain subdirectories and have appropriate permissions set so this will
@@ -183,6 +180,7 @@ variable.
 Ensure that the user BigBrother is running as, has write permission to the
 specified log file, and of course execute permission for ffmpeg.
 
+
 The camera configuration file is where you define each camera you want
 BigBrother to work with and the actions you want it to take. Again this
 is a plain text file with one entry (camera) per line, blank lines are
@@ -226,16 +224,28 @@ mirroring for this camera. This allows you to view the live output from the came
 in a webpage and can be routed from one network to another if you want to monitor
 cameras from a remote location or if you have a separate VLAN for cameras and want to
 monitor them from a different VLAN. If you dont' wish to do this use * otherwise
-this sets the stream format that BigBrother/ffmpeg will produce. Currently the only
-valid value is HLS which provides HTTP Live Streaming.
+this sets the stream format that BigBrother/ffmpeg will produce. 
+
+Valid values are HLS which provides an H.264 stream at 10Mbits/sec using HTTP Live Streaming.
+Or can also specify a bit rate using HLS/x where x is the bitrate in megabits/sec and is a number
+from 0.1 to 20. This is useful if you are remotely monitoring CCTV over a connection with limited
+upstream speed such as a DSL line.
+
 e.g HLS
+e.g HLS/0.5
+e.g HLS/2
 e.g *
 
 Folder is the main parent directory you want the recordings to be placed in. This
 directory must contain mandatory sub directories as described above.
 
-ContainerType is the type of codec container delivered by the camera. Currently
-the only valid value is MP4 for an MPEG4 container.
+ContainerType is the type of codec container used to store the recorded video.
+Valid values are MP4 for an MPEG4 container, MXG for an MxPEG container,
+WEBM for a WebM container and MKC for a Matroska container. 
+
+It is important that the container chosen is compatible with the video being 
+delivered by the camera. For most cameras video will be in H.264 or H.265 format
+and an MP4 container should therefore be used.
 
 Here are some full examples:
 
@@ -355,6 +365,7 @@ both running under the same username/id, you therefore need to take an additiona
 	3. Put the webservers username into the cctvwriters group
 
 
+
 ====================================================
 APPENDIX A - Remote access to recordings using Samba
 ====================================================
@@ -463,7 +474,7 @@ APPENDIX B - Building from source
 
 A FreeBSD pkgng package can be build by cd'ing to the source directory and running
 
-pkg create -M ./+MANIFEST -r .
+make pkgng
 
 A Debian .deb package can be built by cd'ing to the source directory and running
 make deb
