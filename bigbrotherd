@@ -7,7 +7,7 @@
 # Copyright 2016-2025 Andrew Wood                                  #
 #                                                                  #
 # The main bigbrother daemon. This double forks a child process to #
-# return to shell 						                           #
+# return to shell                                                  #
 #                                                                  #
 # bigbrothercctv.org	                                           #
 #                                                                  #
@@ -38,7 +38,7 @@ class ParseException(Exception):
 #######################################
 #System wide knobs
 
-bbversion=1.1 ##only change version no here and in no other file
+bbversion=1.2 ##only change version no here and in no other file
 exedir=os.path.dirname(os.path.realpath(__file__)) ##gives dir with no trailing /
 globalconffile=exedir+"/bigbrother.conf"
 dashfspecified=False
@@ -215,215 +215,266 @@ def onlyContainsLettersOrNumbers(str):
 #############################################
 def work():
 	
-	for cameraconf in cameras:
-		Log("P3 Preparing to start "+str(cameraconf))
-		if (cameraconf['recordmode']!="*"):
-			#recording
-			if (cameraconf['recordmode']=="C"):
-				#by camera
-				L=[]
-				L.append(exedir+"/record_bycamera.sh")
-				L.append("-cam")
-				L.append(cameraconf['url'])
-				L.append("-name")
-				L.append(cameraconf['cam'])
-				L.append("-group")
-				L.append(cameraconf['group'])
-				L.append("-folder")
-				L.append(cameraconf['folder'])
-				L.append("-log")
-				L.append(logfilepath)
-				L.append("-cmd")
-				L.append(ffmpegcommand)
-				L.append("-container")
-				L.append(cameraconf['container'])
-				cpid = os.spawnv(os.P_NOWAIT, exedir+'/record_bycamera.sh', L)
-				pids.append(cpid)
-				recordingpids.append(cpid)
-				Log("P3 started camera recording process OS PID:"+str(cpid))
+    for cameraconf in cameras:
+        Log("P3 Preparing to start "+str(cameraconf))
+        if (cameraconf['recordmode']!="*"):
+            #recording
+            if (cameraconf['recordmode']=="C"):
+                #by camera
+                L=[]
+                L.append(exedir+"/record_bycamera.sh")
+                L.append("-cam")
+                L.append(cameraconf['url'])
+                L.append("-name")
+                L.append(cameraconf['cam'])
+                L.append("-group")
+                L.append(cameraconf['group'])
+                L.append("-folder")
+                L.append(cameraconf['folder'])
+                L.append("-log")
+                L.append(logfilepath)
+                L.append("-cmd")
+                L.append(ffmpegcommand)
+                L.append("-container")
+                L.append(cameraconf['container'])
+                cpid = os.spawnv(os.P_NOWAIT, exedir+'/record_bycamera.sh', L)
+                pids.append(cpid)
+                recordingpids.append(cpid)
+                Log("P3 started camera recording process OS PID:"+str(cpid))
 
-			elif (cameraconf['recordmode']=="D"):
-				#by day
-				L=[]
-				L.append(exedir+"/record_byday.sh")
-				L.append("-cam")
-				L.append(cameraconf['url'])
-				L.append("-name")
-				L.append(cameraconf['cam'])
-				L.append("-folder")
-				L.append(cameraconf['folder'])
-				L.append("-log")
-				L.append(logfilepath)
-				L.append("-cmd")
-				L.append(ffmpegcommand)
-				L.append("-container")
-				L.append(cameraconf['container'])
-				cpid = os.spawnv(os.P_NOWAIT, exedir+'/record_byday.sh', L)
-				pids.append(cpid)
-				recordingpids.append(cpid)
-				Log("P3 started camera recording process OS PID:"+str(cpid))
-
-
+            elif (cameraconf['recordmode']=="D"):
+                #by day
+                L=[]
+                L.append(exedir+"/record_byday.sh")
+                L.append("-cam")
+                L.append(cameraconf['url'])
+                L.append("-name")
+                L.append(cameraconf['cam'])
+                L.append("-folder")
+                L.append(cameraconf['folder'])
+                L.append("-log")
+                L.append(logfilepath)
+                L.append("-cmd")
+                L.append(ffmpegcommand)
+                L.append("-container")
+                L.append(cameraconf['container'])
+                cpid = os.spawnv(os.P_NOWAIT, exedir+'/record_byday.sh', L)
+                pids.append(cpid)
+                recordingpids.append(cpid)
+                Log("P3 started camera recording process OS PID:"+str(cpid))
 
 
-		if (cameraconf['mirrormode']=="HLS"):
-			#mirroring using HLS
-			L=[]
-			L.append(exedir+"/mirror_hls.sh")
-			L.append("-cam")
-			L.append(cameraconf['url'])
-			L.append("-name")
-			L.append(cameraconf['cam'])
-			L.append("-log")
-			L.append(logfilepath)
-			L.append("-cmd")
-			L.append(ffmpegcommand)
-			L.append("-webroot")
-			L.append(mirrorwebroot)
-			cpid = os.spawnv(os.P_NOWAIT, exedir+'/mirror_hls.sh', L)
-			pids.append(cpid)
-			Log("P3 started camera mirroring process OS PID:"+str(cpid))
 
-		elif (cameraconf['mirrormode']=="MJPG"):
+
+        if (cameraconf['mirrormode']=="HLS"):
+            #mirroring using HLS
+            L=[]
+            L.append(exedir+"/mirror_hls.sh")
+            L.append("-cam")
+            L.append(cameraconf['url'])
+            L.append("-name")
+            L.append(cameraconf['cam'])
+            L.append("-log")
+            L.append(logfilepath)
+            L.append("-cmd")
+            L.append(ffmpegcommand)
+            L.append("-webroot")
+            L.append(mirrorwebroot)
+            if cameraconf.get('mirrorbitrate')!=None:
+                L.append("-mbits")
+                L.append(str(cameraconf['mirrorbitrate'])+"M")
+                L.append("-fps")
+                L.append(str(cameraconf['mirrorframerate']))
+                L.append("-res")
+                L.append(str(cameraconf['mirrorresolution']))
+            else:
+                L.append("-mbits")
+                L.append("10M") #default to 10Mbits if no bitrate specified
+                L.append("-fps")
+                L.append("20")
+                L.append("-res")
+                L.append("720x480")
+            cpid = os.spawnv(os.P_NOWAIT, exedir+'/mirror_hls.sh', L)
+            pids.append(cpid)
+            Log("P3 started camera mirroring process OS PID:"+str(cpid))
+
+        elif (cameraconf['mirrormode']=="MJPG"):
 			#mirroring using MJPG over DASH
-			L=[]
-			L.append(exedir+"/mirror_mjpg.sh")
-			L.append("-cam")
-			L.append(cameraconf['url'])
-			L.append("-name")
-			L.append(cameraconf['cam'])
-			L.append("-log")
-			L.append(logfilepath)
-			L.append("-cmd")
-			L.append(ffmpegcommand)
-			L.append("-webroot")
-			L.append(mirrorwebroot)
-			cpid = os.spawnv(os.P_NOWAIT, exedir+'/mirror_mjpg.sh', L)
-			pids.append(cpid)
-			Log("P3 started camera mirroring process OS PID:"+str(cpid))
+            L=[]
+            L.append(exedir+"/mirror_mjpg.sh")
+            L.append("-cam")
+            L.append(cameraconf['url'])
+            L.append("-name")
+            L.append(cameraconf['cam'])
+            L.append("-log")
+            L.append(logfilepath)
+            L.append("-cmd")
+            L.append(ffmpegcommand)
+            L.append("-webroot")
+            L.append(mirrorwebroot)
+            cpid = os.spawnv(os.P_NOWAIT, exedir+'/mirror_mjpg.sh', L)
+            pids.append(cpid)
+            Log("P3 started camera mirroring process OS PID:"+str(cpid))
 
-	Log("P3 setting up signal handlers")
-	signal.signal(signal.SIGINT, handler)
-	signal.signal(signal.SIGTERM, handler)
-	signal.signal(signal.SIGQUIT, handler)
-	signal.signal(signal.SIGHUP,handler)
+    Log("P3 setting up signal handlers")
+    signal.signal(signal.SIGINT, handler)
+    signal.signal(signal.SIGTERM, handler)
+    signal.signal(signal.SIGQUIT, handler)
+    signal.signal(signal.SIGHUP,handler)
 	
-	pid=os.getpid()
-	Log("P3 is process ID "+str(pid)+", writing it to PID file at "+pidfilepath)
-	try:
-    		pidfile=open(pidfilepath,'w')
-    		pidfile.truncate()
-    		pidfile.write(str(pid))
-    		pidfile.close()
-	except IOError:
-    		Log("P3 unable to write PID file")
+    pid=os.getpid()
+    Log("P3 is process ID "+str(pid)+", writing it to PID file at "+pidfilepath)
+    try:
+            pidfile=open(pidfilepath,'w')
+            pidfile.truncate()
+            pidfile.write(str(pid))
+            pidfile.close()
+    except IOError:
+        Log("P3 unable to write PID file")
 
-	Log("P3 sleeping")
-	while (1):
-		time.sleep(4200)
+    Log("P3 sleeping")
+    while (1):
+        time.sleep(4200)
 ###########################################
 
 ##########################################
 def parseLine(line):
-	cols=line.split()
-	if (len(cols)!=7):
-		errstr="Each camera action definition (line) needs 7 parameters, separated by spaces"
-		raise ParseException(errstr)
-	action={}
-	action['cam']=cols[0]
-	action['url']=cols[1]
-	action['group']=cols[2]
-	action['recordmode']=cols[3]
-	action['mirrormode']=cols[4]
-	action['folder']=cols[5]
-	action['container']=cols[6]
+    cols=line.split()
+    if (len(cols)!=7):
+        errstr="Each camera action definition (line) needs 7 parameters, separated by spaces"
+        raise ParseException(errstr)
+    action={}
+    action['cam']=cols[0]
+    action['url']=cols[1]
+    action['group']=cols[2]
+    action['recordmode']=cols[3]
+    action['mirrormode']=cols[4]
+    action['folder']=cols[5]
+    action['container']=cols[6]
 
-	if ( (action['folder']=="*") and (action['recordmode']!="*")):
-		raise ParseException("To do recording you must specify a folder")
+    if ( (action['folder']=="*") and (action['recordmode']!="*")):
+        raise ParseException("To do recording you must specify a folder")
 
-	if ( (action['folder']!="*") ):
+    if ( (action['folder']!="*") ):
 
-		if(  containsDotsOrStars(action['folder'])  and (action['recordmode']!="*") ):
-			raise ParseException("Folder must be a literal Unix style folder path with no . or * characters")
+        if(  containsDotsOrStars(action['folder'])  and (action['recordmode']!="*") ):
+            raise ParseException("Folder must be a literal Unix style folder path with no . or * characters")
 	
-		foldername=action['folder']
-		lastidx=len(foldername)-1
+        foldername=action['folder']
+        lastidx=len(foldername)-1
 	
-		if ( (foldername[0]!="/") or (foldername[lastidx]=="/") ):
-			raise ParseException("Folder must be a literal Unix style folder path with no trailing /")
+        if ( (foldername[0]!="/") or (foldername[lastidx]=="/") ):
+            raise ParseException("Folder must be a literal Unix style folder path with no trailing /")
 
 
-	if (onlyContainsLettersOrNumbers(action['cam'])==False):
-		raise ParseException("Camera Name must only contain letters and or numbers")
+    if (onlyContainsLettersOrNumbers(action['cam'])==False):
+        raise ParseException("Camera Name must only contain letters and or numbers")
 
-	if ( (action['recordmode']!="D") and  (action['recordmode']!="C") and  (action['recordmode']!="*") ):
-		raise ParseException("Record Mode must be D, C or *")
+    if ( (action['recordmode']!="D") and  (action['recordmode']!="C") and  (action['recordmode']!="*") ):
+        raise ParseException("Record Mode must be D, C or *")
 	
-	if ( (action['container']!="MP4") and  (action['container']!="*") ):
-		raise ParseException("Container Format must be MP4 or *")
+    if ( (action['container']!="MP4") and (action['container']!="MXG") and (action['container']!="WEBM")  and (action['container']!="MKV") and (action['container']!="*") ):
+        raise ParseException("Container Format must be MP4, MXG, WEBM, MKV or *")
 		
-	if ( ( (action['container']=="*") and  (action['recordmode']!="*") ) or ( (action['container']!="*") and (action['recordmode']=="*") ) ):
-		raise ParseException("To record you must specify both a record mode and a container format")
+    if ( ( (action['container']=="*") and  (action['recordmode']!="*") ) or ( (action['container']!="*") and (action['recordmode']=="*") ) ):
+        raise ParseException("To record you must specify both a record mode and a container format")
 
-	action['container']=(action['container'].lower())
 
-	if ( (action['mirrormode']!="HLS") and  (action['mirrormode']!="*") and  (action['mirrormode']!="MJPG") ):		
-		 raise ParseException("Mirror Mode must be HLS or MJPG or *")
+    action['container']=(action['container'].lower())
 
-	if ( (action['mirrormode']!="*") and mirroringconfigvalid==False ):
-		raise ParseException("Mirroring requested, but mirroring config (in global config file) is not valid, check the global config file")
+    if (len(action['mirrormode'])>4) and ((action['mirrormode'])[0:4]=="HLS/"):
+        #HLS/ so get bitrate number
+        mirrorbycomponents=action['mirrormode'].split("/") # gives mirrorbycomponents[0]="HLS", mirrorbycomponents[1]="bitrate"
+        #check if mirrorbycomponents[1] is a valid float or int
+        if re.fullmatch("^[0-9]+$", mirrorbycomponents[1]):
+            #Integer
+            action['mirrorbitrate']=int(mirrorbycomponents[1])
+            if (action['mirrorbitrate']<1) or (action['mirrorbitrate']>20):
+                raise ParseException("Bitrate must be between 0.1 and 20 Mbits/sec")
+        elif  re.fullmatch("^[0-9]+\\.[0-9]$", mirrorbycomponents[1]):
+        #Float
+            action['mirrorbitrate']=float(mirrorbycomponents[1])
+            if (action['mirrorbitrate']<0.1) or (action['mirrorbitrate']>20):
+                raise ParseException("Bitrate must be between 0.1 and 20 Mbits/sec")
+        else:
+            #Not valid bitrate
+            raise ParseException("HLS bitrate not valid. Must be a number from 0.1 to 20 e.g 0.5 or 3")
+        action['mirrormode']="HLS" #change it from HLS/x to HLS as from now on we can use presence of action['mirrorbitrate'] to know if custom bit rate set
+        if action['mirrorbitrate']<0.5:
+            #cut frame rate and resolution to maintain a clearish picture at low bitrate
+            action['mirrorframerate']=1
+            action['mirrorresolution']="320x240"
+        elif action['mirrorbitrate']<1:
+            action['mirrorframerate']=5
+            action['mirrorresolution']="320x240"
+        else:
+            action['mirrorframerate']=20
+            action['mirrorresolution']="720x480"
+    else:
+	#not "HLS/" so check of its "HLS", "MJPG" or "*"
+     if ( (action['mirrormode']!="HLS") and  (action['mirrormode']!="*") and  (action['mirrormode']!="MJPG") ):		
+        raise ParseException("Mirror Mode must be HLS or MJPG or * . You can use HLS/x to specify a bitrate in Mbits/sec e.g HLS/0.5 or HLS/5")
+   
 
-	if ( (action['recordmode']=="C") and (action['group']=="*") ):
-		raise ParseException("Record mode is C but you have not specified a Group Name")
 
-	if (action['group']!="*"):
-		if (onlyContainsLettersOrNumbers(action['group'])==False):
-                	raise ParseException("Group Name must only contain letters and or numbers")
+
+
+
+
+    if ( (action['mirrormode']!="*") and mirroringconfigvalid==False ):
+        raise ParseException("Mirroring requested, but mirroring config (in global config file) is not valid, check the global config file")
+
+    if ( (action['recordmode']=="C") and (action['group']=="*") ):
+        raise ParseException("Record mode is C but you have not specified a Group Name")
+
+    if (action['group']!="*"):
+        if (onlyContainsLettersOrNumbers(action['group'])==False):
+            raise ParseException("Group Name must only contain letters and or numbers")
 
 	
-	if (action['recordmode']!="*"):
-		#folder must exist
-		if (os.path.isdir(action['folder'])==False):
-                        raise ParseException(action['folder']+" must exist")
-		if (os.path.isdir(action['folder']+"/bycamera")==False):
-                        raise ParseException(action['folder']+" must contain a bycamera folder")
+    if (action['recordmode']!="*"):
+        #folder must exist
+        if (os.path.isdir(action['folder'])==False):
+            raise ParseException(action['folder']+" must exist")
+        if (os.path.isdir(action['folder']+"/bycamera")==False):
+            raise ParseException(action['folder']+" must contain a bycamera folder")
 
-		if ( (os.path.isdir(action['folder']+"/byday/Monday")==False) or (os.path.isdir(action['folder']+"/byday/Tuesday")==False) or (os.path.isdir(action['folder']+"/byday/Thursday")==False) or (os.path.isdir(action['folder']+"/byday/Wednesday")==False) or (os.path.isdir(action['folder']+"/byday/Friday")==False) or (os.path.isdir(action['folder']+"/byday/Saturday")==False) or (os.path.isdir(action['folder']+"/byday/Sunday")==False)  ):
-                        raise ParseException(action['folder']+" must contain a byday folder with subfolders for each day")
+        if ( (os.path.isdir(action['folder']+"/byday/Monday")==False) or (os.path.isdir(action['folder']+"/byday/Tuesday")==False) or (os.path.isdir(action['folder']+"/byday/Thursday")==False) or (os.path.isdir(action['folder']+"/byday/Wednesday")==False) or (os.path.isdir(action['folder']+"/byday/Friday")==False) or (os.path.isdir(action['folder']+"/byday/Saturday")==False) or (os.path.isdir(action['folder']+"/byday/Sunday")==False)  ):
+            raise ParseException(action['folder']+" must contain a byday folder with subfolders for each day")
 
-		if (directoryIsWritable(action['folder']+"/byday/Monday")==False):
-			raise ParseException(action['folder']+"/byday/Monday is not writable")
+        if (directoryIsWritable(action['folder']+"/byday/Monday")==False):
+            raise ParseException(action['folder']+"/byday/Monday is not writable")
 
-		if (directoryIsWritable(action['folder']+"/byday/Tuesday")==False):
-                        raise ParseException(action['folder']+"/byday/Tuesday is not writable")
+        if (directoryIsWritable(action['folder']+"/byday/Tuesday")==False):
+            raise ParseException(action['folder']+"/byday/Tuesday is not writable")
 
-		if (directoryIsWritable(action['folder']+"/byday/Wednesday")==False):
-                        raise ParseException(action['folder']+"/byday/Wednesday is not writable")
+        if (directoryIsWritable(action['folder']+"/byday/Wednesday")==False):
+            raise ParseException(action['folder']+"/byday/Wednesday is not writable")
 		
-		if (directoryIsWritable(action['folder']+"/byday/Thursday")==False):
-                        raise ParseException(action['folder']+"/byday/Thursday is not writable")
+        if (directoryIsWritable(action['folder']+"/byday/Thursday")==False):
+            raise ParseException(action['folder']+"/byday/Thursday is not writable")
 
-		if (directoryIsWritable(action['folder']+"/byday/Friday")==False):
-                        raise ParseException(action['folder']+"/byday/Friday is not writable")
+        if (directoryIsWritable(action['folder']+"/byday/Friday")==False):
+            raise ParseException(action['folder']+"/byday/Friday is not writable")
 
-		if (directoryIsWritable(action['folder']+"/byday/Saturday")==False):
-                        raise ParseException(action['folder']+"/byday/Saturday is not writable")
-
-
+        if (directoryIsWritable(action['folder']+"/byday/Saturday")==False):
+            raise ParseException(action['folder']+"/byday/Saturday is not writable")
 
 
-	if (action['recordmode']=="C"):
-		#need to check group folder exists & we can write to it
-		if (os.path.isdir(action['folder']+"/bycamera/"+action['group'])==False):
-			raise ParseException("Group Name must exist as a folder under "+action['folder']+"/bycamera")
 
-		if (directoryIsWritable(action['folder']+"/bycamera/"+action['group'])==False):
-			raise ParseException(action['folder']+"/bycamera/"+action['group']+" is not writable")
+
+    if (action['recordmode']=="C"):
+        #need to check group folder exists & we can write to it
+        if (os.path.isdir(action['folder']+"/bycamera/"+action['group'])==False):
+            raise ParseException("Group Name must exist as a folder under "+action['folder']+"/bycamera")
+
+        if (directoryIsWritable(action['folder']+"/bycamera/"+action['group'])==False):
+            raise ParseException(action['folder']+"/bycamera/"+action['group']+" is not writable")
 		
 	
-	#passed
-	print ("Found "+str(action))
-	return action
+    #passed
+    print ("Found "+str(action))
+    return action
 ############################################
 
 ############################################

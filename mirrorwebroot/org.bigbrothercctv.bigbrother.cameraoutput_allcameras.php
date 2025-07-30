@@ -29,6 +29,7 @@
         $camsprinted=0;
         foreach ($groupsByName as $groupName => $groupMembers)
         {
+		
                   echo("<table cellspacing=10 cellpadding=0 border=0 bordercolor=black bgcolor=gray style='margin:5px;' id=cameragrid>");
                   echo("<tr><td colspan=".$camsPerTR."><p><b>".$groupName."</p></b></td></tr>");
                   foreach ($groupMembers as $camera)

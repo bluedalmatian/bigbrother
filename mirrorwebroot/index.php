@@ -203,6 +203,10 @@
 				}
 			}
 		}
+		else
+		{
+			echo("<p>ERROR: Camera->InitCheck failed reading line {$lineno} from camera config file. This camera will not be displayed</p>");
+		}
 	}
 	fclose($cameraconffile);
 ?>
@@ -495,21 +499,25 @@ function onLoad()
 	if ( (sizeof($camnamesToShow)==0)  &&  (sizeof($groupnamesToShow)==0) )
 	{
 		 set_error_handler("requiredIncludeFail");
+		 echo("<!allcameras.php>");
 		include("org.bigbrothercctv.bigbrother.cameraoutput_allcameras.php");
 	}
 	else if ((sizeof($camnamesToShow)>0)  &&  (sizeof($groupnamesToShow)>0))
 	{
 		   set_error_handler("requiredIncludeFail");
+		   echo("<!namedcameras_namedgroups.phpp>");
 		  include("org.bigbrothercctv.bigbrother.cameraoutput_namedcameras_namedgroups.php"); 
 	} 
 	else if ( (sizeof($camnamesToShow)==0)  &&  (sizeof($groupnamesToShow)>0) )
 	{
 		   set_error_handler("requiredIncludeFail");
+		   echo("<!namedgroups.phpp>");
 		  include("org.bigbrothercctv.bigbrother.cameraoutput_namedgroups.php"); 
 	}
 	else
 	{
 		   set_error_handler("requiredIncludeFail");
+		   echo("<!namedcameras.phpp>");
 		  include("org.bigbrothercctv.bigbrother.cameraoutput_namedcameras.php"); 
 	}
 
