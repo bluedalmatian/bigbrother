@@ -224,7 +224,7 @@ do
 	###	 -s 640x480	 (resolution)
 	###	-q:v 2 set quality of JPEG output (1-32) lower number is better
 
-        $ffmpegcommand -y -loglevel fatal -i $sourceurl -c:v mjpeg -s 720x640 -metadata title="$camname" -keyint_min 10 -g 10 -sc_threshold 0 -b_strategy 0 -use_timeline 1 -use_template 1 -window_size 5 -r 10 -q:v 2 -f dash $webroot/$camname.mpd &
+        $ffmpegcommand -timeout 10000000 -y -loglevel fatal -i $sourceurl -c:v mjpeg -s 720x640 -metadata title="$camname" -keyint_min 10 -g 10 -sc_threshold 0 -b_strategy 0 -use_timeline 1 -use_template 1 -window_size 5 -r 10 -q:v 2 -f dash $webroot/$camname.mpd &
 
 	pid=$!
 	echo "$0 started ffmpeg OS PID $pid" | $bblogger $logfile
