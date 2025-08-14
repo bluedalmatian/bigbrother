@@ -317,7 +317,7 @@ do
         done
 
 	
-	$ffmpegcommand -loglevel fatal -y -t $secs -i $sourceurl -acodec copy -vcodec copy -metadata title="$camname--$todaysdate--$timenow" $folder/bycamera/$group/$camname--$day--$todaysdate--$timenow$dstadjustment.$container  &
+	$ffmpegcommand -timeout 10000000 -loglevel fatal -y -t $secs -i $sourceurl -acodec copy -vcodec copy -metadata title="$camname--$todaysdate--$timenow" $folder/bycamera/$group/$camname--$day--$todaysdate--$timenow$dstadjustment.$container  &
 	pid=$!
 	echo "$0 started ffmpeg OS PID $pid" | $bblogger $logfile
         wait $pid

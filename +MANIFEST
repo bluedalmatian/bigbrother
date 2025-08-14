@@ -1,5 +1,5 @@
 name: "bigbrother";
-version: "1.2";
+version: "1.3";
 origin: "multimedia/bigbrother";
 comment: "BigBrother CCTV recording & mirroring system";
 abi = "FreeBSD:*:*";
@@ -64,7 +64,7 @@ desc: <<EOD
 EOD
 categories: ["multimedia"]
 deps: {
-  ffmpeg: {origin: "multimedia/ffmpeg", version: "2.8"};
+  ffmpeg: {origin: "multimedia/ffmpeg", version: "5.0"};
   python: {origin: "lang/python", version: "3.3"};
   bash: {origin: "shells/bash" ,version: "3.0"};
 }
