@@ -1,6 +1,6 @@
 %define _topdir		%(pwd)/RPM
 %define name            org.bigbrothercctv.bigbrother
-%define version		1.3
+%define version		2.0
 
 
 Summary:        bigbrothercctv.org BigBrother
@@ -12,7 +12,7 @@ Source:         %{name}.tar.gz
 Prefix:         /usr
 Group:          System Environment/Daemons
 BuildArch: 	noarch
-Requires:	ffmpeg,python,bash
+Requires:	ffmpeg,python,bash,python3-opencv >= 4.10
 
 %description
 BigBrother wrapper daemon for FFMPEG to provide CCTV recording & mirroring
@@ -31,6 +31,8 @@ getent passwd bigbrother || useradd -r -M -s /sbin/nologin -g cctvwriters bigbro
 mkdir $RPM_BUILD_ROOT/usr/
 mkdir $RPM_BUILD_ROOT/usr/local/
 mkdir $RPM_BUILD_ROOT/usr/local/bigbrother/
+mkdir $RPM_BUILD_ROOT/usr/local/bigbrother/mirrorwebroot
+mkdir $RPM_BUILD_ROOT/usr/local/bigbrother/onnx
 mkdir $RPM_BUILD_ROOT/etc
 mkdir $RPM_BUILD_ROOT/etc/systemd
 mkdir $RPM_BUILD_ROOT/etc/systemd/system
@@ -48,12 +50,18 @@ systemctl daemon-reload
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bblogger
 %attr (660,bigbrother,cctvwriters) /usr/local/bigbrother/bigbrother.conf
 %attr (660,bigbrother,cctvwriters) /usr/local/bigbrother/bigbrother_camera.conf
+%attr (660,bigbrother,cctvwriters) /usr/local/bigbrother/bigbrother_event.conf
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bigbrotherd
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/mirror_hls.sh
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/mirror_mjpg.sh
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/record_bycamera.sh
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/record_byday.sh
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/extract.sh
+%attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bbeventmonitor_y5onnx.sh
+%attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bbeventmonitor_y5onnx
+%attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/markup_y5onnx.py
 %attr (750,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot
 %attr (640,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot/*
+%attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/onnx
+%attr (640,bigbrother,cctvwriters) /usr/local/bigbrother/onnx/*
 %attr (644,root,root)/etc/systemd/system/bigbrotherd.service

@@ -35,13 +35,11 @@ function do418($sigstdout,$sigstatus)
 	header('HTTP/1.1 418 Kill Failed', true, 418);
 	foreach ($sigstdout as $line)
 	{
-		echo("<p>");
-		echo($line);
-		echo("</p>");
+		echo($line);	
 	}
-	echo("<p>Return code: ");
+	echo(" ");
+	echo("Return code: ");
 	echo($sigstatus);
-	echo("</p>");
 	ob_end_flush();
 	
 }
@@ -57,9 +55,9 @@ function do201()
 function do412()
 {
         header('HTTP/1.1 412 Precondition Failed', true, 412);
-                echo("<p>");
+                echo("");
                 echo("allownewfilefromweb is not set to True in config file");
-                echo("</p>");
+                echo("");
         ob_end_flush();
 
 }

@@ -1,0 +1,927 @@
+#!/usr/bin/env python
+
+####################################################################
+# BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
+# Copyright 2016-2025 Andrew Wood                                  #
+#                                                                  #
+# bbeventmonitor uses a YOLO5 model converted to ONNX format       #
+#                                                                  #
+#                                                                  #
+#                                                                  #
+#                                                                  #
+# Requires OpenCV2 v 4.10 or later (Debian python3-opencv package) #  
+#                                                                  #
+# www.bigbrothercctv.org                                           #
+#                                                                  #
+# Licensed under the GNU Public License v 3                        #
+# The full license can be read at www.gnu.org/licenses/gpl-3.0.txt #
+# and is included in the License.txt file included with this       #
+# software.                                                        #
+#                                                                  #
+# BigBrother is free open source software but if you find it       #
+# useful please consider making a donation to the Communications   #
+# Museum Trust at www.communicationsmuseums.org.uk/donate          #
+####################################################################
+
+
+# Note about command line args: For time codes [*] can be passed to Python without escaping but for group name * needs to be escaped as \*
+# this is because * is interpreted as a wildcard, but Python ignores the wildcard inside [], note that any calling shell script however
+# WILL require [*] to be escaped as \[\*\] and * for group name needs to be double escaped as \\*
+
+
+from datetime import datetime,timedelta
+import re,sys,os
+import cv2
+import numpy as np
+import time
+import threading
+import signal
+import calendar
+import tempfile
+
+##################################################################################################################################################################
+class Detection:
+	#A Detection represents a previously detected event, its bounding box x,y co-ordinates, time of detection and type code
+	#It can be used to test if a 'new' detection is likeley to be the same object
+    
+    def __init__(self, typecode, startX, startY, endX, endY, timestamp):
+        self.typecode=typecode
+        self.startX = startX
+        self.startY = startY
+        self.endX= endX
+        self.endY= endY
+        self.timestamp= int(timestamp)
+        self.firsttimestamp=self.timestamp
+		
+    def __str__(self):
+        return "type: "+self.typecode+" startX: "+str(self.startX)+" startY: "+str(self.startY)+" endX: "+str(self.endX)+" endY: "+str(self.endY)+" ts: "+str(self.timestamp)+" ts1: "+str(self.firsttimestamp)+"("+self.timestampToHuman(self.firsttimestamp)+")"
+	  
+    def updateTimestamp(self):
+        self.timestamp=int(time.time())
+        
+    def timestampToHuman(self,ts):
+        return datetime.fromtimestamp(int(ts)).strftime('%Y-%m-%d %H:%M:%S')
+
+
+    def isOlderThan(self,sec):
+        if ( (int(time.time()) - self.timestamp) > sec   ):
+            return True
+        else:
+            return False
+			
+    def intersects(self,startX,startY,endX,endY,code):
+        #this func can be removed
+        offset=50
+        startoverlap=False
+        endoverlap=False
+        if (  (abs(startX-self.startX) < offset) and  (abs(startY-self.startY) < offset) ):
+            startoverlap=True
+		
+        if (  (abs(endX-self.endX) < offset) and  (abs(endY-self.endY) < offset)  ):
+            endoverlap=True
+			
+        if ((code==self.typecode) and (startoverlap) and (endoverlap)):
+            return True
+        else:
+            return False
+            
+    def isSameType(self,code):
+        if (code==self.typecode):
+            return True
+        else:
+            return False
+
+
+    def calculateIoU(self,d2):
+        #box1 is self
+        #box2 is d2 (another Detection obj)
+ 
+        a1=self.endX
+        b1=self.endY
+    
+        a2=d2.endX
+        b2=d2.endY
+    
+        area1 = (a1-self.startX)*(b1-self.startY) 
+        area2 = (a2-d2.startX)*(b2-d2.startY)
+ 
+        # find intersection box
+        # find largest (x, y) coordinates 
+        # for the start of the intersection bounding box and 
+        # the smallest (x, y) coordinates for the 
+        # end of the intersection bounding box
+        xx = max(self.startX, d2.startX)
+        yy = max(self.startY, d2.startY)
+        aa = min(a1, a2)
+        bb = min(b1, b2)
+ 
+        # intersection bound box has coords (xx,yy) (aa,bb)
+        # get its width and height
+        w = max(0, aa - xx)
+        h = max(0, bb - yy)
+ 
+        intersectionarea = w*h
+        unionarea = area1 + area2 - intersectionarea 
+        IoU = intersectionarea / unionarea
+    
+        return IoU
+
+			
+#END OF CLASS Detection
+##################################################################################################################################################################			
+	
+
+#################################################################################################
+def unescapeTimeString(inputstr):
+    #inputstr is a timestr in format "\[20:00-21:00\]" or "\[20:00-21:00\]/\[22:00-22:30\]" or "\[\*\]"
+    #remove \ escape chars and return string
+    outputstr=""
+    for char in inputstr:
+        if char!="\\":
+            outputstr=outputstr+char
+    return outputstr
+##################################################################################################
+
+##############################################
+def splitStartEndTime(txt):
+	components1 = txt.split("-")
+	start=components1[0].replace("[", "")
+	end=components1[1].replace("]", "")
+	components2=[start,end]
+	return components2
+##############################################
+
+############################################## 
+def splitHoursMinutes(txt):
+	components = txt.split(":")
+	return components
+##############################################
+
+
+##############################################
+def isHour(txt):
+	hr=int(txt)
+	if hr>=0 and hr <=23:
+		return True
+	else:
+		return False;
+##############################################        
+        
+##############################################       
+def isMinute(txt):
+	minutes=int(txt)
+	if minutes>=0 and minutes <=59:
+		return True
+	else:
+		return False;
+############################################## 
+
+ 
+##############################################      
+def startEndSane(starthr,startmin,endhr,endmin):
+	starthr=int(starthr)
+	startmin=int(startmin)
+	endhr=int(endhr)
+	endmin=int(endmin)
+	
+	if (starthr>endhr):
+		return False
+	if ((starthr==endhr) and (startmin>=endmin)):
+		return False
+	return True;
+##############################################
+
+
+##############################################
+def timeAlreadyPassed(hr,minutes):
+	now = datetime.now()
+	todaytarget = now.replace(hour=int(hr), minute=int(minutes), second=0, microsecond=0)
+	if now < todaytarget:
+		return False
+	else:
+		return True
+##############################################
+
+      
+##############################################
+# Convert a '[HH:MM-HH:MM]' string into (start, end) datetime objects
+def parseRange(r):
+	r = r.strip('[]')
+	start_str, end_str = r.split('-')
+	base_date = datetime(2000, 1, 1)  # arbitrary date
+	start = datetime.strptime(start_str, "%H:%M").replace(year=2000, month=1, day=1)
+	end = datetime.strptime(end_str, "%H:%M").replace(year=2000, month=1, day=1)
+
+	# If end time is earlier than start, it's an overnight range
+	if end <= start:
+		end += timedelta(days=1)
+
+	return start, end
+##############################################    
+    
+##############################################
+# Check for overlaps
+def checkOverlap(ranges):
+	base_date = datetime(2000, 1, 1)
+	intervals = []
+
+	for r in ranges:
+		r = r.strip("[]")
+		start_str, end_str = r.split("-")
+		start = datetime.strptime(start_str, "%H:%M").replace(year=2000, month=1, day=1)
+		end = datetime.strptime(end_str, "%H:%M").replace(year=2000, month=1, day=1)
+		if end <= start:
+			end += timedelta(days=1)
+		intervals.append((start, end))
+		intervals.append((start + timedelta(days=1), end + timedelta(days=1)))
+
+	for i in range(len(intervals)):
+		for j in range(i + 1, len(intervals)):
+			s1, e1 = intervals[i]
+			s2, e2 = intervals[j]
+			if s1 < e2 and s2 < e1:
+				return True
+	return False
+##############################################
+
+##############################################    
+def ignoreEvent(times):
+	for txt in times:
+		startendtime=splitStartEndTime(txt) #gives list ['HH:MM', 'HH:MM']
+		start=splitHoursMinutes(startendtime[0]) #gives list ['HH','MM']
+		end=splitHoursMinutes(startendtime[1]) #gives list ['HH','MM']
+        
+		print("Checking if we are within: ",txt)
+
+		if ( (timeAlreadyPassed(start[0],start[1])) and (timeAlreadyPassed(end[0],end[1])==False) ):
+			#"Within ignore time
+			return True
+	return False;
+##############################################
+
+
+
+################################################
+def shouldProcess(eventcode):
+
+    try:
+        eventidx=eventcodes.index(eventcode)
+    except ValueError as e:
+        return False;
+    
+    if (eventignoretimes[eventidx]!="[*]"):
+        if (ignoreEvent(eventignoretimes[eventidx])):
+            #"Ignore
+            return False
+        else:
+            #there is a time restriction for this event but we are not in it currently
+            return True;
+    else:
+        #there is no time restriction for this event
+       return True
+    
+################################################
+
+#######################################
+def fileIsExe(filepath):
+    path = shutil.which(filepath)
+    if path is None:
+        return False
+    else:
+        return True
+#######################################
+
+#######################################
+def fileIsReadable(filepath):
+    try:
+        file=open(filepath,'r')
+        file.close()
+        return True
+    except IOError:
+        return False
+#######################################
+
+
+##############################################
+def onlyContainsLettersOrNumbers(str):
+	result=re.search("^[A-Za-z0-9]+$",str)
+	if (result==None):
+		return False
+	else:
+		return True
+##############################################
+
+##############################################
+def checkEventDirectory(path,groupname,eventlogtype):
+    #folder must exist
+    if (os.path.isdir(path)==False):
+        return False
+    print("Checking Event logging directory, GroupName:"+groupname+" EventLogType:"+eventlogtype)
+    if ((groupname!="*") and (eventlogtype=="C")):
+        print("GroupName is set and logtype is C, checking there is a group directory...")
+        if (os.path.isdir(path+"/bycamera/"+groupname)==False):
+            return False
+        print("group directory OK")
+
+    if ( (os.path.isdir(path+"/byday/Monday")==False) or (os.path.isdir(path+"/byday/Tuesday")==False) or (os.path.isdir(path+"/byday/Thursday")==False) or (os.path.isdir(path+"/byday/Wednesday")==False) or (os.path.isdir(path+"/byday/Friday")==False) or (os.path.isdir(path+"/byday/Saturday")==False) or (os.path.isdir(path+"/byday/Sunday")==False)  ):
+        return False
+
+    if (directoryIsWritable(path+"/byday/Monday")==False):
+        return False
+
+    if (directoryIsWritable(path+"/byday/Tuesday")==False):
+        return False
+
+    if (directoryIsWritable(path+"/byday/Wednesday")==False):
+        return False
+		
+    if (directoryIsWritable(path+"/byday/Thursday")==False):
+        return False
+
+    if (directoryIsWritable(path+"/byday/Friday")==False):
+        return False
+
+    if (directoryIsWritable(path+"/byday/Saturday")==False):
+        return False
+    
+    return True
+
+
+
+##############################################
+
+###############################################
+def directoryIsWritable(path):
+    try:
+        testfile = tempfile.TemporaryFile(dir = path)
+        testfile.close()
+    except OSError as e:
+        return False
+    return True
+###############################################
+
+#############################################
+def Log(msg,throw=False):
+       	try:
+                now=datetime.now()
+                datestr=now.strftime("%Y-%m-%d %H:%M")
+                file=open(logfilepath,'a')
+                pid=str(os.getpid())
+
+                #if given just \n\n output it with no datetime prepended
+                if msg=="\n\n":
+                        file.write(str)
+                        file.close()
+                        return()
+
+                if msg[len(msg)-1]!="\n":
+                        msg=msg+"\n"
+                file.write(datestr+" "+"[bbeventmonitor] ["+cameraname+"] "+"[PID "+pid+"] "+msg)
+                file.close()
+        except IOError as e:
+                if (throw):
+                        raise e
+                else:
+                        print ("ERROR: Could not open Log file an IOError was thrown, ignoring")
+###############################################
+
+#############################################
+def LogEvent(code, cameraname,frame,throw=False):
+    now=datetime.now()
+    datestr=now.strftime("%Y-%m-%d %H:%M:%S")
+    
+             
+    try:
+        datestrforframe=now.strftime("%Y-%m-%d--%H%M%S") #avoid using colons as it conflicts with Windows permitted file names
+        dayname=calendar.day_name[now.weekday()]
+        if (eventlogtype=="D"):
+            framedirectory=eventlogpath+"/"+dayname
+        else:
+            framedirectory=eventlogpath
+        #Save the image, check if filename already exists (it might if clocks just went back for DST), if so add int to it
+        n=0
+        filepath=framedirectory+"/"+cameraname+"--"+datestrforframe+"--"+code+'.jpg'
+        while fileIsReadable(filepath):
+            n=n+1
+            filepath=framedirectory+"/"+cameraname+"--"+datestrforframe+"--"+code+'-'+str(n)+'.jpg'
+        frameresult=cv2.imwrite(filepath, frame)
+    except:
+        print ("ERROR: Could not write frame to Event Log directory, an exception was thrown")
+
+    if frameresult==False:
+        print ("ERROR: Could not write frame to Event Log directory, imwrite returned False")
+        
+    #log to live notify log
+    mydir=os.path.abspath(os.path.dirname(__file__)) #gives dir without trailing /
+    liveeventlogpath=mydir+"/mirrorwebroot/org.bigbrothercctv.bigbrother.aieventlog.txt"
+    try:
+        file=open(liveeventlogpath,'a')
+        file.write(datestr+" "+cameraname+" "+code+"\n")
+        file.close()
+    except IOError as e:
+        if (throw):
+            raise e
+        else:
+             print ("ERROR: Could not open Live Event Log file "+liveeventlogpath+" an IOError was thrown, ignoring")
+
+###############################################
+
+
+##################################################################################
+def LogIfOfInterest(id,frame,confidence,startX,startY,endX,endY,tid):
+    #must be called while holding eventLogLock
+    print("LogIfOfInterest [thread: "+str(tid)+"] checking "+id+" confidence:"+str(confidence)+" X1:"+str(startX)+" Y1:"+str(startY)+" X2:"+str(endX)+" Y2:"+str(endY))
+    
+    classPids=["person"] #ids  which relate to persons
+    classVids=["bicycle","van","bus", "car","motorcycle","truck"]  #ids which relate to vehicles
+
+    if id in classPids:
+        print("Found Person [thread: "+str(tid)+"]")
+        if shouldProcess("P"):
+            print("Not currently in an ignore timeframe [thread: "+str(tid)+"]")
+            if (isRepeatDetection("P",startX,startY,endX,endY)):
+                print("repeat detection, ignoring")
+            else:
+                LogEvent("P", cameraname,frame)
+                d=Detection("P",startX,startY,endX,endY,int(time.time()))
+                detections.append(d)
+        else:
+            print("Ignoring, within an ignore timeframe [thread: "+str(tid)+"]")
+        
+    if id in classVids:
+        
+        print("Found Vehicle")
+        if shouldProcess("V"):
+            print("Not currently in an ignore timeframe [thread: "+str(tid)+"]")
+            if (isRepeatDetection("V",startX,startY,endX,endY)):
+                print("repeat detection, ignoring")
+            else:
+                LogEvent("V", cameraname,frame)
+                d=Detection("V",startX,startY,endX,endY,int(time.time()))
+                detections.append(d)
+        else:
+            print("Ignoring, within an ignore timeframe [thread: "+str(tid)+"]")
+###############################################################################
+
+
+###############################################################################
+def isRepeatDetection(typecode,startX,startY,endX,endY):
+    #must be called while holding eventLogLock
+    prospect=Detection(typecode,startX,startY,endX,endY,int(time.time()))
+    for detection in detections:
+        if ( detection.isSameType(typecode) and (detection.calculateIoU(prospect)>iouThreshold)  ):
+            detection.updateTimestamp()
+            return True
+    return False
+##############################################################################
+
+
+
+###############################################################################
+def processFrame(threadidx,frame):
+    tsstart=time.time()
+    locks[threadidx].acquire()
+    
+    blob = cv2.dnn.blobFromImage(frame, 1/255.0, (640, 640), swapRB=True,crop=False)
+    dnn=models[threadidx]
+    dnn.setInput(blob)
+    outputs = dnn.forward(dnn.getUnconnectedOutLayersNames())
+
+    class_ids = []
+    confidences = []
+    boxes = []
+
+    width = frame.shape[1] 
+    height = frame.shape[0]
+
+    rows = outputs[0].shape[1]
+    image_height, image_width = frame.shape[:2]   
+    x_factor = width / 640
+    y_factor =  height / 640
+    
+    for r in range(rows):
+        row = outputs[0][0][r]
+        confidence = row[4]
+        if confidence >= confidencemin:
+            classes_scores = row[5:]
+            class_id = np.argmax(classes_scores)
+            if (classes_scores[class_id] > scoremin):
+                confidences.append(confidence)
+                class_ids.append(class_id)
+                cx, cy, w, h = row[0], row[1], row[2], row[3]
+                left = int((cx - w/2) * x_factor)
+                top = int((cy - h/2) * y_factor)
+                bwidth = int(w * x_factor)
+                bheight = int(h * y_factor)
+                box = np.array([left, top, bwidth, bheight])
+                boxes.append(box)               
+    
+    indices = cv2.dnn.NMSBoxes(boxes, confidences, confidencemin, nmsmin)
+
+    for i in indices:           
+        box = boxes[i]
+        left = box[0]
+        top = box[1]
+        bwidth = box[2]
+        bheight = box[3]             
+        
+
+        if markup:
+            #Draw text onto image at location xy 
+            cv2.rectangle(frame, (left, top), (left + bwidth, top + bheight), BLUE, 3*THICKNESS)
+            label = "{}:{:.2f}".format(classNames[class_ids[i]], confidences[i])
+            text_size = cv2.getTextSize(label, FONT_FACE, FONT_SCALE, THICKNESS)
+            dim, baseline = text_size[0], text_size[1]
+            # Use text size to create a BLACK rectangle.
+            cv2.rectangle(frame, (left,top), (left + dim[0], top + dim[1] + baseline), BLUE, cv2.FILLED);
+            # Display text inside the rectangle.
+            cv2.putText(frame, label, (left, top + dim[1]), FONT_FACE, FONT_SCALE, WHITE, THICKNESS, cv2.LINE_AA)
+    
+            x_top_left=left
+            y_top_left=top
+            x_bottom_right=(left+bwidth)-1
+            y_bottom_right=(top+bheight)-1
+        
+        eventLogLock.acquire()
+        LogIfOfInterest(classNames[class_ids[i]],frame,confidences[i],x_top_left,y_top_left,x_bottom_right,y_bottom_right,threadidx)
+        eventLogLock.release()
+    
+    tsend=time.time()
+    print("Thread "+str(threadidx)+" (thread sys id "+str(threading.get_ident())+") time taken: "+str(tsend-tsstart)+" sec")
+    locks[threadidx].release()
+
+##############################################################################
+
+##############################################################################
+def housekeeping():
+    #thread routine executed by housekeeping thread only
+    global starttimestr
+    while (exit_event.is_set()==False):
+        time.sleep(10)
+        eventLogLock.acquire()
+        beforesize=(len(detections))
+        #remove any which have not had timestamp updated for maxAge secs
+        detections[:] = [x for x in detections if not x.isOlderThan(maxAge)]
+        aftersize=len(detections)
+        diff=beforesize-aftersize
+        diff=str(diff)
+        print("========================================================================================================")
+        print(" ")
+        print(" ")
+        print("Program started:"+starttimestr)
+        print("housekeeping removed "+diff+" old detections. "+str(aftersize)+" active detections")
+        for detection in detections:
+        	print(detection)
+        print(" ")
+        print(" ")
+        print("========================================================================================================")
+        eventLogLock.release()
+##############################################################################
+
+###############################################################################
+def signalHandler(signum, frame):
+    print('Signal handler called with signal',signum)
+    exit_event.set()
+
+###############################################################################
+
+
+displayargcount=str((len(sys.argv)-1))
+if (len(sys.argv) < 9):
+    print ("Usage: "+sys.argv[0]+" /path/to/generallog /path/to/eventlog EVENTLOGBYTYPE CameraName GroupName CameraURL EventCodeA EventIgnoreTimesA ... EventCodeN EventIgnoreTimesN")
+    print("Example: "+sys.argv[0]+" /path /path D CamX GroupX rtsp://x.x.x.x P [HH:MM-HH:MM] V [HH:MM-HH:MM]/[HH:MM-HH:MM]")
+    print("\n")
+    print("[*] can be specified in place of EventIgnoreTimes to monitor at all times")
+    print("Example: "+sys.argv[0]+" /path /path D CamX GroupX rtsp://x.x.x.x [P] *")
+    print("\n")
+    print("You only specified "+displayargcount+" arguments")
+    exit(1)
+    
+if (  (len(sys.argv) > 9) and (len(sys.argv) % 2 == 0) ):
+	#If > 9 args specified args 10+ are extra events and ignore times and must be paired, so check we have odd num of args
+    print ("Usage: "+sys.argv[0]+" /path/to/generallog /path/to/eventlog EVENTLOGBYTYPE CameraName GroupName CameraURL EventCodeA EventIgnoreTimesA ... EventCodeN EventIgnoreTimesN")
+    print("Example: "+sys.argv[0]+" /path /path D CamX GroupX rtsp://x.x.x.x P [HH:MM-HH:MM] V [HH:MM-HH:MM]/[HH:MM-HH:MM]")
+    print("\n")
+    print("[*] can be specified in place of EventIgnoreTimes to monitor at all times")
+    print("Example: "+sys.argv[0]+" /path /path D CamX Group X rtsp://x.x.x.x P [*]")
+    print("\n")
+    print("You only specified "+displayargcount+" arguments, EventCodes and EventIgnoreTimes must be paired")
+    exit(1)    
+
+exit_event = threading.Event()
+
+
+logfilepath=sys.argv[1]
+eventlogpath=sys.argv[2]
+eventlogtype=sys.argv[3]
+cameraname=sys.argv[4]
+groupname=sys.argv[5]
+cameraurl=sys.argv[6] #this will be validated by checking if OpenCV successfully connects to it
+
+groupname=groupname.strip("\\")
+
+#these 3 arrays contain entry for each event correlated by index
+eventcodes=[]
+eventignorestr=[] #used during validation only
+eventignoretimes=[] #to be used after validation is complete
+
+####################################################################
+#Alter these 2 values to adjust accuracy of detection
+confidencemin=0.6 #minimum probability to filter weak detections
+iouThreshold=0.6 #threshold when detecting duplicates
+maxAge=5 #seconds since Detection obj last updated before it 
+scoremin=0.5#To filter low probability class scores where one object has been ID'd as > 1 class
+nmsmin=0.45
+####################################################################
+markup=False #useful for debugging, markup logged frame with detection
+BLUE   = (255,178,50)
+BLACK   = (0,0,0)
+WHITE   = (255,255,255)
+FONT_FACE = cv2.FONT_HERSHEY_SIMPLEX
+FONT_SCALE = 0.7
+THICKNESS = 1
+####################################################################
+
+
+
+
+
+
+
+
+#lock for access to LogIfOfInterest func & detections array
+eventLogLock=threading.Lock()
+
+#will store previously detected objects/events (protected by eventLogLock)
+detections=[]
+
+print("Got "+displayargcount+" arguments")
+
+mydir=os.path.abspath(os.path.dirname(__file__)) #gives dir without trailing /
+
+code=True
+for x in range(7,len(sys.argv)):
+    if (code):
+        eventcodes.append(sys.argv[x])
+        code=False
+        print("Got EventCode:"+sys.argv[x])
+    else:
+        eventignorestr.append(unescapeTimeString(sys.argv[x]))
+        print("Got EventIgnoreTimes:"+unescapeTimeString(sys.argv[x]))
+        code=True
+
+#validate CameraName before we start logging so its safe to put CameraName into log
+if onlyContainsLettersOrNumbers(cameraname)==False:
+    print("ERROR: CameraName is invalid, must only contain letters or numbers")
+    exit(1)
+
+
+try:
+	Log("bbeventmonitor starting for camera "+cameraname+"...",True)
+except IOError:
+	print("ERROR: Could not open log file "+logfilepath+", check the file permissions")
+	exit(1)
+
+#eventlogpath must not have trailing / so remove it if present
+if eventlogpath[len(eventlogpath)-1]=="/":
+    eventlogpath = eventlogpath[:-1]
+
+if groupname!="*":
+    if onlyContainsLettersOrNumbers(groupname)==False:
+        print("ERROR: GroupName is invalid, must only contain letters or numbers")
+        exit(1)
+
+
+
+if checkEventDirectory(eventlogpath,groupname,eventlogtype)==False:
+    print("ERROR: EventLog is not writable, check it contains a /byday directory containing a directory for each day (named /Monday, /Tuesday etc) and a /bycamera directory with a subdirectory for each group")
+    Log("ERROR: EventLog is not writable, check it contains a /byday directory containing a directory for each day (named /Monday, /Tuesday etc) and a /bycamera directory with a subdirectory for each group")
+    exit(1)
+
+if eventlogtype=="C":
+    if groupname=="*":
+        print("ERROR: EventLogBy is C (by camera) but GroupName is not set. GroupName cannot be * if logging by camera")
+        Log("ERROR: EventLogBy is C (by camera) but GroupName is not set. GroupName cannot be * if logging by camera")
+        exit(1)
+    eventlogpath=eventlogpath+"/bycamera/"+groupname
+elif eventlogtype=="D":
+    eventlogpath=eventlogpath+"/byday"
+else:
+    print("ERROR: EventLogBy is not valid must be D (by day) or C (by camera)")
+    Log("ERROR: EventLogBy is not valid must be D (by day) or C (by camera)")
+    exit(1)
+
+
+
+try:
+    elog = open(mydir+"/mirrorwebroot/org.bigbrothercctv.bigbrother.aieventlog.txt", "a")
+
+    if (elog.writable()==False):
+        print("ERROR: mirrorwebroot/org.bigbrothercctv.bigbrother.aieventlog.txt is not writable")
+        Log("ERROR: mirrorwebroot/org.bigbrothercctv.bigbrother.aieventlog.txt is not writable")
+        exit(1)
+    elog.close()
+except IOError as e:
+    print ("ERROR: Could not open mirrorwebroot/org.bigbrothercctv.bigbrother.aieventlog.txt an IOError was thrown")
+    exit(1)
+
+if len(eventcodes)!=len(eventignorestr):
+    Log("ERROR: Number of EventCodes and EventIgnoreTimes values do not match, if an event is to be monitored at all times specify * for EventIgnoreTimes")
+    print("ERROR: Number of EventCodes and EventIgnoreTimes values do not match, if an event is to be monitored at all times specify * for EventIgnoreTimes")	
+    exit(1)
+
+for code in eventcodes:
+    if ((code!="P") and (code!="V")):
+        Log("ERROR: Invalid event code: "+code)
+        print("ERROR: Invalid event code: ",code)
+        exit(1)
+
+
+if (  len(eventcodes) != len(set(eventcodes))   ):
+    Log("ERROR: Duplicate found in event codes")
+    print("ERROR: Duplicate found in event codes")
+    exit(1)
+
+counter=0
+for timestr in eventignorestr:
+    if timestr=="[*]":
+        Log("Event type "+eventcodes[counter]+" will be monitored at all times")
+        eventignoretimes.append("[*]")
+    else:
+        Log("Event type "+eventcodes[counter]+" has a time restriction, checking if times are valid...")
+        times=timestr.split("/")
+        for  txt in times:
+            #txt must be in format "[20:05-20:10]"
+            x = re.search("^\[[0-9][0-9]:[0-9][0-9]-[0-9][0-9]:[0-9][0-9]\]$", txt)
+            if x:
+                print("Ignore time  for event "+eventcodes[counter]+" matches format")
+                Log("Ignore time  for event "+eventcodes[counter]+" matches format")
+                
+                startendtime=splitStartEndTime(txt) #gives list ['HH:MM', 'HH:MM']
+                start=splitHoursMinutes(startendtime[0]) #gives list ['HH','MM']
+                end=splitHoursMinutes(startendtime[1]) #gives list ['HH','MM']
+
+
+                if isHour(start[0])==False:
+                    print("ERROR: Ignore time Start Hours not OK for event "+eventcodes[counter]+", check 00 to 23")
+                    Log("ERROR: Ignore time Start Hours not OK for event "+eventcodes[counter]+", check 00 to 23")
+                    exit(1)
+                if isMinute(start[1])==False:
+                    print("ERROR: Ignore time Start Minutes not OK for event "+eventcodes[counter]+", check 00 to 59")
+                    Log("ERROR: Ignore time Start Minutes not OK for event "+eventcodes[counter]+", check 00 to 59")
+                    exit(1)
+                if isHour(end[0])==False:
+                    print("ERROR: Ignore time End Hours not OK for event "+eventcodes[counter]+", check 00 to 23")
+                    Log("ERROR: Ignore time End Hours not OK for event "+eventcodes[counter]+", check 00 to 23")
+                    exit(1)
+                if isMinute(end[1])==False:
+                    print("ERROR: Ignore time End Minutes not OK for event "+eventcodes[counter]+", check 00 to 59")
+                    Log("ERROR: Ignore time End Minutes not OK for event "+eventcodes[counter]+", check 00 to 59")
+                    exit(1)
+    
+                if startEndSane(start[0],start[1],end[0],end[1])==False:
+                    print("ERROR: Ignore time End time for event "+eventcodes[counter]+" is before start time")
+                    Log("ERROR: Ignore time End time for event "+eventcodes[counter]+" is before start time")
+                    
+                if checkOverlap(times):
+                    print("ERROR Ignore times overlap for event "+eventcodes[counter])
+                    Log("ERROR Ignore times overlap for event "+eventcodes[counter])
+                    exit(1)
+               
+                print("Ignore time  for event "+eventcodes[counter]+" passed all checks")
+                Log("Ignore time  for event "+eventcodes[counter]+" passed all checks")
+                
+            else:
+                print("ERROR: Ignore time  for event "+eventcodes[counter]+" does not match format")
+                Log("ERROR: Ignore time  for event "+eventcodes[counter]+" does not match format")
+                exit(1)
+        eventignoretimes.append(times)
+    counter=counter+1
+
+#all validated, ready to to look for events
+Log("All parameters validated, ready to look for events...")
+
+#handle SIGINT from parent control script
+signal.signal(signal.SIGINT,signalHandler)
+
+
+
+cvversion=cv2.__version__
+cvversionelements=cvversion.split(".")
+
+
+if (int(cvversionelements[0])<5) and (int(cvversionelements[1])<10):
+    print("This program requires OpenCV version 4.10 or later, you are using "+cvversionelements[0]+"."+cvversionelements[1])
+    Log("This program requires OpenCV version 4.10 or later, you are using "+cvversionelements[0]+"."+cvversionelements[1])
+    exit(1)
+
+
+
+
+
+modeldir=mydir+"/onnx"
+ 
+#setup model
+modelPath = modeldir+"/bbrelease-100-640x640.onnx"
+# dictionary with the object class id and names on which the model is trained
+classNames = { 0: 'person',1: 'car', 2: 'truck', 3: 'motorcycle', 4: 'van',5: 'bus',6: 'bicycle'}
+
+if ( (fileIsReadable(modelPath)==False)    ):
+    print("ERROR: Could not open ONNX model files check the onnx directory exists and contains model files which are readable")
+    Log("ERROR: Could not open ONNX model files check the onnx directory exists and contains model files which are readable")
+    exit(1)
+    
+#setup one model (deep neural net) for each thread
+maxThreads=4
+models=[]
+locks=[]
+models.append(cv2.dnn.readNetFromONNX(modelPath))
+models.append(cv2.dnn.readNetFromONNX(modelPath))
+models.append(cv2.dnn.readNetFromONNX(modelPath))
+models.append(cv2.dnn.readNetFromONNX(modelPath))
+
+
+
+locks.append(threading.Lock())
+locks.append(threading.Lock())
+locks.append(threading.Lock())
+locks.append(threading.Lock())
+
+
+now=datetime.now()
+starttimestr=now.strftime("%Y-%m-%d %H:%M:%S")
+
+
+#setup and start housekeeping thread to trim detections[] array
+cleaner=threading.Thread(target=housekeeping, args=())
+cleaner.start()
+
+#load video
+camera = cv2.VideoCapture(cameraurl)
+if (camera.isOpened()==False):
+    print("ERROR: Could not open camera "+cameraurl)
+    Log("ERROR: Could not open camera "+cameraurl)
+    exit_event.set()
+    exit(1)
+
+print("Camera Opened")
+Log("Camera Opened")
+
+frameWidth  = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
+frameHeight = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+print("Frame size: W:"+str(frameWidth)+" H:"+str(frameHeight))
+
+
+f=0
+framereaderrorcount=0
+ftotal=0
+threadidx=0
+
+framestocheck=[1, 10, 20, 30]
+
+
+while(exit_event.is_set()==False):
+    #read a frame
+    ftotal=ftotal+1
+    ret, frame = camera.read()
+    if (ret):
+       #Got frame
+        framereaderrorcount=0
+        f=f+1
+        if ( f not in framestocheck):
+            continue
+        if (f==30):
+            f=0
+            continue
+        
+        print("Checking frame "+str(f))
+        worker = threading.Thread(target=processFrame, args=(threadidx,frame))
+        worker.start()
+        if (threadidx==(maxThreads-1)):
+            threadidx=0
+        else:
+            threadidx=threadidx+1
+        
+      
+    else:
+        print("could not read frame")
+        framereaderrorcount=framereaderrorcount+1
+        time.sleep(0.1)
+        if (framereaderrorcount>100):
+            print("ERROR: Failed to read 100 frames in succession, stream has died, ftotal="+str(ftotal))
+            Log("ERROR: Failed to read 100 frames in succession, stream has died. If this is happening for reasons other than camera/network problems it is due to lack of sufficient CPU power to prevent OpenCV buffer overflowing")
+            exit_event.set()
+            break
+            
+lx=1
+for l in locks:
+    print("Waiting to acquire lock "+str(lx))
+    l.acquire()
+    lx=lx+1
+print("Acquired all thread locks so all threads stopped")
+camera.release()
+cv2.destroyAllWindows()
+print("Exiting")
+Log("Exiting")
+exit(0)

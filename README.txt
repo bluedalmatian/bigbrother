@@ -2,11 +2,11 @@
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #		      
 # Copyright 2016-2025 Andrew Wood                                  #
 #                                                                  #
-#This copy of the README file relates to version 1.2		   #
+#This copy of the README file relates to version 2.0		   #
 #                                                                  #
 # www.bigbrothercctv.org			                   #
 #                                                                  #
-# Licensed under the GNU Public License v 3		           #
+# Licensed under the GNU Public License v 3			   #
 # The full license can be read at www.gnu.org/licenses/gpl-3.0.txt #
 # and is included in the License.txt file included with this	   #
 # software.                                                        #
@@ -180,6 +180,17 @@ variable.
 Ensure that the user BigBrother is running as, has write permission to the
 specified log file, and of course execute permission for ffmpeg.
 
+Optional key/values are:
+	speakevents true
+
+If speakevents is set to true the mirroring web interface with use
+voice synthesys to announce event detection in addition to playing
+the alert sound
+
+Note it is not currently recommended to use Firefox on Linux for viewing 
+if you are using the speakevents function as at the time of writing voice 
+synthesys in Firefox on Linux has poor pronunciation and the mute feature
+does not work. It is recommended to use Chrome/Chromium on Linux instead.
 
 The camera configuration file is where you define each camera you want
 BigBrother to work with and the actions you want it to take. Again this
@@ -204,10 +215,11 @@ e.g rtsp://cameraip/StreamID
 
 
 GroupName is an optional string containing only letters or numbers. It is 
-mandatory if using the RecordMode C (see below). It allows you to group
+mandatory if using the RecordMode C  or EventMode C (see below). It allows you to group
 recording files together in a folder and must therefore exist as a directory
 under your main recording directory's/bycamera subfolder (see above)
 If you dont want to specify a GroupName use *
+
 GroupNames can also be used to group related cameras together for display
 (see the URL Format section below)
 e.g Group1
@@ -228,9 +240,7 @@ this sets the stream format that BigBrother/ffmpeg will produce.
 
 Valid values are HLS which provides an H.264 stream at 10Mbits/sec using HTTP Live Streaming.
 Or can also specify a bit rate using HLS/x where x is the bitrate in megabits/sec and is a number
-from 0.1 to 20. This is useful if you are remotely monitoring CCTV over a connection with limited
-upstream speed such as a DSL line.
-
+from 0.1 to 20
 e.g HLS
 e.g HLS/0.5
 e.g HLS/2
@@ -239,7 +249,7 @@ e.g *
 Folder is the main parent directory you want the recordings to be placed in. This
 directory must contain mandatory sub directories as described above.
 
-ContainerType is the type of codec container used to store the recorded video.
+ContainerType is the type of codec container delivered by the camera. 
 Valid values are MP4 for an MPEG4 container, MXG for an MxPEG container,
 WEBM for a WebM container and MKC for a Matroska container. 
 
@@ -330,11 +340,25 @@ The URL used by the mirroring system accepts the following optional parameters:
 	Note that the use of sqaure brackets [] is required if you specify more than
         one value, otherwise only the last one will be acted on.
 
+
+	minimalUI=true
+	Displays just the video of the cameras, hides the toolbar, header, footer
+	and group and camera name titles so that the video utilises the full screen
+	space.
+
+
+	miniStatus=true
+	Only valid when minimalUI=true, this will put a mini status bar at bottom
+	of screen for event notifcations or error messages
+
+	ignoreEvents=true
+	Disabled notifcations of events, events are still logged but not displayed
+
 If you specify both a groupName and a cameraName and the camera is in that group, 
 it will only be shown once (as part of its groups display).
 
-An example of the URL in full:
-http://server/index.php?groupName[]=Group1&groupName[]=Group2&cameraName[]=CameraX&cameraName[]=CameraY&perRow=5
+An example of the URL:
+http://server/index.php?groupName[]=Group1&groupName[]=Group2&cameraName[]=CameraX&cameraName[]=CameraY&perRow=5&minimalUI=true&miniStatus=true
 
 If no parameters are specified all cameras setup in the config file for mirroring will be shown
 
@@ -365,6 +389,69 @@ both running under the same username/id, you therefore need to take an additiona
 	3. Put the webservers username into the cctvwriters group
 
 
+================
+EVENT MONITORING
+================
+
+From version 2.0 BigBrother provides an event monitoring feature using Artifical Intelligence to detect events
+(presence of people or vehicles) and to log it and provide a notification alert in the mirroring web interface.
+
+This is configurable on a per camera basis, allowing you to specify which cameras to monitor, whether to look 
+for people, vehicles or both, and optionally specify time periods during which the presence of people or vehicles
+is to be ignored.
+
+To enable this feature an optional parameter is specified in the main config file:
+cameraeventconf /usr/local/bigbrother/bigbrother_event.conf
+
+This gives the path to a config file which defines which cameras to monitor and for which events.
+This file contains one line for each camera you want to monitor in the following format:
+
+CameraName LogDirectory LogBy EventCode1 IgnoreTime1
+
+CameraName must match a camera defined in the camera config file
+LogDirectory is the path to where you want the event logged. This directory must contain a subdirectoy tree
+as explained later.
+
+LogBy is either D or C (Log by Day or by Camera) and will be explained later.
+
+EventCode1 is either P or V to detect People or Vehicles
+
+IgnoreTime1  is a time range during which EventCode1 is to be ignored or [*] if this event is to be
+monitored at all times. Time ranges are in format [HH:MM-HH:MM]
+Multiple time ranges can be specified separated by / e.g [08:30-12:00]/[13:00-17:00]
+
+For example, monitor FrontEntrance for people at all times, vehicles from 6PM to 8AM (ignored 8AM to 6PM)
+FrontEntrance /cctvevents D P [*] V [08:00-18:00]
+
+In this example events are logged to /cctvevents by day (D).
+The directory structure of /cctvevents is similar to the recording directory tree.
+It must contain a /byday and /bycamera directory, and the /byday directory must have a subdirectory for 
+each day of the week. /bycamera must contain a subdirectory for each camera group
+
+Likewise the persmissions and ownership should be set the same as the recording directory tree.
+
+When an event is detected BigBrother will save a snapshot JPEG image of the camera to the log directory
+The filename will be of the format CameraName--YYYY-MM-DD--HHMM--EventCode.jpg
+
+If mode is D then events a are logged to the appropriate directory under 'byday' and old files are deleted
+after 7 days automatically. 
+
+If mode is C then events are logged to 'bycamera/GroupName' and are left there indefinately. It is the 
+responsibility of the system administrator to delete old files.
+
+In addition an audiable and visual alert will be given on the mirroring webpage. A facility is available
+on the webpage to view the last 1000 event notifications.
+
+Note that in order for the alert to function correctly you must configure PHP with the correct server
+timezone in php.ini if this is not set it will default to UTC, which even if you are in the UK will
+cause problems as it ignores Daylight Savings time (BST). In the UK you should set it to "Europe/London".
+For other countries see the list at: https://www.php.net/manual/en/timezones.php
+
+
+
+Remote access to the events log can be provided via Samba in the same way as the recording folder is, so that
+it can be accessed and the images easily viewed from any Windows PC, Linux PC or Mac. The instructions in
+Appendix A which detail how to set up Samba to access the recordings can also be applied to create an events share.
 
 ====================================================
 APPENDIX A - Remote access to recordings using Samba
@@ -394,7 +481,7 @@ On FreeBSD the Samba 4 package is called samba4x where x is the minor version, c
 samba43
 
 Below is a sample smb4.conf file suitable for a standalone file server for accessing BigBrother
-recordings. Comments are lines starting with a #
+recordings and events. Comments are lines starting with a #
 
 #global section defines server wide settings
 [global]
@@ -422,7 +509,7 @@ recordings. Comments are lines starting with a #
 #it is read only for security against CCTV deletion
 [cctvrecordings]
         comment = CCTV recordings file share
-	#the directory we want to serve up
+		#the directory we want to serve up
         path = /cctvrecordings
         read only = yes
         guest ok = no
@@ -433,6 +520,21 @@ recordings. Comments are lines starting with a #
         validusers = @cctvviewers
         adminusers = root
 
+#this is a file share called cctvrecordings
+#accessible by anyone in the cctvviewers group
+#it is read only for security against CCTV deletion
+[cctvevents]
+        comment = CCTV events file share
+		#the directory we want to serve up
+        path = /cctvevents
+        read only = yes
+        guest ok = no
+        browseable = yes
+        writeable = no
+        create mode = 0660 #default for new files = rw-rw----
+        directory mode = 0770 #default for new sub dirs = rwxrwx---
+        validusers = @cctvviewers
+        adminusers = root
 
 #End of smb4.conf
 
@@ -483,3 +585,17 @@ To build a Debian package you will need checkinstall which can be installed usin
 and GNU Make
 
 To build an RPM cd to the source directory and run make rpm
+
+===============================================================
+APPENDIX C - System Requirements
+===============================================================
+
+Your mileage may vary but as a rough guide on RAM usage, a mirroring process uses around 150MB per camera,
+an event monitoring process uses around 800MB per camera, a recording process uses around 50MB per camera.
+
+An event monitoring process requires at least 2 CPU cores per camera.
+
+A modern 4 core CPU will handle mirroring and recording for around 4 cameras and event monitoring for 2 cameras
+simultaneously.
+
+This will vary depending on what else the system is handling and the bitrate and resolution of the cameras.
