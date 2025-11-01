@@ -40,8 +40,6 @@ class Camera
 		$len=sizeof($elements);
 		if ($len< 5)
 		{
-			
-
 			$this->initOK=false;
 			return;
 		}
@@ -55,7 +53,7 @@ class Camera
 		$this->mirror=$elements[4];
 
 		$this->initOK=true;
-		
+
 
 	}
 	function initCheck()
@@ -82,13 +80,15 @@ class Camera
 	
 		if (  (strlen($this->mirror)>2) && (substr($this->mirror,0,3)=="HLS")  )
 		{
-			echo("<video class='video-js vjs-default-skin' width=640 height=480 controls autoplay muted data-setup='{}'>");
+			echo("<div id=".$this->name."_pauseoverlay style=\"display:none; position:relative; background-image: url(pausedOverlayBackground.png);\"><img src=pausedOverlay.gif width=64 height=64></div>");
+			echo("<video class='video-js vjs-default-skin' width=640 height=480 controls autoplay muted data-setup='{\"userActions\": {\"click\": false}}' id=".$this->name.">");
 
     			echo("<source src='".$this->name.".m3u8' type='application/x-mpegURL'>");
-
+				
 			echo("</video>");
 			
-			echo("<p>".$this->name."</p>");
+			echo("<p class=cameraname>".$this->name."</p>");
+			
 		}
 		
 	}

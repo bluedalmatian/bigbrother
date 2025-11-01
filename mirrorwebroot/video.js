@@ -10,6 +10,9 @@
  * <https://github.com/mozilla/vtt.js/blob/main/LICENSE>
  */
 
+
+
+
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -26045,19 +26048,21 @@
     ;
 
     _proto.handleTechClick_ = function handleTechClick_(event) {
+		
       if (!isSingleLeftClick(event)) {
         return;
       } // When controls are disabled a click should not toggle playback because
       // the click is considered a control
-
+	
 
       if (!this.controls_) {
         return;
       }
-
+		
       if (this.paused()) {
         silencePromise(this.play());
       } else {
+		  
         this.pause();
       }
     }
@@ -63639,6 +63644,7 @@
   var initPlugin = function initPlugin(player, options) {
     var lastCalled = 0;
     var seekTo = 0;
+	
     var localOptions = videojs$1.mergeOptions(defaultOptions, options);
     player.ready(function () {
       player.trigger({
@@ -63687,6 +63693,7 @@
         name: 'hls-error-reload'
       });
       player.play();
+	  
     };
     /**
      * Attempt to get a source from either the built-in getSource function

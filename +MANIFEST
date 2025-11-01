@@ -1,5 +1,5 @@
 name: "bigbrother";
-version: "1.3";
+version: "2.0";
 origin: "multimedia/bigbrother";
 comment: "BigBrother CCTV recording & mirroring system";
 abi = "FreeBSD:*:*";
@@ -59,14 +59,17 @@ desc: <<EOD
 	*Runs on Unix-like operating systems with a Bourne Shell, Python run time
         and (optionally) a webserver supporting PHP if you want to do mirroring.
         Also requires an intallation of the ffmpeg command line program.
+        
+        *Event monitoring for detection of People and Vehicles
 
  
 EOD
 categories: ["multimedia"]
 deps: {
-  ffmpeg: {origin: "multimedia/ffmpeg", version: "5.0"};
-  python: {origin: "lang/python", version: "3.3"};
+  ffmpeg: {origin: "multimedia/ffmpeg", version: "5.1"};
+  python: {origin: "lang/python", version: "3.10"};
   bash: {origin: "shells/bash" ,version: "3.0"};
+  python-opencv: {origin: "graphics/opencv-python" ,version: "4.10"};
 }
 files: {
  /usr/local/bigbrother/README.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 644};
@@ -74,9 +77,13 @@ files: {
  /usr/local/bigbrother/bblogger: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/bigbrother.conf: {uname: 'bigbrother', gname: 'cctvwriters',perm: 660};
  /usr/local/bigbrother/bigbrother_camera.conf: {uname: 'bigbrother', gname: 'cctvwriters',perm: 660};
+ /usr/local/bigbrother/bigbrother_event.conf: {uname: 'bigbrother', gname: 'cctvwriters',perm: 660};
  /usr/local/bigbrother/bigbrotherd: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/mirror_hls.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/mirror_mjpg.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/bbeventmonitor_y5onnx.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/bbeventmonitor_y5onnx: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/markup_y5onnx.py: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/rc.bigbrother: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/record_bycamera.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/record_byday.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
@@ -98,6 +105,8 @@ files: {
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_namedgroups.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.functions.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.hup.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/onnx/24102025-100-640x640.onnx: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
+ /usr/local/bigbrother/onnx/classes.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
 }
 
 scripts: {
@@ -127,6 +136,8 @@ chown -R bigbrother:cctvviewers /usr/local/bigbrother/mirrorwebroot
 chmod 755 /usr/local/bigbrother
 chmod 751 /usr/local/bigbrother/mirrorwebroot
 chmod g+s /usr/local/bigbrother/mirrorwebroot
+chown -R bigbrother:cctvwriters /usr/local/bigbrother/onnx
+chmod 751 /usr/local/bigbrother/onnx
 EOD;
 
 	post-deinstall = <<EOD

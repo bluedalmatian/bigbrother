@@ -7,7 +7,7 @@
 # Copyright 2016-2025 Andrew Wood                                  #
 #                                                                  #
 # The main bigbrother daemon. This double forks a child process to #
-# return to shell                                                  #
+# return to shell 						                           #
 #                                                                  #
 # bigbrothercctv.org	                                           #
 #                                                                  #
@@ -27,7 +27,8 @@
 
 
 
-import sys, os, time, signal, tempfile, re, datetime, pwd, subprocess, shutil
+import sys, os, time, signal, tempfile, re, datetime, pwd, subprocess, shutil, threading, calendar
+
 
 #######################################
 class ParseException(Exception):
@@ -38,7 +39,7 @@ class ParseException(Exception):
 #######################################
 #System wide knobs
 
-bbversion=1.3 ##only change version no here and in no other file
+bbversion=2.0 ##only change version no here and in no other file
 exedir=os.path.dirname(os.path.realpath(__file__)) ##gives dir with no trailing /
 globalconffile=exedir+"/bigbrother.conf"
 dashfspecified=False
@@ -55,6 +56,8 @@ logfilepath=""
 ffmpegcommand=""
 user="" #this is the username we will try to switch to
 allownewfilefromweb=False
+eventconffilepath="" #this is the camera event monitoring conf file
+speakevents=False
 
 ##this knob to be calculated automatically
 mirrorwebroot=exedir+"/mirrorwebroot"
@@ -63,7 +66,105 @@ mirrorwebroot=exedir+"/mirrorwebroot"
 #if the global options for doing mirroring (such as webroot dir) are not valid this flag will trap it if mirroring is requested later
 mirroringconfigvalid=False
 
+#shutdown flag
+exit_event = threading.Event()
+
+eventlogtrimmer=0
+
 #######################################
+
+
+##############################################################################
+def eventlogtrimmer():
+    #thread routine executed by eventlogtrimmer thread only
+    #trim mirrorwebroot/org.bigbrothercctv.bigbrother.aieventlog.txt to max 1000 entries    
+    Log("eventlogtrimmer thread starting")
+
+    while (exit_event.is_set()==False):
+        now=datetime.datetime.now()
+        minutes=now.strftime('%M')
+        minutes=int(minutes)
+        if minutes > 58 and minutes < 2:
+            sleepsecs=(60*60)+(60*5) #sleep for 1 hr 5 mins to avoid running on the hour when CPU is busy doib recording file changeovers
+        else:
+            sleepsecs=(60*60)
+        time.sleep(sleepsecs)
+        start=time.time()
+        lines=[]
+        try:
+            elogfile=open(mirrorwebroot+"/org.bigbrothercctv.bigbrother.aieventlog.txt",'r+')
+            lines=elogfile.readlines()
+            numlines=len(lines)-1 #ign comment line at top
+            cutoffidx=numlines-1000 #line no from which we keep entries from there to bottom
+            if numlines>1000:
+                keep=lines[cutoffidx:]
+                elogfile.truncate(0)
+                elogfile.seek(0)
+                elogfile.write("#THIS FILE IS GENERATED AUTOMATICALLY BY BIGBROTHER WHEN AI EVENT MONITORING IS ENABLED\n")
+                for keepline in keep:
+                    elogfile.write(keepline)
+                elogfile.close()
+                end=time.time()
+                duration=end-start
+                duration=round(duration,3)
+                Log("eventlogtrimmer took "+str(duration)+" secs (trimmed)")
+            else:
+                elogfile.close()
+                end=time.time()
+                duration=end-start
+                duration=round(duration,3)
+                Log("eventlogtrimmer took "+str(duration)+" secs (nothing to trim)")
+                continue
+            
+        except IOError:
+            Log("ERROR: eventlogtrimmer could not trim event log down to 1000 lines\n")
+        
+        
+    Log("eventlogtrimmer thread exiting")
+##############################################################################
+
+
+###########################################################################################
+def removeOldFiles(direc,todaydate):
+    #Remove files in dir whose file name does not contain todaydate, which is todays date
+    #in format YYYY-MM-DD
+    regex=re.compile("^.+--"+todaydate+"--")
+    for root, dirs, files in os.walk(direc):
+        for file in files:
+            if regex.match(file)==None:
+                os.remove(direc+"/"+file)
+############################################################################################
+
+############################################################################################
+def eventlogcleaner(eventlogdirs):
+    #thread func executed by eventlog tidying thread, note this separate from eventlogtimmer thread
+    #this trims the logged frames in each cams log dir, eventlogtrimmer trims the txt log in mirrorwebroot
+    Log("eventlogcleaner thread starting")
+    while (exit_event.is_set()==False): 
+        now=datetime.datetime.now()
+        datestr=now.strftime("%Y-%m-%d")
+        dayname=calendar.day_name[now.weekday()]
+        for direc in eventlogdirs:
+            fulldir=direc+"/byday/"+dayname
+            try:
+                Log("eventlogcleaner thread cleaning old files in "+fulldir)
+                removeOldFiles(fulldir,datestr)
+            except:
+                Log("ERROR: eventlogcleaner thread could not remove old files")
+        #calc no of secs to midnight
+        hrstr = now.strftime("%H")
+        minstr = now.strftime("%M")
+        secstr = now.strftime("%S")
+        hrstogo=23-int(hrstr)
+        minstogo=59-int(minstr)
+        secstogo=59-int(secstr)	
+        sleeptime=secstogo+(minstogo*60)+((hrstogo*60)*60)+90 #set time to wake just (90 sec) after midnight
+        Log("eventlogcleaner thread sleeping for "+str(sleeptime)+" secs")
+        time.sleep(sleeptime)
+        Log("eventlogcleaner thread woke")
+    Log("eventlogcleaner thread exiting")
+############################################################################################
+
 
 #######################################
 def cleanup():
@@ -86,78 +187,91 @@ def fileIsExe(filepath):
 
 #######################################
 def readGlobalConfig():
-	global ffmpegcommand
-	global logfilepath
-	global conffilepath
-	global user
-	global allownewfilefromweb
-	global mirrorwebroot
+    global ffmpegcommand
+    global logfilepath
+    global conffilepath
+    global user
+    global allownewfilefromweb
+    global mirrorwebroot
+    global eventconffilepath
 
-	try:
-        	conffile=open(globalconffile,'r')
-        	lines=conffile.readlines()
-        	conffile.close()
-	except IOError:
-		print ("Could not open global conf file "+globalconffile)
-		exit(1)
-	lineno=0
-	for line in lines:
-		lineno=lineno+1
-		if line[0]=='#':
-			continue
-		if line[0]=='\n':
-			continue
-		try:
-			cols=line.split()
-			if (cols[0]=="cameraconf"):
-				conffilepath=cols[1]
-			elif (cols[0]=="ffmpegcommand"):
-				ffmpegcommand=cols[1]
-			elif (cols[0]=="logfile"):
-				logfilepath=cols[1]
-			elif (cols[0]=="user"):
-				user=cols[1]
-			elif (cols[0]=="allownewfilefromweb"):
-				cols[1]=cols[1].lower()
-				if (cols[1]=="true"):
-					allownewfilefromweb=True
-				else:
-					allownewfilefromweb=False
-			else:
-				raise ParseException("unknown keyword "+cols[0])
+    try:
+            conffile=open(globalconffile,'r')
+            lines=conffile.readlines()
+            conffile.close()
+    except IOError:
+        print ("Could not open global conf file "+globalconffile)
+        exit(1)
+    lineno=0
+    for line in lines:
+        lineno=lineno+1
+        if line[0]=='#':
+            continue
+        if line[0]=='\n':
+            continue
+        try:
+            cols=line.split()
+            if (cols[0]=="cameraconf"):
+                conffilepath=cols[1]
+            elif (cols[0]=="ffmpegcommand"):
+                ffmpegcommand=cols[1]
+            elif (cols[0]=="logfile"):
+                logfilepath=cols[1]
+            elif (cols[0]=="cameraeventconf"):
+                eventconffilepath=cols[1]
+            elif (cols[0]=="user"):
+                user=cols[1]
+            elif (cols[0]=="allownewfilefromweb"):
+                cols[1]=cols[1].lower()
+                if (cols[1]=="true"):
+                    allownewfilefromweb=True
+                else:
+                    allownewfilefromweb=False
+            elif (cols[0]=="speakevents"):
+                cols[1]=cols[1].lower()
+                if (cols[1]=="true"):
+                    speakevents=True
+                else:
+                    speakevents=False
+            else:
+                raise ParseException("unknown keyword "+cols[0])
 
-		except ParseException as e:
-			print ("Syntax error in "+globalconffile+" on line "+str(lineno))
-			print ("\n")
-			print (e.msg)
-			exit(1)
+        except ParseException as e:
+            print ("Syntax error in "+globalconffile+" on line "+str(lineno))
+            print ("\n")
+            print (e.msg)
+            exit(1)
 ############################################
 
 pids=[] #List of PIDs of each (all) action subprocess
 recordingpids=[] #List of PIDs of recording (only) subprocesses
 cameras=[] #List of dictionaries of the configs of each cam
 
+eventtasks=[] #List of dictionaries with the event monitoring configs of each cam
+eventlogdirstrings=[] #List of paths to top level log directories for each cam
+
 ############################################
 def handler(signum, frame):
-	if signum==signal.SIGHUP:
+    if signum==signal.SIGHUP:
 		#forward SIGHUP to record subprocesses only
 		#and only if allownewfilefromweb==True
-		if (allownewfilefromweb==False):
-			 Log("Got SIGHUP but allownewfilefromweb is set to False, ignoring")
-			 return
-		Log("Got signal "+str(signum))
-		for cpid in recordingpids:
-                        Log("Forwarding signal to OS PID: "+str(cpid))
-                        os.kill(cpid, signal.SIGHUP)		
-	else:
+        if (allownewfilefromweb==False):
+            Log("Got SIGHUP but allownewfilefromweb is set to False, ignoring")
+            return
+        Log("Got signal "+str(signum))
+        for cpid in recordingpids:
+            Log("Forwarding signal to OS PID: "+str(cpid))
+            os.kill(cpid, signal.SIGHUP)		
+    else:
 		#forward SIGINT to all subprocesses
-		Log("Got signal "+str(signum))
-		for cpid in pids:
-			Log("Forwarding signal to OS PID: "+str(cpid))
-			os.kill(cpid, signal.SIGINT)
-		cleanup()
-		Log(" bigbrotherd finished handling signal, exiting")
-		sys.exit()
+        Log("Got signal "+str(signum))
+        for cpid in pids:
+            Log("Forwarding signal to OS PID: "+str(cpid))
+            os.kill(cpid, signal.SIGINT)
+        cleanup()
+        exit_event.set()
+        Log(" bigbrotherd finished handling signal, exiting")
+        sys.exit()
 #############################################
 
 #############################################
@@ -211,6 +325,370 @@ def onlyContainsLettersOrNumbers(str):
 	else:
 		return True
 ##############################################
+
+###############################################
+def getCameraGroup(name):
+    #Return group name for camera name or False if not found
+    for cam in cameras:
+        if cam['cam']==name:
+            return cam['group']
+    return False
+###############################################
+
+###############################################
+def getCamera(name):
+    #Return {dict} for camera name or False if not found
+    for cam in cameras:
+        if cam['cam']==name:
+            return cam
+    return False
+###############################################
+
+
+
+
+
+##############################################
+# Convert a '[HH:MM-HH:MM]' string into (start, end) datetime objects
+def parseRange(r):
+	r = r.strip('[]')
+	start_str, end_str = r.split('-')
+	base_date =datetime.datetime(2000, 1, 1)  # arbitrary date
+	start = datetime.datetime.strptime(start_str, "%H:%M").replace(year=2000, month=1, day=1)
+	end = datetime.datetime.strptime(end_str, "%H:%M").replace(year=2000, month=1, day=1)
+
+	# If end time is earlier than start, it's an overnight range
+	if end <= start:
+		end += datetime.timedelta(days=1)
+
+	return start, end
+##############################################    
+    
+##############################################
+# Check for overlaps
+def checkOverlap(ranges):
+	base_date = datetime.datetime(2000, 1, 1)
+	intervals = []
+
+	for r in ranges:
+		r = r.strip("[]")
+		start_str, end_str = r.split("-")
+		start = datetime.datetime.strptime(start_str, "%H:%M").replace(year=2000, month=1, day=1)
+		end = datetime.datetime.strptime(end_str, "%H:%M").replace(year=2000, month=1, day=1)
+		if end <= start:
+			end += datetime.timedelta(days=1)
+		intervals.append((start, end))
+		intervals.append((start + datetime.timedelta(days=1), end + datetime.timedelta(days=1)))
+
+	for i in range(len(intervals)):
+		for j in range(i + 1, len(intervals)):
+			s1, e1 = intervals[i]
+			s2, e2 = intervals[j]
+			if s1 < e2 and s2 < e1:
+				return True
+	return False
+##############################################
+##############################################
+def splitStartEndTime(txt):
+	components1 = txt.split("-")
+	start=components1[0].replace("[", "")
+	end=components1[1].replace("]", "")
+	components2=[start,end]
+	return components2
+##############################################
+
+############################################## 
+def splitHoursMinutes(txt):
+	components = txt.split(":")
+	return components
+##############################################
+
+
+##############################################
+def isHour(txt):
+	hr=int(txt)
+	if hr>=0 and hr <=23:
+		return True
+	else:
+		return False;
+##############################################        
+        
+##############################################       
+def isMinute(txt):
+	minutes=int(txt)
+	if minutes>=0 and minutes <=59:
+		return True
+	else:
+		return False;
+############################################## 
+
+ 
+##############################################      
+def startEndSane(starthr,startmin,endhr,endmin):
+	starthr=int(starthr)
+	startmin=int(startmin)
+	endhr=int(endhr)
+	endmin=int(endmin)
+	
+	if (starthr>endhr):
+		return False
+	if ((starthr==endhr) and (startmin>=endmin)):
+		return False
+	return True;
+##############################################
+
+##############################################
+def checkEventDirectory(path,groupname):
+    #folder must exist
+    if (os.path.isdir(path)==False):
+        return False
+    if (os.path.isdir(path+"/bycamera/"+groupname)==False):
+        return False
+
+    if ( (os.path.isdir(path+"/byday/Monday")==False) or (os.path.isdir(path+"/byday/Tuesday")==False) or (os.path.isdir(path+"/byday/Thursday")==False) or (os.path.isdir(path+"/byday/Wednesday")==False) or (os.path.isdir(path+"/byday/Friday")==False) or (os.path.isdir(path+"/byday/Saturday")==False) or (os.path.isdir(path+"/byday/Sunday")==False)  ):
+        return False
+
+    if (directoryIsWritable(path+"/byday/Monday")==False):
+        return False
+
+    if (directoryIsWritable(path+"/byday/Tuesday")==False):
+        return False
+
+    if (directoryIsWritable(path+"/byday/Wednesday")==False):
+        return False
+		
+    if (directoryIsWritable(path+"/byday/Thursday")==False):
+        return False
+
+    if (directoryIsWritable(path+"/byday/Friday")==False):
+        return False
+
+    if (directoryIsWritable(path+"/byday/Saturday")==False):
+        return False
+    
+    return True
+
+
+
+##############################################
+
+###########################################
+def readEventConfig():
+    try:
+        conffile=open(eventconffilepath,'r')
+        lines=conffile.readlines()
+        conffile.close()
+    except IOError:
+        print("Could not open camera event conf file "+eventconffilepath)
+        Log("Could not open camera event conf file "+eventconffilepath)
+        exit(1)
+    lineno=0
+    for line in lines:
+        lineno=lineno+1
+        if line[0]=='#':
+            continue
+        if line[0]=='\n':
+            continue
+        try:
+            eventtasks.append(parseEventLine(line))
+        except ParseException as e:
+            print ("Syntax error in "+eventconffilepath+" on line "+str(lineno))
+            print ("\n")
+            print (e.msg)
+            Log("Syntax error in "+eventconffilepath+" on line "+str(lineno)+" :"+e.msg)
+            
+            exit(1)
+###########################################
+
+##########################################
+def parseEventLine(line):
+    cols=line.split()
+    if ( (len(cols)!=5) and(len(cols)!=7) ):
+        errstr="Each camera event monitoring action definition (line) needs 5 or 7 parameters, separated by spaces"
+        raise ParseException(errstr+" found: "+str(cols))
+        
+    
+    action={}
+    eventcodes=[]
+    eventignores=[]
+    idx=0
+    flipflop=0
+    for col in cols:
+        if idx==0:
+            action['cam']=col
+        elif idx==1:
+            action['eventlogfolder']=col
+        elif idx==2:
+            action['eventlogmode']=col
+        #cols3+ are events/ignore time pairs
+        if idx>2:
+            if flipflop==0:
+                eventcodes.append(col)
+                flipflop=1
+            else:
+                eventignores.append(col)
+                flipflop=0
+        idx=idx+1
+    
+    if (len(eventcodes)!=len(eventignores)):
+        raise ParseException("Each Event code must be accompanied by an ignore time string or [*] if it is to be monitored at all times, eventcodes:"+str(eventcodes)+" eventignores:"+str(eventignores))
+        
+    action['events']=eventcodes
+    action['eventignoretimes']=eventignores
+    
+    if (onlyContainsLettersOrNumbers(action['cam'])==False):
+        raise ParseException("Camera Name must only contain letters and or numbers, found:"+action['cam'])
+    
+    group=getCameraGroup(action['cam'])
+    if (group==False):
+        raise ParseException("Camera Name defined for event monitoring in the camera event config file must match a camera in the camera config file")
+   
+    action['group']=group
+    
+    
+    
+    
+    #action['eventlogfolder'] must not have trailing / so remove it if present
+    if (action['eventlogfolder'])[len(action['eventlogfolder'])-1]=="/":
+        (action['eventlogfolder'])=(action['eventlogfolder'])[:-1]
+
+
+        
+    if (checkEventDirectory(action['eventlogfolder'],group)==False):
+        raise ParseException("Event Log folder must be readable and contain a /byday folder with a subfolder for each day of week, and a /bycamera folder with a subfolder for each group")
+        
+    if ( (action['eventlogmode']!="D") and (action['eventlogmode']!="C") ):
+        raise ParseException("Event Log mode must be D or C")
+        
+    for code in action['events']:
+        if code!="P" and code!="V":
+             raise ParseException("Event code mode must be P or V")
+	
+        if (os.path.isdir(action['eventlogfolder'])==False):
+            raise ParseException(action['eventlogfolder']+" must exist")
+                        
+        if (os.path.isdir(action['eventlogfolder']+"/bycamera")==False):
+            raise ParseException(action['eventlogfolder']+" must contain a bycamera folder")
+
+        if ( (os.path.isdir(action['eventlogfolder']+"/byday/Monday")==False) or (os.path.isdir(action['eventlogfolder']+"/byday/Tuesday")==False) or (os.path.isdir(action['eventlogfolder']+"/byday/Thursday")==False) or (os.path.isdir(action['eventlogfolder']+"/byday/Wednesday")==False) or (os.path.isdir(action['eventlogfolder']+"/byday/Friday")==False) or (os.path.isdir(action['eventlogfolder']+"/byday/Saturday")==False) or (os.path.isdir(action['eventlogfolder']+"/byday/Sunday")==False)  ):
+            raise ParseException(action['eventlogfolder']+" must contain a byday folder with subfolders for each day")
+
+
+        if (directoryIsWritable(action['eventlogfolder']+"/byday/Monday")==False):
+            raise ParseException(action['eventlogfolder']+"/byday/Monday is not writable")
+
+        if (directoryIsWritable(action['eventlogfolder']+"/byday/Tuesday")==False):
+            raise ParseException(action['eventlogfolder']+"/byday/Tuesday is not writable")
+
+        if (directoryIsWritable(action['eventlogfolder']+"/byday/Wednesday")==False):
+            raise ParseException(action['eventlogfolder']+"/byday/Wednesday is not writable")
+		
+        if (directoryIsWritable(action['eventlogfolder']+"/byday/Thursday")==False):
+            raise ParseException(action['eventlogfolder']+"/byday/Thursday is not writable")
+
+        if (directoryIsWritable(action['eventlogfolder']+"/byday/Friday")==False):
+            raise ParseException(action['eventlogfolder']+"/byday/Friday is not writable")
+
+        if (directoryIsWritable(action['eventlogfolder']+"/byday/Saturday")==False):
+            raise ParseException(action['eventlogfolder']+"/byday/Saturday is not writable")
+
+
+
+
+    if (action['eventlogmode']=="C"):
+        #need to check group folder exists & we can write to it
+        if (os.path.isdir(action['eventlogfolder']+"/bycamera/"+action['group'])==False):
+            raise ParseException("Group Name must exist as a folder under "+action['eventlogfolder']+"/bycamera")
+
+        if (directoryIsWritable(action['eventlogfolder']+"/bycamera/"+action['group'])==False):
+            raise ParseException(action['eventlogfolder']+"/bycamera/"+action['group']+" is not writable")
+		
+        
+        # check eventignore strings to ensure it is a valid string [*] or [HH:MM-HH:MM] or [HH:MM-HH:MM]/[HH:MM-HH:MM]
+        
+    if (  len(eventcodes) != len(set(eventcodes))   ):
+        raise ParseException("Duplicate found in event codes")
+        
+    okcount=0
+    counter=0
+    for timestr in action['eventignoretimes']:
+        if timestr=="[*]":
+            okcount=okcount+1
+        else:
+            #Event type has a time restriction, checking if times are valid...
+            times=timestr.split("/")
+            for  txt in times:
+                #txt must be in format "[20:05-20:10]"
+                x = re.search("^\[[0-9][0-9]:[0-9][0-9]-[0-9][0-9]:[0-9][0-9]\]$", txt)
+                if x:
+                    #matches format
+                
+                    startendtime=splitStartEndTime(txt) #gives list ['HH:MM', 'HH:MM']
+                    start=splitHoursMinutes(startendtime[0]) #gives list ['HH','MM']
+                    end=splitHoursMinutes(startendtime[1]) #gives list ['HH','MM']
+
+
+                    if isHour(start[0])==False:
+                        errstr="ERROR: Ignore time Start Hours not OK for event "+ (action['events'])[counter]+", check 00 to 23"
+                        Log(errstr)
+                        raise ParseException(errstr)
+                    if isMinute(start[1])==False:
+                        errstr="ERROR: Ignore time Start Minutes not OK for event "+ (action['events'])[counter]+", check 00 to 59"
+                        Log(errstr)
+                        raise ParseException(errstr)
+                    if isHour(end[0])==False:
+                        errstr="ERROR: Ignore time End Hours not OK for event "+ (action['events'])[counter]+", check 00 to 23"
+                        Log(errstr)
+                        raise ParseException(errstr)
+                    if isMinute(end[1])==False:
+                        errstr="ERROR: Ignore time End Minutes not OK for event "+ (action['events'])[counter]+", check 00 to 59"
+                        Log(errstr)
+                        raise ParseException(errstr)
+    
+                    if startEndSane(start[0],start[1],end[0],end[1])==False:
+                        errstr="ERROR: Ignore time End time for event "+ (action['events'])[counter]+" is before start time"
+                        Log(errstr)
+                        raise ParseException(errstr)
+					
+                    if checkOverlap(times):
+                        errstr="ERROR Ignore times overlap for event "+ (action['events'])[counter]
+                        Log(errstr)
+                        raise ParseException(errstr)
+               
+                    errstr="Ignore time  for event "+(action['events'])[counter]+" passed all checks"
+                    Log(errstr)
+                    okcount=okcount+1
+                
+                else:
+                    errstr="ERROR: Ignore time  for event "+(action['events'])[counter]+" does not match format: "+txt
+                    Log(errstr)
+                    raise ParseException(errstr)
+       
+        counter=counter+1
+    
+	
+    #passed
+    print ("Found "+str(action))
+    eventlogdirstrings.append(action['eventlogfolder']) #used by eventtidying thread to clean old files from previous weeks
+    return action
+############################################
+
+
+
+#################################################################################
+def escapeTimeString(inputstr):
+    #inputstr is a timestr in format "[20:00-21:00]" or "[20:00-21:00]/[22:00-22:30]" or "[*]"
+    #escape [ ] * characters and return escaped string
+    outputstr=""
+    for char in inputstr:
+        if char=="[" or char=="]" or char=="*":
+            outputstr=outputstr+"\\"+char
+        else:
+            outputstr=outputstr+char
+    return outputstr
+#################################################################################
+
+
 
 #############################################
 def work():
@@ -297,9 +775,9 @@ def work():
             cpid = os.spawnv(os.P_NOWAIT, exedir+'/mirror_hls.sh', L)
             pids.append(cpid)
             Log("P3 started camera mirroring process OS PID:"+str(cpid))
-
+       
         elif (cameraconf['mirrormode']=="MJPG"):
-			#mirroring using MJPG over DASH
+            #mirroring using MJPG over DASH
             L=[]
             L.append(exedir+"/mirror_mjpg.sh")
             L.append("-cam")
@@ -316,6 +794,40 @@ def work():
             pids.append(cpid)
             Log("P3 started camera mirroring process OS PID:"+str(cpid))
 
+
+            
+        if (cameraconf['events']!=None):
+            #event monitoring for this camera
+            L=[]
+            L.append(exedir+"/bbeventmonitor_y5onnx.sh")
+            L.append("-cam")
+            L.append(cameraconf['url'])
+            L.append("-name")
+            L.append(cameraconf['cam'])
+            L.append("-log")
+            L.append(logfilepath)
+            L.append("-elog")
+            L.append((cameraconf['events'])['eventlogfolder'])
+            L.append("-group")
+            L.append(cameraconf['group'])
+            L.append("-elogby")
+            L.append((cameraconf['events'])['eventlogmode'])
+            cameventconf=cameraconf['events']
+            idx=0
+            L.append("-events")
+            for eventcode in cameventconf['events']:
+                ignore=cameventconf['eventignoretimes']
+                ignoreX=ignore[idx]
+                ignoreX=escapeTimeString(ignoreX)
+                L.append(eventcode)
+                L.append(ignoreX)
+                idx=idx+1
+ 
+            Log("Found an event conf: "+str(L))
+            cpid = os.spawnv(os.P_NOWAIT, exedir+'/bbeventmonitor_y5onnx.sh', L)
+            pids.append(cpid)
+            Log("P3 started camera event monitoring process OS PID:"+str(cpid))
+            
     Log("P3 setting up signal handlers")
     signal.signal(signal.SIGINT, handler)
     signal.signal(signal.SIGTERM, handler)
@@ -330,11 +842,13 @@ def work():
             pidfile.write(str(pid))
             pidfile.close()
     except IOError:
-        Log("P3 unable to write PID file")
+            Log("P3 unable to write PID file")
 
     Log("P3 sleeping")
     while (1):
-        time.sleep(4200)
+        #time.sleep(4200)
+        eventlogtrimmer.join()
+        eventlogcleaner.join()
 ###########################################
 
 ##########################################
@@ -351,6 +865,7 @@ def parseLine(line):
     action['mirrormode']=cols[4]
     action['folder']=cols[5]
     action['container']=cols[6]
+    action['events']=None   #If event monitoring is later found to be set (and its config valid) for this cam, this will be a {} containing the config from parseEventLine
 
     if ( (action['folder']=="*") and (action['recordmode']!="*")):
         raise ParseException("To do recording you must specify a folder")
@@ -379,8 +894,10 @@ def parseLine(line):
     if ( ( (action['container']=="*") and  (action['recordmode']!="*") ) or ( (action['container']!="*") and (action['recordmode']=="*") ) ):
         raise ParseException("To record you must specify both a record mode and a container format")
 
-
     action['container']=(action['container'].lower())
+
+   
+
 
     if (len(action['mirrormode'])>4) and ((action['mirrormode'])[0:4]=="HLS/"):
         #HLS/ so get bitrate number
@@ -416,10 +933,10 @@ def parseLine(line):
         raise ParseException("Mirror Mode must be HLS or MJPG or * . You can use HLS/x to specify a bitrate in Mbits/sec e.g HLS/0.5 or HLS/5")
    
 
-
-
-
-
+   
+   
+   
+   
 
     if ( (action['mirrormode']!="*") and mirroringconfigvalid==False ):
         raise ParseException("Mirroring requested, but mirroring config (in global config file) is not valid, check the global config file")
@@ -540,22 +1057,31 @@ def mirroringCleanup():
 
 ###########################################
 def mirroringInit():
-	Log("P3 cleaning up webroot in case last run was not cleanly shut down")
-	mirroringCleanup()
-	mirrorcontrolfilepath=mirrorwebroot+"/org.bigbrothercctv.bigbrother.bigbrotherd.php"
-	Log("P3 generating "+mirrorcontrolfilepath)
-	try:
-		mirrorcontrolfile=open(mirrorcontrolfilepath,"w")
-		mirrorcontrolfile.write("<?php\n");
-		mirrorcontrolfile.write("##THIS FILE IS GENERATED AUTOMATICALLY BY bigbrotherd##\n")
-		mirrorcontrolfile.write("$DAEMONPID="+str(os.getpid())+";\n")
-		mirrorcontrolfile.write("$GLOBALCONFFILEPATH='"+globalconffile+"';\n")
-		mirrorcontrolfile.write("$BBVERSION="+str(bbversion)+";\n")
-		mirrorcontrolfile.write("$ALLOWNEWFILEFROMWEB="+str(allownewfilefromweb)+";\n")
-		mirrorcontrolfile.write("?>\n") 
-		mirrorcontrolfile.close()
-	except:
-		Log("P3 could not initialise "+mirrorcontrolfilepath+" mirroring will not work");
+    Log("P3 cleaning up webroot in case last run was not cleanly shut down")
+    mirroringCleanup()
+    mirrorcontrolfilepath=mirrorwebroot+"/org.bigbrothercctv.bigbrother.bigbrotherd.php"
+    Log("P3 generating "+mirrorcontrolfilepath)
+    try:
+        mirrorcontrolfile=open(mirrorcontrolfilepath,"w")
+        mirrorcontrolfile.write("<?php\n");
+        mirrorcontrolfile.write("##THIS FILE IS GENERATED AUTOMATICALLY BY bigbrotherd##\n")
+        mirrorcontrolfile.write("$DAEMONPID="+str(os.getpid())+";\n")
+        mirrorcontrolfile.write("$GLOBALCONFFILEPATH='"+globalconffile+"';\n")
+        mirrorcontrolfile.write("$BBVERSION="+str(bbversion)+";\n")
+        mirrorcontrolfile.write("$ALLOWNEWFILEFROMWEB="+str(allownewfilefromweb)+";\n")
+        mirrorcontrolfile.write("$STARTTIMESTAMP="+str(int(time.time()))+";\n")
+        mirrorcontrolfile.write("?>\n") 
+        mirrorcontrolfile.close()
+    except:
+        Log("P3 could not initialise "+mirrorcontrolfilepath+" mirroring will not work")
+    try:
+        if (os.path.isfile(mirrorwebroot+"/org.bigbrothercctv.bigbrother.aieventlog.txt")==False):
+            elog=open(mirrorwebroot+"/org.bigbrothercctv.bigbrother.aieventlog.txt","w")
+            elog.write("#THIS FILE IS GENERATED AUTOMATICALLY BY BIGBROTHER WHEN AI EVENT MONITORING IS ENABLED\n")
+            elog.close()
+        os.chmod(mirrorwebroot+"/org.bigbrothercctv.bigbrother.aieventlog.txt", 0o660) #allow cctvwriters group owner to write to it so webserver can empty it
+    except:
+        Log("P3 could not initialise "+mirrorwebroot+"/org.bigbrothercctv.bigbrother.aieventlog.txt"+" event notifications may not work")
 ##########################################
 
 
@@ -571,6 +1097,9 @@ print ("cameraconf="+conffilepath)
 print ("logfile="+logfilepath)
 print ("user="+user)
 print ("allownewfilefromweb="+str(allownewfilefromweb))
+
+if eventconffilepath!="":
+    print ("cameraeventconf="+eventconffilepath)
 
 print ("Mirroring web root folder is: "+mirrorwebroot)
 
@@ -598,6 +1127,11 @@ if (dashfspecified):
 Log("ffmpegcommand is: "+ffmpegcommand)
 Log("cameraconf is: "+conffilepath)
 Log("user is: "+user)
+
+if eventconffilepath!="":
+    Log("cameraeventconf is: "+eventconffilepath)
+else:
+    Log("no cameraeventconf file was specified, events will not be monitored")
 
 
 #switch to specified user
@@ -636,41 +1170,66 @@ else:
 
 #readConfig() does directory writable permission test so we must have switched users by here
 readConfig() ##this is the camera conf file
+
+if eventconffilepath!="":
+    readEventConfig()
+    Log("Got "+str(len(eventtasks))+" event tasks from config file")
+    L=[]
+    for eventtask in eventtasks:
+        totest=eventtask['cam'].upper()
+        Log("Cheking event config for "+eventtask['cam']+" to see if it is a duplicate")
+        if totest in L:
+            Log("Duplicate entry for camera "+eventtask['cam']+" in Event config file "+eventconffilepath)
+            exit(1)
+        else:
+            L.append(eventtask['cam'].upper())
+    Log("P1 Camera Event Config read & parsed OK")
+    for eventtask in eventtasks:
+        cam=getCamera(eventtask['cam'])
+        cam['events']=eventtask
+
 Log("P1 Camera Config read & parsed OK, forking 1st child (P2)")
 pid=os.fork()
 
 if (pid==0):
-	os.setsid()
-	Log("P2 forking 2nd child (P3)")
-	pid=os.fork()
-	if (pid==0):
-		#daemons work
-		Log("P3 closing FDs")
-		# Iterate through and close all file descriptors.
-		for fd in range(0, 1024):
-			try:
-				os.close(fd)
-			except OSError:	# ERROR, fd wasn't open to begin with (ignored)
-				pass
+    os.setsid()
+    Log("P2 forking 2nd child (P3)")
+    pid=os.fork()
+    if (pid==0):
+        #daemons work
+        Log("P3 closing FDs")
+        # Iterate through and close all file descriptors.
+        for fd in range(0, 1024):
+            try:
+                os.close(fd)
+            except OSError:	# ERROR, fd wasn't open to begin with (ignored)
+                pass
 
    		   # Redirect the standard I/O file descriptors to /dev/null. 
 
    		   # This call to open is guaranteed to return the lowest file descriptor,
    		   # which will be 0 (stdin), since it was closed above.
-		os.open("/dev/null", os.O_RDWR)	# standard input (0)
+        os.open("/dev/null", os.O_RDWR)	# standard input (0)
 		# Duplicate standard input to standard output and standard error.
-		os.dup2(0, 1)			# standard output (1)
-		os.dup2(0, 2)			# standard error (2)
-		Log("P3 initialising "+mirrorwebroot)
-		mirroringInit()
-		Log("P3 calling work()")
-		work()
-		Log("P3 returned from work()")
+        os.dup2(0, 1)			# standard output (1)
+        os.dup2(0, 2)			# standard error (2)
+        Log("P3 initialising "+mirrorwebroot)
+        mirroringInit()
+        Log("P3 setting up eventlogtrimmer & eventlogcleaner")
+        eventlogtrimmer = threading.Thread(target=eventlogtrimmer, args=())
+        eventlogtrimmer.start()
+        #remove duplicates from eventlogdirstrings
+        eventlogdirstrings=list(set(eventlogdirstrings))
+        eventlogcleaner = threading.Thread(target=eventlogcleaner, args=(eventlogdirstrings,))
+        eventlogcleaner.start()
+        Log("P3 calling work()")
+        work()
+        Log("P3 returned from work()")
 		#we never get here usually because sig handler calls exit
 		#end daemons work
-	else:
-		Log("P2 exiting")
-		exit(0)
+    else:
+        Log("P2 exiting")
+        exit(0)
 else:
 	Log("P1 exiting")
 	exit(0)

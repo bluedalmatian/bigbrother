@@ -24,7 +24,7 @@
 	set_error_handler(NULL);
 	if (sizeof($camnamesToShow)>0)
         {
-                echo("<table cellspacing=10 cellpadding=0 border=0  style='margin:5px;' id=cameragrid>");
+                echo("<table cellspacing=10 cellpadding=0 border=0  id=cameragrid>");
                  $camsprinted=0;
             
         }
@@ -54,7 +54,7 @@
                 {
                         echo("<tr>");
                 }
-                echo("<td valign=top  width=640>");
+                echo("<td valign=top width=640 class=videotd style=\"position:relative;\">");
                 $camera->GenerateHTML();
                 echo("</td>");
 
@@ -63,7 +63,7 @@
                 if ($camsprinted==$camsPerTR)
                 {
                         echo("</tr>");
-                        echo("<tr><td colspan=".$camsPerTR." height=10 width=100%>&nbsp;</td></tr>");
+                        echo("<tr class=spacertr><td colspan=".$camsPerTR." height=10 width=100%>&nbsp;</td></tr>");
 
                         $camsprinted=0;
                 }

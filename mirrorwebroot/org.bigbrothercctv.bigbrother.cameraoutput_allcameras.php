@@ -2,7 +2,7 @@
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016 Andrew Wood                                       #
+# Copyright 2016-2025 Andrew Wood                                  #
 #                                                                  #
 # UI code to display all cameras defined for mirroring	           #
 #                                                                  #
@@ -24,15 +24,17 @@
 
 
 
-
+	
 	set_error_handler(NULL);
+	echo("<table cellspacing=0 cellpadding=0  bgcolor=gray  id=cameragrid>");
         $camsprinted=0;
         foreach ($groupsByName as $groupName => $groupMembers)
         {
-		
-                  echo("<table cellspacing=10 cellpadding=0 border=0 bordercolor=black bgcolor=gray style='margin:5px;' id=cameragrid>");
-                  echo("<tr><td colspan=".$camsPerTR."><p><b>".$groupName."</p></b></td></tr>");
-                  foreach ($groupMembers as $camera)
+                  if ($minimalUI==false)
+		  {
+                  	echo("<tr class=groupnametr><td colspan=".$camsPerTR."><p><b>".$groupName."</p></b></td></tr>");
+		  }
+		  foreach ($groupMembers as $camera)
                   {
                            if ($camsprinted==0)
                            {
@@ -40,30 +42,35 @@
                            }
 
 
-                           echo("<td valign=top width=640>");
+                           echo("<td valign=top width=640 class=videotd style=\"position:relative;\">");
                            $camera->GenerateHTML();
                            echo("</td>");
 
                                 $camsprinted++;
-
-                        if ($camsprinted==$camsPerTR)
+                        if ($camsprinted==$camsPerTR)  
                         {
                                 echo("</tr>");
-                                echo("<tr><td colspan=".$camsPerTR." height=10 width=100%>&nbsp;</td></tr>");
+                                echo("<tr class=spacertr><td colspan=".$camsPerTR." height=10 width=100%>&nbsp;</td></tr>");
 
                                 $camsprinted=0;
                         }
+			
 
                   }
-                  echo("</table>");
+                  
         }
 
-   echo("<br>");
+
+   echo("<div class=spacertr><br></div>");
+
    
 	if (sizeof($nullGroupCameras)>0)
         {
-                echo("<table cellspacing=10 cellpadding=0 border=0 bordercolor=black  style='margin:5px;'>");
-                 $camsprinted=0;
+                if ($minimalUI==false)
+		{
+				echo("<tr class=groupnametr><td colspan=".$camsPerTR."><p><b>Other</p></b></td></tr>");
+		}
+                $camsprinted=0;
             
         }
 
@@ -90,10 +97,9 @@
 
 
         }
-        if (sizeof($nullGroupCameras)>0)
-        {
+        
               echo("</table>");
 
-        }
+       
 
 ?>

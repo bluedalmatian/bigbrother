@@ -3,11 +3,21 @@ MODIFICATIONS / FUTURE FEATURES TO BE ADDED (IN ORDER)
 
 Release blocker		Bugfixes / new features
 ---------------		-----------------------
-			Logfile is chown'ed to bb user after being created but group not changed, would need specifying in global conf file - should be same as webservers group?
-			Review & refactor recording dir:
-				Look at record by camera - can it be refactored?
-				shell script given 2 args: -d /dir & -o user:group creates recording dirs inder /dir and sets owner to user:group 
-				Having a group directory under record by day dirs?
-			Extract segment from recording web interface
-			Web interface to filter cameras shown on mirror page rather than user having to edit URL manually
+			(In v1+) Logfile is chown'ed to bb user after being created but group not changed, would need specifying in global conf file - should be same as webservers group?
+			(In v1+) Review & refactor recording dir:
+					Look at record by camera - can it be refactored?
+					shell script given 2 args: -d /dir & -o user:group creates recording dirs inder /dir and sets owner to user:group 
+					Having a group directory under record by day dirs?
+			(In v1+) Extract segment from recording web interface
+			(In v1+) Web interface to filter cameras shown on mirror page rather than user having to edit URL manually
+			
+			(In v2+) Group is optional, check event monitoring code in both bbeventmonitor and bigbrotherd accepts this
+			
+			(In v3+) In order for apache to access log these commands need to be run (this is only an issue in v3 cameraControl.php)
+				chgrp cctvwriters /var/log/bigbrother.log 
+				chmod g+w /var/log/bigbrother.log 
+				
+
+
+
 			

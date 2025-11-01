@@ -1,6 +1,6 @@
 CHECKINSTALLOPTIONS = --pkgname=org.bigbrothercctv.bigbrother -A all --pkggroup=Video \
 --pkglicense=GPL --nodoc --maintainer='bigbrothercctv.org' \
---requires=ffmpeg,python3
+--requires='ffmpeg,python3,python3-opencv \(\>=4.10\)'
 INSTALLDIR = /usr/local/bigbrother
 
 default:
@@ -14,9 +14,13 @@ installbinary:
 	cp ./bblogger  $(INSTALLDIR)
 	cp ./bigbrother.conf  $(INSTALLDIR)
 	cp ./bigbrother_camera.conf  $(INSTALLDIR)
+	cp ./bigbrother_event.conf  $(INSTALLDIR)
 	cp ./bigbrotherd.service /etc/systemd/system
 	cp ./License.txt  $(INSTALLDIR)
 	cp ./README.txt  $(INSTALLDIR)
+	cp ./markup_y5onnx.py $(INSTALLDIR)
+	cp ./bbeventmonitor_y5onnx $(INSTALLDIR)
+	cp -R ./onnx $(INSTALLDIR)
 
 #Use checkinstall to make a .deb
 deb:
@@ -27,7 +31,7 @@ deb:
 
 rpm:
 
-	tar cf ./bigbrother.tar  ./*.sh ./bigbrotherd ./mirrorwebroot ./bblogger ./bigbrother.conf ./bigbrother_camera.conf ./bigbrotherd.service ./License.txt ./README.txt
+	tar cf ./bigbrother.tar  ./*.sh ./bigbrotherd ./mirrorwebroot ./bblogger ./bigbrother.conf ./bigbrother_camera.conf ./bigbrotherd.service ./License.txt ./README.txt ./bigbrother_event.conf ./markup_y5onnx.py ./markup_y5onnx.py ./bbeventmonitor_y5onnx ./onnx
 	gzip ./bigbrother.tar
 	mv ./bigbrother.tar.gz ./RPM/SOURCES/org.bigbrothercctv.bigbrother.tar.gz	
 	rpmbuild -v -bb --clean ./RPM/SPECS/bigbrother.spec
@@ -47,6 +51,10 @@ pkgng:
 	cp ./rc.bigbrother ./pkgng-tmp$(INSTALLDIR)
 	cp ./License.txt  ./pkgng-tmp$(INSTALLDIR)
 	cp ./README.txt  ./pkgng-tmp$(INSTALLDIR)
+	cp ./bigbrother_event.conf ./pkgng-tmp$(INSTALLDIR)
+	cp ./markup_y5onnx.py ./pkgng-tmp$(INSTALLDIR)
+	cp ./bbeventmonitor_y5onnx ./pkgng-tmp$(INSTALLDIR)
+	cp -R ./onnx ./pkgng-tmp$(INSTALLDIR)
 	pkg create -M ./+MANIFEST -r ./pkgng-tmp
 
 clean:

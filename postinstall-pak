@@ -19,6 +19,8 @@ chown bigbrother:cctvwriters  $INSTALLDIR/bigbrother.conf
 chmod 660 $INSTALLDIR/bigbrother.conf
 chown bigbrother:cctvwriters  $INSTALLDIR/bigbrother_camera.conf
 chmod 660 $INSTALLDIR/bigbrother_camera.conf
+chown bigbrother:cctvwriters  $INSTALLDIR/bigbrother_event.conf
+chmod 660 $INSTALLDIR/bigbrother_event.conf
 chown bigbrother:cctvwriters  $INSTALLDIR/bigbrotherd
 chmod 750 $INSTALLDIR/bigbrotherd
 chown bigbrother:cctvwriters  $INSTALLDIR/*.sh
@@ -27,5 +29,11 @@ chown -R bigbrother:cctvviewers  $INSTALLDIR/mirrorwebroot
 chmod 750 $INSTALLDIR/mirrorwebroot
 chmod g+xs  $INSTALLDIR/mirrorwebroot
 chmod 640 $INSTALLDIR/mirrorwebroot/*
+chown bigbrother:cctvwriters  $INSTALLDIR/markup_y5onnx.py
+chown bigbrother:cctvwriters  $INSTALLDIR/bbeventmonitor_y5onnx
+chown -R bigbrother:cctvwriters  $INSTALLDIR/onnx
+chmod 750 $INSTALLDIR/onnx
+chmod 640 $INSTALLDIR/onnx/*
 
 systemctl daemon-reload
+

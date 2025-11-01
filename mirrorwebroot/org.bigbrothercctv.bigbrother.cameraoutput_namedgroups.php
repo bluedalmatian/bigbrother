@@ -38,6 +38,8 @@
 	//this page could be made more efficient by putting group code below into above loop, but for now this will do
 	//the tradeoff between cpu efficiency & programmer time efficiency is not worth it
 
+	echo("<table cellspacing=0 cellpadding=0 border=0 bgcolor=gray id=cameragrid>");
+
 
 	foreach ($groupsByName as $groupName => $groupMembers)
         {
@@ -47,9 +49,11 @@
 		{
 			continue;
 		}
-	          echo("<table cellspacing=10 cellpadding=0 border=0 bordercolor=black bgcolor=gray style='margin:5px;'>");
-                  echo("<tr><td colspan=".$camsPerTR."><p><b>".$groupName."</p></b></td></tr>");
-                  foreach ($groupMembers as $camera)
+		  if ($minimalUI==false)
+		  {	          
+                  	echo("<tr class=groupnametr><td colspan=".$camsPerTR."><p><b>".$groupName."</p></b></td></tr>");
+                  }
+		  foreach ($groupMembers as $camera)
                   {
                            if ($camsprinted==0)
                            {
@@ -57,7 +61,7 @@
                            }
 
 
-                           echo("<td valign=top bgcolor=white width=640>");
+                           echo("<td valign=top width=640 class=videotd style=\"position:relative;\">");
                            $camera->GenerateHTML();
                            echo("</td>");
 
@@ -66,13 +70,13 @@
                         if ($camsprinted==$camsPerTR)
                         {
                                 echo("</tr>");
-                                echo("<tr><td colspan=".$camsPerTR." bgcolor=gray height=10 width=100%>&nbsp;</td></tr>");
+                                echo("<tr class=spacertr><td colspan=".$camsPerTR." height=10 width=100%>&nbsp;</td></tr>");
 
                                 $camsprinted=0;
                         }
 
                   }
-                  echo("</table>");
+                  
         }
-
+	echo("</table>");
 ?>
