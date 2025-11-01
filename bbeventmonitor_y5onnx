@@ -537,10 +537,10 @@ def processFrame(threadidx,frame):
             # Display text inside the rectangle.
             cv2.putText(frame, label, (left, top + dim[1]), FONT_FACE, FONT_SCALE, WHITE, THICKNESS, cv2.LINE_AA)
     
-            x_top_left=left
-            y_top_left=top
-            x_bottom_right=(left+bwidth)-1
-            y_bottom_right=(top+bheight)-1
+        x_top_left=left
+        y_top_left=top
+        x_bottom_right=(left+bwidth)-1
+        y_bottom_right=(top+bheight)-1
         
         eventLogLock.acquire()
         LogIfOfInterest(classNames[class_ids[i]],frame,confidences[i],x_top_left,y_top_left,x_bottom_right,y_bottom_right,threadidx)
