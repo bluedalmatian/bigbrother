@@ -1459,7 +1459,7 @@ function showMiniStatus()
 <center>
 <table cellspacing=0 cellpadding=0 border=0>
 <tr>
-	<td colspan=8><center><p>Powered by:</p></center></td>
+	<td colspan=6><center><p>Powered by:</p></center></td>
 </tr>
 <tr>
 	<td><img src=ffmpeg.jpg width=50></td>
@@ -1470,8 +1470,6 @@ function showMiniStatus()
         <td valign=center><p>BigBrother</p></td>
 	<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
 
-	<td><img src=opencv.png width=50></td>
-        <td valign=center><p>OpenCV</p></td>
 </tr>
 </table>
 <table cellspacing=0 cellpadding=0 border=0>
