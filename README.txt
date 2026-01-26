@@ -2,7 +2,7 @@
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #		      
 # Copyright 2016-2025 Andrew Wood                                  #
 #                                                                  #
-#This copy of the README file relates to version 2.0		   #
+#This copy of the README file relates to version 2.1		   #
 #                                                                  #
 # www.bigbrothercctv.org			                   #
 #                                                                  #
@@ -447,6 +447,10 @@ timezone in php.ini if this is not set it will default to UTC, which even if you
 cause problems as it ignores Daylight Savings time (BST). In the UK you should set it to "Europe/London".
 For other countries see the list at: https://www.php.net/manual/en/timezones.php
 
+
+Note that many web browsers will require you to go into settings and explicitly give the site permission
+to play sound, otherwise sound will not play until the user has interacted with the page by clicking on
+something.
 
 
 Remote access to the events log can be provided via Samba in the same way as the recording folder is, so that

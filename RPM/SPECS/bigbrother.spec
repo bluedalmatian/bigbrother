@@ -1,6 +1,6 @@
 %define _topdir		%(pwd)/RPM
 %define name            org.bigbrothercctv.bigbrother
-%define version		2.0
+%define version		2.1
 
 
 Summary:        bigbrothercctv.org BigBrother
@@ -32,6 +32,7 @@ mkdir $RPM_BUILD_ROOT/usr/
 mkdir $RPM_BUILD_ROOT/usr/local/
 mkdir $RPM_BUILD_ROOT/usr/local/bigbrother/
 mkdir $RPM_BUILD_ROOT/usr/local/bigbrother/mirrorwebroot
+mkdir $RPM_BUILD_ROOT/usr/local/bigbrother/mirrorwebroot/snapshots
 mkdir $RPM_BUILD_ROOT/usr/local/bigbrother/onnx
 mkdir $RPM_BUILD_ROOT/etc
 mkdir $RPM_BUILD_ROOT/etc/systemd
@@ -39,6 +40,7 @@ mkdir $RPM_BUILD_ROOT/etc/systemd/system
 cp -r ./* $RPM_BUILD_ROOT/usr/local/bigbrother
 cp ./bigbrotherd.service  $RPM_BUILD_ROOT/etc/systemd/system
 chmod g+s $RPM_BUILD_ROOT/usr/local/bigbrother/mirrorwebroot
+chmod g+s $RPM_BUILD_ROOT/usr/local/bigbrother/mirrorwebroot/snapshots
 
 %post
 systemctl daemon-reload
@@ -62,6 +64,7 @@ systemctl daemon-reload
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/markup_y5onnx.py
 %attr (750,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot
 %attr (640,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot/*
+%attr (750,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot/snapshots
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/onnx
 %attr (640,bigbrother,cctvwriters) /usr/local/bigbrother/onnx/*
 %attr (644,root,root)/etc/systemd/system/bigbrotherd.service

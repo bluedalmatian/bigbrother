@@ -5,8 +5,12 @@ ob_start();
 
 	function controlFileIncludeFail($errno, $errstr, $errfile, $errline)
 	{
-		$nodaemonerrmsg="<center><table cellspacing=0 cellpadding=0 border=0><tr><td><img src=bb.png width=64 valign=middle></td>";
-		$nodaemonerrmsg=$nodaemonerrmsg."<td valign=middle><p><font face=face='Arial','Verdana'>CCTV not available,BigBrother is not running</font></p></td></tr></table></center>";
+
+		$nodaemonerrmsg="<body bgcolor=#000000><center><table cellspacing=0 cellpadding=0 border=0 height=100%><tr height=*><td colspan=2>&nbsp;</td></tr>";
+                $nodaemonerrmsg=$nodaemonerrmsg."<tr><td><img src=bb.png width=100 valign=middle></td>";
+                $nodaemonerrmsg=$nodaemonerrmsg."<td valign=middle><img src=transparent.png width=100% height=2><p class=statusmsg><h2><font color=#FFFFFF face='Arial'>CCTV not available, BigBrother is not running</font></h2></p></td></tr>";
+                $nodaemonerrmsg=$nodaemonerrmsg."<tr height=*><td colspan=2>&nbsp;</td></tr></table></center>";
+                $nodaemonerrmsg=$nodaemonerrmsg."<meta http-equiv='refresh' content='1'>";
 		exit($nodaemonerrmsg);
 	}
 	function requiredIncludeFail($errno, $errstr, $errfile, $errline)
@@ -50,6 +54,18 @@ function doErase()
 	ftruncate($handle, 0);
 	fwrite($handle, "#THIS FILE IS GENERATED AUTOMATICALLY BY BIGBROTHER WHEN AI EVENT MONITORING IS ENABLED\n");
 	fclose($handle);
+
+	$files = glob("snapshots/*"); // get all file names
+	foreach($files as $file)
+	{ 
+  		if(is_file($file)) 
+		{
+    			unlink($file); // delete file
+  		}
+	}
+
+
+
 	exit();
 }
 ?>
@@ -144,7 +160,7 @@ function readFileBackwards($numlines, $path)
               continue;
         }
 		$elements=preg_split('/\s+/', $line);
-		if (sizeof($elements) < 4) //at time of writing there are 4 mandatory params (more maybe added later), we only need to read upto 4 here.
+		if (sizeof($elements) < 5) //at time of writing there are 5 mandatory params (more maybe added later), we only need to read upto 5 here.
 		{
 		
 			exit("<p>Syntax error in AI Event Log on line ".$lineno." Too few parameters</p>");
@@ -284,67 +300,86 @@ function doReload()
 
 
 
-<table cellspacing=0 cellpadding=5 border=0 id=toolbar width=100%>
+<table cellspacing=0 cellpadding=0 border=0 id=toolbar width=100%>
 	<tr>
-	    <td>
+	    <td colspan=2>
 		<table cellspacing=0 cellpadding=0 border=0 width=100%>
-		 <tr>
-                        <td>
-				<p><font size=-1><img src=bb.png width=100 style="margin: 2px;" align=middle valign=middle>
-				<?php  echo " BigBrother ".$formattedversion; $date = date('Y-m-d H:i:s'); echo " Page loaded: ".$date." (server time)"; ?> 
-				</p></font><div id=msgarea></div>
-			</td>
-                </tr>
-		<tr height=1 width=100%>
-			<td bgcolor="#666565"></td>
-		</tr>
+		 	<tr>
+                        	<td>
+					<p><font size=-1><img src=bb.png width=100 style="margin: 2px;" align=middle valign=middle>
+					<?php  echo " BigBrother ".$formattedversion; $date = date('Y-m-d H:i:s'); echo " Page loaded: ".$date." (server time)"; ?>.
+					This page will reload every 5 minutes 
+					</p></font><div id=msgarea></div>
+				</td>
+                	</tr>
 		</table>
 	   </td>
 	</tr>
 	<tr>
-	  <td>
-		<table cellspacing=4 cellpadding=0 border=0>
-		<tr>
+		<td>
+			<table cellspacing=0 cellpadding=20 border=0>
+				<tr>
+					<td valign=middle><h2>Detected Event Notification History</h2></td>
+					<td valign=top><p>This shows up to the last 1000 events</p></td>
+					<td valign=top><p class=supersmall>No. of events: <?php echo(sizeof($allEvents));?></p></td>
+				</tr>
+			</table>
+		</td>
+		<td>
+			<table cellspacing=4 cellpadding=0 border=0>
+				<tr>
+					<!Erase log button>
+					<td class=toolbarbutton id=eraselogbutton onclick='eraseLog();' onmouseover='mouseOverButton(this);' onmouseout='mouseOutButton(this);'>
+						<p>
+							<img src=trash.png width=48 align=middle valign=middle>Erase All Notifications
+						</p>
+						<p class=extremesmall>This will NOT remove snapshot images</p>
+					</td>
+
+					<!Refresh button>
+                                        <td class=toolbarbutton id=refreshlogbutton onclick='window.location.reload();' onmouseover='mouseOverButton(this);' onmouseout='mouseOutButton(this);'>
+                                                <p>
+                                                        <img src=refresh.png width=48 align=middle valign=middle>Refresh
+                                                </p>
+                                        </td>
+
 			
-			<!Erase log button>
-			<td class=toolbarbutton id=eraselogbutton onclick='eraseLog();' onmouseover='mouseOverButton(this);' onmouseout='mouseOutButton(this);'>
-			<p>
-				<img src=trash.png width=48 align=middle valign=middle>Erase All Notifications
-			</p>
-			<p class=extremesmall>This will NOT remove snapshot images</p>
-			</td>
-			
-		</tr>
-		</table>
-	   </td>
+				</tr>
+			</table>
+	   	</td>
 	</tr>
+
+	 <tr height=3 width=100%>
+                <td colspan=2>&nbsp;</td>
+        </tr>
+
+	<tr height=1 width=100%>
+                <td colspan=2 bgcolor="#666565"></td>
+	</tr>
+	 <tr height=10 width=100%>
+                <td colspan=2>&nbsp;</td>
+        </tr>
+
+
 </table>
 
-<h2>Detected Event Notification History:</h2>
-<p>This shows up to the last 1000 events</p>
-<p class=supersmall>No. of events: <?php echo(sizeof($allEvents));?></p>
 
 
-<table cellspacing=0 cellpadding=0 border=0 width=100% height=100%>
-<tr height=1 width=100%>
-			<td bgcolor="#666565"></td>
-</tr>
 
-<tr>
-<td width=100% height=100% valign=top>
-<br>
+
 <table cellpadding=0 cellspacing=0 border=1 id=eventtable width=100%>
 <tr>
 	<td width=100><p><b>Date</b></p></td>
 	<td width=100><p><b>Time</b></p></td>
 	<td><p><b>Camera</b></p></td>
-	<td width=*><p><b>Event</b></p></td>
+	<td width=200><p><b>Event</b></p></td>
+	<td width=*><p><b>Snapshot</b></p></td>
 </tr>
 
 <?php
 	if (sizeof($allEvents)==0)
 	{
-		echo("<td colspan=4><center><p>No Events Detected</p></center></td>");
+		echo("<td colspan=5><center><p>No Events Detected</p></center></td>");
 	}
 	foreach ($allEvents as $event)
 	{
@@ -354,23 +389,30 @@ function doReload()
 		
 		
 		echo("<td width=100>");
-		echo("<p>".$event->getEventDate()."</p>");
+		echo("<p align=center>".$event->getEventDate()."</p>");
 		echo("</td>");
 		
 		echo("<td width=100>");
-		echo("<p>".$event->getEventTime()."</p>");
+		echo("<p align=center>".$event->getEventTime()."</p>");
 		echo("</td>");
 		
 		echo("<td>");
-		echo("<p>".$event->getCameraName()."</p>");
+		echo("<p align=center>".$event->getCameraName()."</p>");
 		echo("</td>");
 		
-		echo("<td width=*>");
+		echo("<td width=200>");
 		
-		echo("<p><img src=".$event->GetTypeCode()."-white.png width=24 height=16 align=middle></img>");
+		echo("<p align=center><img src=".$event->GetTypeCode()."-white.png width=32 height=24 valign=middle></img>");
 		echo("".$event->getEventDesc()."</p>");
 		echo("</td>");
-		echo("</tr>");
+
+		echo("<td width=*>");
+		$eventtimecompressed=str_replace(":","",$event->getEventTime());
+		echo("<img src=snapshots/".$event->GetFilename()." width=100% height=400 loading=lazy class=snapshotimage");
+		echo("</td>");
+		echo("</tr>");		
+
+
 	}
 ?>
 

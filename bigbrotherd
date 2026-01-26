@@ -4,10 +4,10 @@
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016-2025 Andrew Wood                                  #
+# Copyright 2016-2026 Andrew Wood                                  #
 #                                                                  #
 # The main bigbrother daemon. This double forks a child process to #
-# return to shell 						                           #
+# return to shell 			                           #
 #                                                                  #
 # bigbrothercctv.org	                                           #
 #                                                                  #
@@ -39,7 +39,7 @@ class ParseException(Exception):
 #######################################
 #System wide knobs
 
-bbversion=2.0 ##only change version no here and in no other file
+bbversion=2.1 ##only change version no here and in no other file
 exedir=os.path.dirname(os.path.realpath(__file__)) ##gives dir with no trailing /
 globalconffile=exedir+"/bigbrother.conf"
 dashfspecified=False
@@ -79,35 +79,43 @@ def eventlogtrimmer():
     #thread routine executed by eventlogtrimmer thread only
     #trim mirrorwebroot/org.bigbrothercctv.bigbrother.aieventlog.txt to max 1000 entries    
     Log("eventlogtrimmer thread starting")
-
-    while (exit_event.is_set()==False):
+    keepgoing=True
+    while (keepgoing):
         now=datetime.datetime.now()
         minutes=now.strftime('%M')
         minutes=int(minutes)
-        if minutes > 58 and minutes < 2:
-            sleepsecs=(60*60)+(60*5) #sleep for 1 hr 5 mins to avoid running on the hour when CPU is busy doib recording file changeovers
+        if minutes > 43 and minutes < 47:
+            sleepsecs=20*60 #sleep for 20  mins to avoid running on the hour when CPU is busy doing recording file changeovers
         else:
-            sleepsecs=(60*60)
-        time.sleep(sleepsecs)
+            sleepsecs=15*60 # sleep for 15 min
+        exit_event.wait(sleepsecs) #wait until condition or time expires
+        Log("eventlogtrimmer woke")
+        if exit_event.is_set():
+            keepgoing=False
+
         start=time.time()
         lines=[]
         try:
             elogfile=open(mirrorwebroot+"/org.bigbrothercctv.bigbrother.aieventlog.txt",'r+')
             lines=elogfile.readlines()
-            numlines=len(lines)-1 #ign comment line at top
+            lines=lines[1:] #remove comment line at top of file
+            numlines=len(lines) #ign comment line at top
             cutoffidx=numlines-1000 #line no from which we keep entries from there to bottom
             if numlines>1000:
                 keep=lines[cutoffidx:]
+                discard=lines[:cutoffidx]
                 elogfile.truncate(0)
                 elogfile.seek(0)
                 elogfile.write("#THIS FILE IS GENERATED AUTOMATICALLY BY BIGBROTHER WHEN AI EVENT MONITORING IS ENABLED\n")
                 for keepline in keep:
                     elogfile.write(keepline)
-                elogfile.close()
+                snapshotTrimmer(discard)
                 end=time.time()
                 duration=end-start
                 duration=round(duration,3)
-                Log("eventlogtrimmer took "+str(duration)+" secs (trimmed)")
+                count=numlines-len(keep)
+                elogfile.close()
+                Log("eventlogtrimmer took "+str(duration)+" secs (trimmed "+str(count)+" entries)")
             else:
                 elogfile.close()
                 end=time.time()
@@ -122,6 +130,29 @@ def eventlogtrimmer():
         
     Log("eventlogtrimmer thread exiting")
 ##############################################################################
+
+
+##############################################################################
+def snapshotTrimmer(lines):
+    #Given an array of lines from eventlogfile, remove the corresponding snapshot image
+    n=0
+    done=[]
+    donecount=[]
+    for line in lines:
+        line=line.split()
+        filename=line[4]
+        mydir=os.path.abspath(os.path.dirname(__file__)) #gives dir without trailing /
+        
+        Log("snapshotTrimmer would remove "+mydir+"/mirrorwebroot/snapshots/"+filename)
+        try:
+            os.remove(mydir+"/mirrorwebroot/snapshots/"+filename)
+            n=n+1
+        except FileNotFoundError:
+            Log("snapshotTrimmer could not remove "+mydir+"/mirrorwebroot/snapshots/"+filename)
+
+    Log("snapshotTrimmer removed "+str(n)+" images")
+##############################################################################
+
 
 
 ###########################################################################################
@@ -140,7 +171,8 @@ def eventlogcleaner(eventlogdirs):
     #thread func executed by eventlog tidying thread, note this separate from eventlogtimmer thread
     #this trims the logged frames in each cams log dir, eventlogtrimmer trims the txt log in mirrorwebroot
     Log("eventlogcleaner thread starting")
-    while (exit_event.is_set()==False): 
+    keepgoing=True
+    while (keepgoing): 
         now=datetime.datetime.now()
         datestr=now.strftime("%Y-%m-%d")
         dayname=calendar.day_name[now.weekday()]
@@ -160,7 +192,9 @@ def eventlogcleaner(eventlogdirs):
         secstogo=59-int(secstr)	
         sleeptime=secstogo+(minstogo*60)+((hrstogo*60)*60)+90 #set time to wake just (90 sec) after midnight
         Log("eventlogcleaner thread sleeping for "+str(sleeptime)+" secs")
-        time.sleep(sleeptime)
+        exit_event.wait(sleeptime) #wait until condition or time expires
+        if exit_event.is_set():
+            keepgoing=False
         Log("eventlogcleaner thread woke")
     Log("eventlogcleaner thread exiting")
 ############################################################################################
@@ -263,11 +297,17 @@ def handler(signum, frame):
             Log("Forwarding signal to OS PID: "+str(cpid))
             os.kill(cpid, signal.SIGHUP)		
     else:
-		#forward SIGINT to all subprocesses
+        #forward SIGINT to all subprocesses
         Log("Got signal "+str(signum))
         for cpid in pids:
             Log("Forwarding signal to OS PID: "+str(cpid))
             os.kill(cpid, signal.SIGINT)
+            Log("Attempting to reap OS PID: "+str(cpid))
+            try: 
+                cpidstatus=os.waitpid(cpid,0)
+                Log("Reaped OS PID: "+str(cpid))
+            except Exception as e:
+                Log("Could not reap OS PID: "+str(cpid)+" error was: "+str(e))
         cleanup()
         exit_event.set()
         Log(" bigbrotherd finished handling signal, exiting")
@@ -278,7 +318,7 @@ def handler(signum, frame):
 def Log(str,throw=False):
        	try:
                 now=datetime.datetime.now()
-                datestr=now.strftime("%Y-%m-%d %H:%M")
+                datestr=now.strftime("%Y-%m-%d %H:%M:%S")
                 file=open(logfilepath,'a')
 
                 #if given just \n\n output it with no datetime prepended
@@ -1080,6 +1120,9 @@ def mirroringInit():
             elog.write("#THIS FILE IS GENERATED AUTOMATICALLY BY BIGBROTHER WHEN AI EVENT MONITORING IS ENABLED\n")
             elog.close()
         os.chmod(mirrorwebroot+"/org.bigbrothercctv.bigbrother.aieventlog.txt", 0o660) #allow cctvwriters group owner to write to it so webserver can empty it
+        #Set umask to octal 26 (decimal 22) this will give newly created files a mode of 640 rw-r-----
+	#inherited by all child processes so mirroring video segments and snapshots written to mirrorwebroot will inherit it
+        umask = os.umask(22)
     except:
         Log("P3 could not initialise "+mirrorwebroot+"/org.bigbrothercctv.bigbrother.aieventlog.txt"+" event notifications may not work")
 ##########################################

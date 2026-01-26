@@ -2,7 +2,7 @@
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016-2025 Andrew Wood                                  #
+# Copyright 2016-2026 Andrew Wood                                  #
 #                                                                  #
 # bbeventmonitor uses a YOLO5 model converted to ONNX format       #
 #                                                                  #
@@ -38,6 +38,8 @@ import threading
 import signal
 import calendar
 import tempfile
+import shutil
+import subprocess
 
 ##################################################################################################################################################################
 class Detection:
@@ -91,6 +93,13 @@ class Detection:
         else:
             return False
 
+    def containedCompletelyWithin(self,otherstartX,otherendX,otherstartY,otherendY):
+	    #if others co-ordinates are completely contained within this objects bounding box return True
+        if (self.startX >=otherstartX) and (self.endX <=otherendX) and (self.startY >=otherstartY) and (self.endY <=otherendY):
+            #self is 100% contained within other
+            return True
+        else:
+            return False
 
     def calculateIoU(self,d2):
         #box1 is self
@@ -389,7 +398,7 @@ def Log(msg,throw=False):
 def LogEvent(code, cameraname,frame,throw=False):
     now=datetime.now()
     datestr=now.strftime("%Y-%m-%d %H:%M:%S")
-    
+    mydir=os.path.abspath(os.path.dirname(__file__)) #gives dir without trailing /    
              
     try:
         datestrforframe=now.strftime("%Y-%m-%d--%H%M%S") #avoid using colons as it conflicts with Windows permitted file names
@@ -398,25 +407,39 @@ def LogEvent(code, cameraname,frame,throw=False):
             framedirectory=eventlogpath+"/"+dayname
         else:
             framedirectory=eventlogpath
-        #Save the image, check if filename already exists (it might if clocks just went back for DST), if so add int to it
+        #Save the image to the snapshot log folder, check if filename already exists (it might if clocks just went back for DST), if so add int to it
         n=0
         filepath=framedirectory+"/"+cameraname+"--"+datestrforframe+"--"+code+'.jpg'
         while fileIsReadable(filepath):
             n=n+1
             filepath=framedirectory+"/"+cameraname+"--"+datestrforframe+"--"+code+'-'+str(n)+'.jpg'
         frameresult=cv2.imwrite(filepath, frame)
+        #Save the image to mirrorwebroot/snapshots
+        n=0
+        firstfilepath=filepath
+        filepath=mydir+"/mirrorwebroot/snapshots/"+cameraname+"--"+datestrforframe+"--"+code+'.jpg'
+        while fileIsReadable(filepath):
+            n=n+1
+            filepath=mydir+"/mirrorwebroot/snapshots/"+cameraname+"--"+datestrforframe+"--"+code+'-'+str(n)+'.jpg'
+        
+        #shutil.copy2(firstfilepath, filepath) 
+
+        subprocess.Popen('cp '+firstfilepath+" "+filepath, shell=True)
+ 
     except:
-        print ("ERROR: Could not write frame to Event Log directory, an exception was thrown")
+        print ("ERROR: Could not write frame to Event Log directory or mirrorwebroot/snapshots, an exception was thrown")
 
     if frameresult==False:
         print ("ERROR: Could not write frame to Event Log directory, imwrite returned False")
-        
+   
+   
     #log to live notify log
-    mydir=os.path.abspath(os.path.dirname(__file__)) #gives dir without trailing /
     liveeventlogpath=mydir+"/mirrorwebroot/org.bigbrothercctv.bigbrother.aieventlog.txt"
     try:
         file=open(liveeventlogpath,'a')
-        file.write(datestr+" "+cameraname+" "+code+"\n")
+        components=filepath.split("/")
+        filepath=components[len(components)-1] # get just filename
+        file.write(datestr+" "+cameraname+" "+code+" "+filepath+"\n")
         file.close()
     except IOError as e:
         if (throw):
@@ -442,9 +465,10 @@ def LogIfOfInterest(id,frame,confidence,startX,startY,endX,endY,tid):
             if (isRepeatDetection("P",startX,startY,endX,endY)):
                 print("repeat detection, ignoring")
             else:
-                LogEvent("P", cameraname,frame)
-                d=Detection("P",startX,startY,endX,endY,int(time.time()))
-                detections.append(d)
+                if confidence>=confidenceUpperThreshold:
+                    LogEvent("P", cameraname,frame)
+                    d=Detection("P",startX,startY,endX,endY,int(time.time()))
+                    detections.append(d)
         else:
             print("Ignoring, within an ignore timeframe [thread: "+str(tid)+"]")
         
@@ -456,20 +480,24 @@ def LogIfOfInterest(id,frame,confidence,startX,startY,endX,endY,tid):
             if (isRepeatDetection("V",startX,startY,endX,endY)):
                 print("repeat detection, ignoring")
             else:
-                LogEvent("V", cameraname,frame)
-                d=Detection("V",startX,startY,endX,endY,int(time.time()))
-                detections.append(d)
+                if confidence>=confidenceUpperThreshold:
+                    LogEvent("V", cameraname,frame)
+                    d=Detection("V",startX,startY,endX,endY,int(time.time()))
+                    detections.append(d)
         else:
             print("Ignoring, within an ignore timeframe [thread: "+str(tid)+"]")
 ###############################################################################
 
 
 ###############################################################################
-def isRepeatDetection(typecode,startX,startY,endX,endY):
+def isRepeatDetection(typecode,startX,startY,endX,endY,):
     #must be called while holding eventLogLock
     prospect=Detection(typecode,startX,startY,endX,endY,int(time.time()))
     for detection in detections:
         if ( detection.isSameType(typecode) and (detection.calculateIoU(prospect)>iouThreshold)  ):
+            detection.updateTimestamp()
+            return True
+        if ( detection.isSameType(typecode) and (detection.containedCompletelyWithin(startX,endX,startY,endY)  ) ):
             detection.updateTimestamp()
             return True
     return False
@@ -502,7 +530,7 @@ def processFrame(threadidx,frame):
     for r in range(rows):
         row = outputs[0][0][r]
         confidence = row[4]
-        if confidence >= confidencemin:
+        if confidence >= confidenceLowerThreshold:
             classes_scores = row[5:]
             class_id = np.argmax(classes_scores)
             if (classes_scores[class_id] > scoremin):
@@ -516,7 +544,7 @@ def processFrame(threadidx,frame):
                 box = np.array([left, top, bwidth, bheight])
                 boxes.append(box)               
     
-    indices = cv2.dnn.NMSBoxes(boxes, confidences, confidencemin, nmsmin)
+    indices = cv2.dnn.NMSBoxes(boxes, confidences, confidenceLowerThreshold, nmsmin)
 
     for i in indices:           
         box = boxes[i]
@@ -627,9 +655,10 @@ eventignoretimes=[] #to be used after validation is complete
 
 ####################################################################
 #Alter these 2 values to adjust accuracy of detection
-confidencemin=0.6 #minimum probability to filter weak detections
-iouThreshold=0.6 #threshold when detecting duplicates
-maxAge=5 #seconds since Detection obj last updated before it 
+confidenceUpperThreshold=0.6 #if this is new detection, it must meet or exceed this threshold
+confidenceLowerThreshold=0.4 #discard all detections less than this
+iouThreshold=0.5 #overlap threshold when detecting duplicates
+maxAge=25 #seconds since Detection obj last updated before it 
 scoremin=0.5#To filter low probability class scores where one object has been ID'd as > 1 class
 nmsmin=0.45
 ####################################################################
@@ -724,6 +753,16 @@ try:
 except IOError as e:
     print ("ERROR: Could not open mirrorwebroot/org.bigbrothercctv.bigbrother.aieventlog.txt an IOError was thrown")
     exit(1)
+
+
+
+if directoryIsWritable(mydir+"/mirrorwebroot/snapshots"):
+    print("mirrorwebroot/snapshots is writable OK")
+else:
+    Log("ERROR: mirrorwebroot/snapshots is not writable")
+    print("ERROR: mirrorwebroot/snapshots is not writable")
+    exit(1)
+
 
 if len(eventcodes)!=len(eventignorestr):
     Log("ERROR: Number of EventCodes and EventIgnoreTimes values do not match, if an event is to be monitored at all times specify * for EventIgnoreTimes")
