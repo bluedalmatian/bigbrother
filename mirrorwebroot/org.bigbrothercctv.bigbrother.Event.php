@@ -2,7 +2,7 @@
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016-2025 Andrew Wood                                  #
+# Copyright 2016-2026 Andrew Wood                                  #
 #                                                                  #
 # Event class represents an AI auto detected event such as a       #
 # person or vehicle presence                                       #
@@ -34,6 +34,7 @@ class Event
 	var $unixtimestamp=NULL;
 	var $cameraname=NULL;
 	var $typecode=NULL;
+	var $filename=NULL;
 	var $initOK=false;
 
 	//Methods
@@ -42,7 +43,7 @@ class Event
 		error_log('creating Event obj');
 		
 		$len=sizeof($elements);
-		if ($len< 4)
+		if ($len< 5)
 		{
 			$this->initOK=false;
 			
@@ -54,6 +55,7 @@ class Event
 		$this->eventtime=$elements[1];
 		$this->cameraname=$elements[2];
 		$this->typecode=$elements[3];
+		$this->filename=$elements[4];
 		
 		$datecomponents=preg_split('/-/', $this->eventdate);
 		$timecomponents=preg_split('/:/', $this->eventtime);
@@ -122,6 +124,10 @@ class Event
 		{
 			return "Unknown event";
 		}
+	}
+	function GetFilename()
+	{
+		return $this->filename;
 	}
 	
 }

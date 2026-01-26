@@ -1,5 +1,5 @@
 name: "bigbrother";
-version: "2.0";
+version: "2.1";
 origin: "multimedia/bigbrother";
 comment: "BigBrother CCTV recording & mirroring system";
 abi = "FreeBSD:*:*";
@@ -95,6 +95,27 @@ files: {
  /usr/local/bigbrother/mirrorwebroot/i-green.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/i-orange.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/i-red.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/aieventicon.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/bb.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/bbsimple.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/clearmsg.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/event.mp3: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/minimalUIstatusbar.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/P.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/pausedOverlay.gif: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/pausedOverlayBackground.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/P-white.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/questionmark-blue.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/refresh.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/reload.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/fullscreen.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/hup.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/minimalUIicon.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/transparent.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/trash.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/U.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/V.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/V-white.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/index.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/video.js: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/video-js.css: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
@@ -105,7 +126,9 @@ files: {
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_namedgroups.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.functions.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.hup.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /usr/local/bigbrother/onnx/24102025-100-640x640.onnx: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.showEvents.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.Event.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/onnx/bbrelease-100-640x640.onnx: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
  /usr/local/bigbrother/onnx/classes.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
 }
 
@@ -134,10 +157,14 @@ echo 'To start BigBrother at boot time add bigbrotherd_enable="YES and bigbrothe
 chown -R bigbrother:cctvwriters /usr/local/bigbrother
 chown -R bigbrother:cctvviewers /usr/local/bigbrother/mirrorwebroot
 chmod 755 /usr/local/bigbrother
-chmod 751 /usr/local/bigbrother/mirrorwebroot
+chmod 750 /usr/local/bigbrother/mirrorwebroot
 chmod g+s /usr/local/bigbrother/mirrorwebroot
+mkdir /usr/local/bigbrother/mirrorwebroot/snapshots
+chown -R bigbrother:cctvviewers /usr/local/bigbrother/mirrorwebroot/snapshots
+chmod 750 /usr/local/bigbrother/mirrorwebroot/snapshots
+chmod g+s /usr/local/bigbrother/mirrorwebroot/snapshots
 chown -R bigbrother:cctvwriters /usr/local/bigbrother/onnx
-chmod 751 /usr/local/bigbrother/onnx
+chmod 750 /usr/local/bigbrother/onnx
 EOD;
 
 	post-deinstall = <<EOD

@@ -1,11 +1,14 @@
 [Unit]
 Description=BigBrother wrapper daemon for FFMPEG for recording and mirroring IP CCTV cameras. Requires FFMPEG and Python. Mirroring requires a PHP enabled HTTP server
+After=network.target
 
 [Service]
 ExecStart=/usr/local/bigbrother/bigbrotherd -f /usr/local/bigbrother/bigbrother.conf
 Type=forking
 PIDFile=/usr/local/bigbrother/pid
-
+TimeoutStopSec=120
+KillSignal=SIGINT
+KillMode=process
 
 [Install]
 WantedBy=multi-user.target

@@ -46,7 +46,7 @@ processSIGTERM()
         echo "Got SIGTERM"
         echo "$0 Got SIGTERM forwarding to OS PID $pid" | $bblogger $logfile
 	keepGoing=0
-        kill -TERM $pid
+        kill -INT $pid
 
 }
 
@@ -55,7 +55,7 @@ processSIGQUIT()
         echo "Got SIGQUIT"
         echo "$0 Got SIGQUIT forwarding to OS PID $pid" | $bblogger $logfile
 	keepGoing=0
-        kill -QUIT $pid
+        kill -INT $pid
 
 }
 

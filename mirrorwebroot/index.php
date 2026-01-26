@@ -286,9 +286,9 @@ p.xsmall {
 
 .toolbarbutton{
 	
-	margin:4px;
+	margin:0px;
 	cursor:pointer;
-	padding:4px;
+	padding:0px;
 	border-width: 1px;
 	border-color: white;
 	border-style: solid;
@@ -383,6 +383,36 @@ var eventAudio = new Audio('event.mp3');
 
 var speechSynth = window.speechSynthesis;
 
+var pageLoadedTimestamp=Math.round(Date.now() / 1000); //convert timestamp now from ms to sec
+
+
+
+function checkFullscreen()
+{
+	if (document.fullscreenElement != null) 
+	{
+    		//We are in fullscreen mode
+		return true;
+	} 
+	else 
+	{
+    		//We are not in fullscreen mode
+		return false;
+	}
+}
+
+function toggleFullscreen()
+{
+
+	if (checkFullscreen())
+	{
+		document.exitFullscreen().catch((e) => {console.error('Error attempting to exit full-screen mode:', e);});
+	}
+	else
+	{
+		document.documentElement.requestFullscreen().catch((e) => { console.error('Error attempting to enable full-screen mode:', e);});
+	}
+}
 
 function detectBrowser()
 {
@@ -428,10 +458,7 @@ function detectBrowser()
         {
                 //Firefox
 				
-					var body=document.getElementById("body");
-					body.style.background="black";
-					body.innerHTML="<center><h2><font color=white face='arial'>Firefox browser is not supported. It is recommended to use Chromium, Chrome, Edge or Safari</h2></center>";
-					aieventmonitoring=false;
+					
   
         }
 
@@ -459,6 +486,7 @@ function appendMsg(msg)
 		for (var i=0; i <msgps.length; i++)
 		{
 				msgps[i].style.fontSize="x-small";
+				msgps[i].style.margin="0px";
 				
 		}
 			
@@ -490,6 +518,7 @@ function clobberMsg(msg)
 		for (var i=0; i <msgps.length; i++)
 		{
 				msgps[i].style.fontSize="x-small";
+				msgps[i].style.margin="0px";
 				
 		}
 			
@@ -521,6 +550,8 @@ function scrollEventMsg(msg)
 		for (var i=0; i <alertps.length; i++)
 		{
 				alertps[i].style.fontSize="x-small";
+				alertps[i].style.margin="0px";
+				
 				
 		}
 			
@@ -995,8 +1026,8 @@ function showAIEventLog()
 	if (miniStatus)
 	{
 		var overlay=document.getElementById("eventlogoverlay");
-		overlay.innerHTML="<table bgcolor=blue width=100% height=10 border=2 bordercolor=blue><tr><td width=*>&nbsp;</td><td bgcolor=gray width=20><center><p class=small onclick='hideEventLogOverlay();' style='cursor:pointer;'>X</p></center></td></tr>";
-		overlay.innerHTML=overlay.innerHTML+"<tr><td colspan=2><iframe src='org.bigbrothercctv.bigbrother.showEvents.php' width=100% height=100%></iframe></td></tr>";
+		overlay.innerHTML="<table bgcolor=blue width=100% height=10  bordercolor=blue><tr><td width=*>&nbsp;</td><td bgcolor=gray width=20><center><p class=small onclick='hideEventLogOverlay();' style='cursor:pointer;'>X</p></center></td></tr>";
+		overlay.innerHTML=overlay.innerHTML+"<tr><td colspan=2><iframe src='org.bigbrothercctv.bigbrother.showEvents.php' width=100% height=95%></iframe></td></tr>";
 		overlay.innerHTML=overlay.innerHTML+"</table>";
 		overlay.style.display="block";
 		overlay.style.position="absolute";
@@ -1085,10 +1116,15 @@ function showParamHelp()
 	if (miniStatus)
 		
 		{
+			
+			msg=msg+"<br><br><center><p>BigBrother &copy; Copyright Andrew Wood 2016-2026. Licensed under the GNU Public License 3</p></center>";
+			
+			
+			
 			var overlay=document.getElementById("helpoverlay");
 			
 		
-			overlay.innerHTML="<table bgcolor=blue width=100% height=10 border=2 bordercolor=blue><tr><td width=*>&nbsp;</td><td bgcolor=gray width=20><center><p class=small onclick='hideHelpOverlay();' style='cursor:pointer;'>X</p></center></td></tr>";
+			overlay.innerHTML="<table bgcolor=blue width=100% height=10 border=0 bordercolor=blue><tr><td width=*>&nbsp;</td><td bgcolor=gray width=20><center><p class=small onclick='hideHelpOverlay();' style='cursor:pointer;'>X</p></center></td></tr>";
 			overlay.innerHTML=overlay.innerHTML+"<tr><td colspan=2>"+msg+"</td></tr>";
 			overlay.innerHTML=overlay.innerHTML+"</table>";
 			overlay.style.display="block";
@@ -1141,12 +1177,15 @@ function pause(id,show)
 
 function onLoad()
 {
+		pageLoadedTimestamp=getTimestampNow();
 		detectBrowser();
 	    checkPendingEvents();
 		setInterval(checkAIEvents, 5000)
 		displayPendingMessages();
 		checkAIEvents();
-		windowResized(true);
+
+		setTimeout(windowResized, 1000,true) //delayed call to allow time for videojs to init internally
+		setTimeout(setStalledHandlers, 1000,true) //delayed call to allow time for videojs to init internally
 		
 		
 		//event listeners for video.js dont work, the events never fire, so we have to poll
@@ -1193,12 +1232,76 @@ function checkPaused()
 			{
 				pause(id,false);
 			}
-			
-	
-	
+
+			console.log("readyState for "+id+" is :"+videotag.readyState)
 		}
 }
 
+function isStalled()
+{
+	var now=getTimestampNow();
+	if (now-pageLoadedTimestamp > 5)
+	{
+		//page loaded > 5 seconds ago
+	}
+	else
+	{
+		//page loaded < 5 seconds ago so ignoring stall
+	}
+
+	 var videoeles=document.getElementsByClassName("video-js");
+         for (var i=0; i < videoeles.length; i++)
+         {
+                        var id=videoeles[i].getAttribute('id');
+                        //NOTE you would expect videoeles[i] to be the <video> tag with id=camname BUT IT IS NOT!!!!
+                        //video.js has altered the document tree at run time and wrapped the <video> in a <div>
+                        //the <div> now has the id=camname and the <video> is within the <div> with id=camname_html5_api
+
+                        //videoeles[i] is a <div> generated by video.js even though in HTML source it is a <video>!
+                        //the actual <video> has been moved down within the div and has an id of CAMERANAME_html5_api
+                        //this is contrary to the video.js documentation (what limited docs there is)
+
+                        var videotag=document.getElementById(id+"_html5_api");
+			videotag.currentTime = 0;
+			videotag.play();
+			console.log("reloaded video due to stall: "+id);
+	}
+
+}
+
+
+function setStalledHandlers()
+{
+
+
+		 var videoeles=document.getElementsByClassName("video-js");
+                for (var i=0; i < videoeles.length; i++)
+                {
+                        var id=videoeles[i].getAttribute('id');
+                        //NOTE you would expect videoeles[i] to be the <video> tag with id=camname BUT IT IS NOT!!!!
+                        //video.js has altered the document tree at run time and wrapped the <video> in a <div>
+                        //the <div> now has the id=camname and the <video> is within the <div> with id=camname_html5_api
+
+                        //videoeles[i] is a <div> generated by video.js even though in HTML source it is a <video>!
+                        //the actual <video> has been moved down within the div and has an id of CAMERANAME_html5_api
+                        //this is contrary to the video.js documentation (what limited docs there is)
+
+                        var videotag=document.getElementById(id+"_html5_api");
+
+
+                        console.log("Adding stalled handler for "+id);
+
+						videotag.addEventListener('stalled',  evt => { 
+							isStalled();		
+						});
+						videotag.addEventListener('waiting',  evt => { 
+                            isStalled();            
+                        });
+
+
+                }
+
+}
 
 function windowResized(calledFromOnLoad=false)
 {
@@ -1206,7 +1309,9 @@ function windowResized(calledFromOnLoad=false)
 	var numCams=videoeles.length;
 	
 	var viewportW=window.innerWidth;
-    var viewportH=window.innerHeight;
+	var viewportH=window.innerHeight;
+
+
 	
 	if (miniStatus)
 	{
@@ -1297,16 +1402,6 @@ function windowResized(calledFromOnLoad=false)
 		}
 	
 	
-		var ua=navigator.userAgent;
-		ua=ua.toLowerCase();
-		if ( (ua.indexOf("firefox")>0) && (ua.indexOf("gecko")>0) )
-		{
-			if (calledFromOnLoad==false)
-			{
-				//window.location.reload();
-			}
-
-		}
 
 
 }
@@ -1317,7 +1412,6 @@ window.addEventListener('resize', function(event) {
 
 
 
-
 function showMiniStatus()
 {
 	var statusbar=document.getElementById("ministatusbar");
@@ -1325,8 +1419,22 @@ function showMiniStatus()
 	statusbar.style.position="absolute";
 	statusbar.style.top=(window.innerHeight-24)+"px";
 	statusbar.style.width="100%";
+	statusbar.style.height="24px";
+
 	var cameragrid=document.getElementById("cameragrid");
 	cameragrid.style.height=(window.innerHeight-24)+"px";
+
+	var buttons=document.getElementsByClassName("toolbarbutton");
+    for (var i=0; i <buttons.length; i++)
+    {
+        buttons[i].style.height='20px';
+		
+	
+
+    }
+
+	
+
 	
 	if (aieventmonitoring)
 	{
@@ -1336,7 +1444,20 @@ function showMiniStatus()
 	
 }
 
-
+function goMinimalUI()
+{
+	if (minimalUI==false)
+	{
+		if (window.location.href.includes("?"))
+		{
+			window.location.href=window.location.href+"&minimalUI=true&miniStatus=true";
+		}
+		else
+		{
+			window.location.href=window.location.href+"?minimalUI=true&miniStatus=true";
+		}
+	}
+}
 
 </script>
 
@@ -1387,6 +1508,17 @@ function showMiniStatus()
 			<td class=toolbarbutton id=paramhelpbutton onclick='showParamHelp();' onmouseover='mouseOverButton(this);' onmouseout='mouseOutButton(this);'>
 			<p><img src=questionmark-blue.png width=32 align=middle valign=middle>Show optional parameters</p></td>
 			
+			<?php			
+				//Go to minimalUI button
+				if ($minimalUI==false)
+				{
+                        		echo("<td class=toolbarbutton id=minimalUIbutton onclick='goMinimalUI();' onmouseover='mouseOverButton(this);' onmouseout='mouseOutButton(this);'>");
+                        		echo("<p><img src=minimalUIicon.png width=32 align=middle valign=middle>Minimal UI mode</p></td>");
+				}
+			?>
+
+			
+		
 		
 		<?php
 		
@@ -1492,16 +1624,24 @@ is a trademark of Fabrice Bellard</p></font></td>
 	<table cellspacing=0 cellpadding=0 border=0 width=100% height=24 background=minimalUIstatusbar.png>
 		<tr width=100% height=100%>
 			<td width=48><img src=bb.png height=20 width=40></td>
-			<td align=left width=230><p class=small><?php  echo " BigBrother ".$formattedversion;?> &copy; Copyright 2016-<?php printCurrentYear();?> </td>
+			<td align=left width=230><p class=small><?php echo " BigBrother ".$formattedversion;?> &copy; Copyright 2016-<?php printCurrentYear();?> </td>
 			
 			
 			
 				<!Param help button>
 					<td width=20 class=toolbarbutton id=paramhelpbuttonmini onclick='showParamHelp();' onmouseover='mouseOverButton(this);' onmouseout='mouseOutButton(this);' style='margin:0px;'>
-					<center><p class=xsmall style='color:#00f3ff;'>?</p></center>
+					<center><p class=xsmall style='color:#00f3ff; margin:0px;'>?</p></center>
 					</td>
+					
+					<td width=5 height=24>&nbsp;</td>
+
+				 <!Fullscreen button>
+                                        <td width=20 class=toolbarbutton id=fullscreenbuttonmini onclick='toggleFullscreen();' onmouseover='mouseOverButton(this);' onmouseout='mouseOutButton(this);' style='margin:0px;'>
+                                        <center><p class=xsmall style='color:#00f3ff; margin:0px;'><img src=fullscreen.png height=10 align=middle valign=middle style='margin:0px;'></p></center>
+                                        </td>
+
 			
-				<td width=5>&nbsp;</td>
+				<td width=5 height=24>&nbsp;</td>
 				
 				
 				<?php
@@ -1509,9 +1649,11 @@ is a trademark of Fabrice Bellard</p></font></td>
 						//only display UI for sending HUP if configured to do so
 							if ($allownewfilefromweb)
 							{
-								echo("<td width=250 class=toolbarbutton id=hupbuttonmini onclick='handleHUPRequest();' onmouseover='mouseOverButton(this);' onmouseout='mouseOutButton(this);' style=\"margin:'0px';\">");
-								echo("<p class=xsmall><img src=hup.png width=20 height=10 align=middle valign=middle>Start a new file for all current recordings</p></td>");
-								echo("<td width=5>&nbsp;</td>");
+								
+								
+								echo("<td width=235 class=toolbarbutton id=hupbuttonmini onclick='handleHUPRequest();' onmouseover='mouseOverButton(this);' onmouseout='mouseOutButton(this);' style=\"margin:'0px';\">");
+								echo("<p class=xsmall style='margin:0px;'><img src=transparent.png width=5><img src=hup.png width=40 height=16 align=middle valign=middle style='margin:0px;'><img src=transparent.png width=5>Start a new file for all current recordings</p></td>");
+								echo("<td width=5 height=24>&nbsp;</td>");
 							}
 			
 				?>
@@ -1520,14 +1662,14 @@ is a trademark of Fabrice Bellard</p></font></td>
 				<?php
 
 				
-	                if ($aieventmonitoring)
-        	        {
-						echo("<td width=150 class=toolbarbutton id=aieventbuttonmini bgcolor=#da912b onclick='showAIEventLog();' onmouseover='mouseOverButton(this);' onmouseout='mouseOutButton(this);' style=\"margin:'0px';\">");
-						echo("<p class=xsmall><img src=aieventicon.png width=30 height=10 align=middle valign=middle>Show detected events</p></td>");
+	                		if ($aieventmonitoring)
+        	        		{
+								
+								echo("<td width=155 class=toolbarbutton id=aieventbuttonmini bgcolor=#da912b onclick='showAIEventLog();' onmouseover='mouseOverButton(this);' onmouseout='mouseOutButton(this);' style=\"margin:'0px';\">");
+								echo("<p class=xsmall style='margin:0px;'><img src=transparent.png width=5><img src=aieventicon.png width=40 height=16 align=middle valign=middle style='margin:0px;'><img src=transparent.png width=5>Show detected events</p></td>");
+					
+					
 					}
-					
-					
-					
 				?>
 			
 			

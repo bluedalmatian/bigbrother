@@ -21,6 +21,7 @@ installbinary:
 	cp ./markup_y5onnx.py $(INSTALLDIR)
 	cp ./bbeventmonitor_y5onnx $(INSTALLDIR)
 	cp -R ./onnx $(INSTALLDIR)
+	
 
 #Use checkinstall to make a .deb
 deb:
