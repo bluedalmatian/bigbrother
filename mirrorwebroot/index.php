@@ -61,7 +61,9 @@
 		$groupNameGET=$_GET['groupName'];
 		$miniStatusGET=$_GET['miniStatus'];
 		$ignoreEventsGET=$_GET['ignoreEvents'];
-		
+
+
+
 		if ($ignoreEventsGET=="true")
 		{
 			$aieventmonitoring=false;
@@ -358,12 +360,13 @@ var cameraNotFound = false;
 	
 	if ($aieventmonitoring)
 	{
-		echo("var aieventmonitoring=true");
+		echo("var aieventmonitoring=true;");
 	}
 	else
 	{
-		echo("var aieventmonitoring=false");
+		echo("var aieventmonitoring=false;");
 	}
+
 		
 ?>
 
@@ -771,6 +774,19 @@ function mouseOutButton(obj)
 	}
 }
 
+function mouseOverXButton(obj)
+{
+        var td=document.getElementById(obj.id);
+        td.style.backgroundColor="#ff0000";
+}
+
+function mouseOutXButton(obj)
+{
+        var td=document.getElementById(obj.id);
+        td.style.backgroundColor="#5e4868";
+}
+
+
 function handleHUPRequest()
 {
 	var hupok=confirm("This will terminate all current recording for all cameras and start new ones")
@@ -1026,16 +1042,18 @@ function showAIEventLog()
 	if (miniStatus)
 	{
 		var overlay=document.getElementById("eventlogoverlay");
-		overlay.innerHTML="<table bgcolor=blue width=100% height=10  bordercolor=blue><tr><td width=*>&nbsp;</td><td bgcolor=gray width=20><center><p class=small onclick='hideEventLogOverlay();' style='cursor:pointer;'>X</p></center></td></tr>";
-		overlay.innerHTML=overlay.innerHTML+"<tr><td colspan=2><iframe src='org.bigbrothercctv.bigbrother.showEvents.php' width=100% height=95%></iframe></td></tr>";
-		overlay.innerHTML=overlay.innerHTML+"</table>";
-		overlay.style.display="block";
-		overlay.style.position="absolute";
-		overlay.style.zIndex=3000;
-		overlay.style.left="10px";
-		overlay.style.top="10px";
-		overlay.style.width=(window.innerWidth-50)+"px";
-		overlay.style.height=(window.innerHeight-50)+"px";
+		overlay.innerHTML="<table bgcolor=#677383 width=100% cellspacing=0 cellpadding=0 border=0><tr><td width=* height=40>&nbsp;</td><td bgcolor=#5e4868 id=eventlogXbutton width=40 height=40 onmouseover='mouseOverXButton(this);' onmouseout='mouseOutXButton(this);'><img src=X.png onclick='hideEventLogOverlay();' style='cursor:pointer;' width=40></td></tr>";
+		overlay.innerHTML=overlay.innerHTML+"<tr><td colspan=2><iframe id=eventoverlayiframe src='org.bigbrothercctv.bigbrother.showEvents.php' width=100% height=95%></iframe></td></tr>";
+        overlay.innerHTML=overlay.innerHTML+"</table>";
+        overlay.style.display="block";
+        overlay.style.position="absolute";
+        overlay.style.zIndex=3000;
+        overlay.style.left="10px";
+        overlay.style.top="10px";
+        overlay.style.width=(window.innerWidth-50)+"px";
+        overlay.style.height=(window.innerHeight-50)+"px";
+		document.getElementById("eventoverlayiframe").style.width=(window.innerWidth-54)+"px";
+		
 	}
 	else
 	{
@@ -1123,8 +1141,7 @@ function showParamHelp()
 			
 			var overlay=document.getElementById("helpoverlay");
 			
-		
-			overlay.innerHTML="<table bgcolor=blue width=100% height=10 border=0 bordercolor=blue><tr><td width=*>&nbsp;</td><td bgcolor=gray width=20><center><p class=small onclick='hideHelpOverlay();' style='cursor:pointer;'>X</p></center></td></tr>";
+			overlay.innerHTML="<table bgcolor=#677383 width=100% cellspacing=0 cellpadding=0 border=0><tr><td width=* height=40>&nbsp;</td><td bgcolor=#5e4868 id=helpXbutton width=40 height=40 onmouseover='mouseOverXButton(this);' onmouseout='mouseOutXButton(this);'><img src=X.png onclick='hideHelpOverlay();' style='cursor:pointer;' width=40></td></tr>";
 			overlay.innerHTML=overlay.innerHTML+"<tr><td colspan=2>"+msg+"</td></tr>";
 			overlay.innerHTML=overlay.innerHTML+"</table>";
 			overlay.style.display="block";
@@ -1195,6 +1212,7 @@ function onLoad()
 		{
 			appendMsg("<p class=statusmsg><b><img src=i-orange.png width=32 height=32 align=middle valign=middle class=statusicon>Event notifications disabled</b></p>"); 
 		}
+
 
 }
 

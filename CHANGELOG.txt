@@ -1,5 +1,7 @@
 MAJOR CHANGES FOR EACH VERSION
 ======================================================================================================================================================================
+2.2	Improved latency for mirroring. Added event filtering, when filter applied deleting events only deletes those to which filter applies
+
 2.1	Fixed rendering bug affecting video size and Z index ordering when using minimalUI mode, fixed issue where recording could be corrupted when BB restarted
 	added networking dependency to System D unit file to prevent BB starting before network up, added feature if video playback in mirroring page freezes page reloads,
 	fixed permissions on mirroring video segment files so not world readable, added event snapshot images to mirror webpage event log viewer, updated AI model

@@ -1,5 +1,5 @@
 name: "bigbrother";
-version: "2.1";
+version: "2.2";
 origin: "multimedia/bigbrother";
 comment: "BigBrother CCTV recording & mirroring system";
 abi = "FreeBSD:*:*";
@@ -90,6 +90,7 @@ files: {
  /usr/local/bigbrother/extract.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/mirrorwebroot/bb.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/ffmpeg.jpg: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/filter.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/hup.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/i-blue.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/i-green.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
@@ -112,10 +113,12 @@ files: {
  /usr/local/bigbrother/mirrorwebroot/hup.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/minimalUIicon.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/transparent.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/star.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/trash.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/U.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/V.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/V-white.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/X.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/index.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/video.js: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/video-js.css: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
@@ -127,6 +130,7 @@ files: {
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.functions.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.hup.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.showEvents.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.FilterSettings.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.Event.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/onnx/bbrelease-100-640x640.onnx: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
  /usr/local/bigbrother/onnx/classes.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
@@ -161,7 +165,7 @@ chmod 750 /usr/local/bigbrother/mirrorwebroot
 chmod g+s /usr/local/bigbrother/mirrorwebroot
 mkdir /usr/local/bigbrother/mirrorwebroot/snapshots
 chown -R bigbrother:cctvviewers /usr/local/bigbrother/mirrorwebroot/snapshots
-chmod 750 /usr/local/bigbrother/mirrorwebroot/snapshots
+chmod 770 /usr/local/bigbrother/mirrorwebroot/snapshots
 chmod g+s /usr/local/bigbrother/mirrorwebroot/snapshots
 chown -R bigbrother:cctvwriters /usr/local/bigbrother/onnx
 chmod 750 /usr/local/bigbrother/onnx
