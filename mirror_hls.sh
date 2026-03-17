@@ -206,7 +206,7 @@ do
 
 	### See https://trac.ffmpeg.org/wiki/Limiting%20the%20output%20bitrate for -b:v and -bufsize parameters 
 
-	$ffmpegcommand -timeout 10000000 -loglevel fatal -i $sourceurl -vcodec libx264 -preset ultrafast -tune zerolatency -acodec aac -strict -2 -b:a 16k -framerate $framerate -s $resolution -b:v $bitrate -bufsize $bitrate -g 10 -segment_list_size 10 -segment_wrap 10 -hls_flags delete_segments -f hls -metadata title="$camname" $webroot/$camname.m3u8  &
+	$ffmpegcommand -timeout 10000000 -loglevel fatal -i $sourceurl -vcodec libx264 -preset ultrafast -tune zerolatency -acodec aac -strict -2 -b:a 16k -framerate $framerate -s $resolution -b:v $bitrate -bufsize $bitrate -g 5 -segment_list_size 1 -segment_wrap 1 -hls_flags delete_segments -hls_init_time 0.3 -hls_time 0.3 -f hls -metadata title="$camname" $webroot/$camname.m3u8  &
 	
 
 	pid=$!

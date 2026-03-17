@@ -1,6 +1,6 @@
 %define _topdir		%(pwd)/RPM
 %define name            org.bigbrothercctv.bigbrother
-%define version		2.1
+%define version		2.2
 
 
 Summary:        bigbrothercctv.org BigBrother
@@ -64,7 +64,7 @@ systemctl daemon-reload
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/markup_y5onnx.py
 %attr (750,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot
 %attr (640,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot/*
-%attr (750,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot/snapshots
+%attr (770,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot/snapshots
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/onnx
 %attr (640,bigbrother,cctvwriters) /usr/local/bigbrother/onnx/*
 %attr (644,root,root)/etc/systemd/system/bigbrotherd.service

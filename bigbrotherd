@@ -39,7 +39,7 @@ class ParseException(Exception):
 #######################################
 #System wide knobs
 
-bbversion=2.1 ##only change version no here and in no other file
+bbversion=2.2 ##only change version no here and in no other file
 exedir=os.path.dirname(os.path.realpath(__file__)) ##gives dir with no trailing /
 globalconffile=exedir+"/bigbrother.conf"
 dashfspecified=False
