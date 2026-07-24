@@ -1,5 +1,8 @@
 MAJOR CHANGES FOR EACH VERSION
 ======================================================================================================================================================================
+2.3	Improvements to event detection performance, improvements to mirroring live view performance including better recovery of stalled camera streams. 
+        New separate license for AI model
+
 2.2	Improved latency for mirroring. Added event filtering, when filter applied deleting events only deletes those to which filter applies
 
 2.1	Fixed rendering bug affecting video size and Z index ordering when using minimalUI mode, fixed issue where recording could be corrupted when BB restarted

@@ -1,10 +1,10 @@
 %define _topdir		%(pwd)/RPM
 %define name            org.bigbrothercctv.bigbrother
-%define version		2.2
+%define version		2.3
 
 
 Summary:        bigbrothercctv.org BigBrother
-License:        GPL
+License:        GPL (software) and BigBrother AI Model License (models)
 Name:           %{name}
 Version:        %{version}
 Release:        1
@@ -48,7 +48,7 @@ systemctl daemon-reload
 %files
 %attr (755,bigbrother,cctvwriters) /usr/local/bigbrother/
 %attr (644,bigbrother,cctvwriters) /usr/local/bigbrother/README.txt
-%attr (644,bigbrother,cctvwriters) /usr/local/bigbrother/License.txt
+%attr (644,bigbrother,cctvwriters) /usr/local/bigbrother/LICENSE*
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bblogger
 %attr (660,bigbrother,cctvwriters) /usr/local/bigbrother/bigbrother.conf
 %attr (660,bigbrother,cctvwriters) /usr/local/bigbrother/bigbrother_camera.conf

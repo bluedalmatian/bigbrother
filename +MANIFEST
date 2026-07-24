@@ -1,5 +1,5 @@
 name: "bigbrother";
-version: "2.2";
+version: "2.3";
 origin: "multimedia/bigbrother";
 comment: "BigBrother CCTV recording & mirroring system";
 abi = "FreeBSD:*:*";
@@ -7,7 +7,7 @@ arch = "freebsd:*:*";
 www: "http://www.bigbrothercctv.org";
 maintainer: awood@communicationsmuseum.org.uk;
 licenselogic: "or";
-licenses: ["GPLv3"];
+licenses: ["GPLv3 (software) and BigBrother AI Model License (models)"];
 flatsize: 1000000;
 users: ["bigbrother"];
 groups: ["cctvviewers", "cctvwriters"];
@@ -17,8 +17,9 @@ desc: <<EOD
   which configures it to do IP CCTV
   recording & mirroring.
 
-  It is licensed under the GNU Public license (GPL) version 3
-  (for the full license see www.gnu.org/licenses/gpl-3.0.en.html)
+  It is licensed under the GNU Public license (GPL) version 3 for the software and 
+  BigBrother AI Model License for the AI Model
+  (for the full license see files LICESNE and LICENSE-AIMODEL)
 
   It offers the following features:
 
@@ -73,7 +74,8 @@ deps: {
 }
 files: {
  /usr/local/bigbrother/README.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 644};
- /usr/local/bigbrother/License.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 644};
+ /usr/local/bigbrother/LICENSE: {uname: 'bigbrother', gname: 'cctvwriters',perm: 644};
+ /usr/local/bigbrother/LICENSE-AIMODEL: {uname: 'bigbrother', gname: 'cctvwriters',perm: 644};
  /usr/local/bigbrother/bblogger: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/bigbrother.conf: {uname: 'bigbrother', gname: 'cctvwriters',perm: 660};
  /usr/local/bigbrother/bigbrother_camera.conf: {uname: 'bigbrother', gname: 'cctvwriters',perm: 660};
@@ -122,6 +124,8 @@ files: {
  /usr/local/bigbrother/mirrorwebroot/index.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/video.js: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/video-js.css: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/LICENSE: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/LICENSE-AIMODEL: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.Camera.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_allcameras.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.cameraoutput_namedcameras.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
@@ -132,8 +136,10 @@ files: {
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.showEvents.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.FilterSettings.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.Event.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/stall.js: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/onnx/bbrelease-100-640x640.onnx: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
  /usr/local/bigbrother/onnx/classes.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
+ /usr/local/bigbrother/onnx/LICENSE-AIMODEL: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
 }
 
 scripts: {

@@ -2,7 +2,7 @@
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016-2025 Andrew Wood                                  #
+# Copyright 2016-2026 Andrew Wood                                  #
 #                                                                  #
 # Camera class represents a camera as defined in the config file   #
 #                                                                  #
@@ -81,13 +81,15 @@ class Camera
 		if (  (strlen($this->mirror)>2) && (substr($this->mirror,0,3)=="HLS")  )
 		{
 			echo("<div id=".$this->name."_pauseoverlay style=\"display:none; position:relative; background-image: url(pausedOverlayBackground.png);\"><img src=pausedOverlay.gif width=64 height=64></div>");
-			echo("<video class='video-js vjs-default-skin' width=640 height=480 controls autoplay muted data-setup='{\"userActions\": {\"click\": false}}' id=".$this->name.">");
+			echo("<video class='video-js vjs-default-skin' width=640 height=480 controls autoplay muted data-setup='{\"liveui\": true, \"html5\": {\"vhs\": {\"lowLatencyMode\": true, \"liveSyncDuration\": 0.5, \"liveMaxLatencyDuration\": 1.5}}, \"userActions\": {\"click\": false}}' id=".$this->name.">");
 
     			echo("<source src='".$this->name.".m3u8' type='application/x-mpegURL'>");
 				
 			echo("</video>");
 			
 			echo("<p class=cameraname>".$this->name."</p>");
+			echo("<script>videotype_extn['".$this->name."']='m3u8';</script>");
+			echo("<script>videotype_mime['".$this->name."']='application/x-mpegURL';</script>");
 			
 		}
 		

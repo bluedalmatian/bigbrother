@@ -120,17 +120,41 @@ for i in indices:
     top = box[1]
     bwidth = box[2]
     bheight = box[3]             
-    cv2.rectangle(frame, (left, top), (left + bwidth, top + bheight), BLUE, 3*THICKNESS)
+    
+    
+    cv2.rectangle(frame, (left, top), (left + bwidth, top + bheight), BLUE, 2)
+        
+        
     label = "{}:{:.2f}".format(classNames[class_ids[i]], confidences[i])
+    
+    # Get text size
+    (text_width, text_height), baseline = cv2.getTextSize(label,cv2.FONT_HERSHEY_SIMPLEX,0.5,2)
+
+    # Compute center of the bounding box
+    center_x = left + bwidth // 2
+    center_y = top + bheight // 2
+
+    # Compute bottom-left corner of text so it is centered
+    text_x = center_x - text_width // 2
+    text_y = center_y + text_height // 2
+
+
+	
+    
+    cv2.putText(frame,label,(text_x, text_y),cv2.FONT_HERSHEY_SIMPLEX,0.5,BLUE,2)
+    
+    
+    
+  
     
     
     #Draw text onto image at location xy 
-    text_size = cv2.getTextSize(label, FONT_FACE, FONT_SCALE, THICKNESS)
-    dim, baseline = text_size[0], text_size[1]
+    #text_size = cv2.getTextSize(label, FONT_FACE, FONT_SCALE, THICKNESS)
+    #dim, baseline = text_size[0], text_size[1]
     # Use text size to create a BLACK rectangle.
-    cv2.rectangle(frame, (left,top), (left + dim[0], top + dim[1] + baseline), BLUE, cv2.FILLED);
+    #cv2.rectangle(frame, (left,top), (left + dim[0], top + dim[1] + baseline), BLUE, cv2.FILLED);
     # Display text inside the rectangle.
-    cv2.putText(frame, label, (left, top + dim[1]), FONT_FACE, FONT_SCALE, WHITE, THICKNESS, cv2.LINE_AA)
+    #cv2.putText(frame, label, (left, top + dim[1]), FONT_FACE, FONT_SCALE, WHITE, THICKNESS, cv2.LINE_AA)
     
     
     

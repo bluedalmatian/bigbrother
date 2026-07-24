@@ -10,8 +10,8 @@ ob_start();
 	{
 		
 		$nodaemonerrmsg=$nodaemonerrmsg."<p class=statusmsg><font face=face='Arial','Verdana'>CCTV not available,BigBrother is not running</font></p>";
-		$nodaemonerrmsg=$nodaemonerrmsg."<meta http-equiv='refresh' content='1'>";
-		do412($nodaemonerrmsg);
+		$nodaemonerrmsg=$nodaemonerrmsg."<meta http-equiv='refresh' content='1'><script>window.location.reload();</script>";
+		do418($nodaemonerrmsg);
 		exit($nodaemonerrmsg);
 	}
 	function requiredIncludeFail($errno, $errstr, $errfile, $errline)
@@ -40,6 +40,16 @@ global $DAEMONPID;
 function do412($err)
 {
         header('HTTP/1.1 412 Precondition Failed', true, 412);
+               
+                echo($err);
+               
+        ob_end_flush();
+
+}
+
+function do418($err)
+{
+        header('HTTP/1.1 418 Precondition Failed', true, 418);
                
                 echo($err);
                

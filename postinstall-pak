@@ -11,8 +11,8 @@ chown bigbrother:cctvwriters $INSTALLDIR
 chmod 755 $INSTALLDIR
 chown bigbrother:cctvwriters  $INSTALLDIR/README.txt
 chmod 644 $INSTALLDIR/README.txt
-chown bigbrother:cctvwriters  $INSTALLDIR/License.txt
-chmod 644 $INSTALLDIR/License.txt
+chown bigbrother:cctvwriters  $INSTALLDIR/LICENSE*
+chmod 644 $INSTALLDIR/LICENSE*
 chown bigbrother:cctvwriters  $INSTALLDIR/bblogger
 chmod 750 $INSTALLDIR/bblogger
 chown bigbrother:cctvwriters  $INSTALLDIR/bigbrother.conf
