@@ -1,17 +1,41 @@
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #		      
-# Copyright 2016-2025 Andrew Wood                                  #
+# Copyright 2016-2026 Andrew Wood                                  #
 #                                                                  #
-#This copy of the README file relates to version 2.2		   #
+# This copy of the README file relates to version 2.3		   #
 #                                                                  #
 # www.bigbrothercctv.org			                   #
+#                           					   #
 #                                                                  #
-# Licensed under the GNU Public License v 3			   #
-# The full license can be read at www.gnu.org/licenses/gpl-3.0.txt #
-# and is included in the License.txt file included with this	   #
-# software.                                                        #
+#                                                                  #
+# SOFTWARE LICENSE                                                 #
+#                                                                  #
+# The BigBrother CCTV software is licensed under the GNU General   #
+# Public License Version 3 (GPLv3). A copy of the GPLv3 is         #
+# included in the file LICENSE and is available at:	           #
+# www.gnu.org/licenses/gpl-3.0.txt                                 #
+#                                                                  #
+#                                                                  #
+# AI MODEL LICENSE                                                 #
+#                                                                  #
+# The BigBrother CCTV AI model files are NOT licensed under the    #
+# GPL. Such AI models are licensed      		           #
+# separately under the BigBrother CCTV AI Model License and are    #
+# subject to their own terms, conditions, restrictions.            #
+# A copy of the BigBrother CCTV AI Model License is included in    #
+# the file LICENSE-AIMODEL and is available at:                    #
+# www.bigbrothercctv.org/LICENSE-AIMODEL.txt                       #
+#                                                                  #
+#                                                                  #
+# The GPLv3 applies only to the BigBrother CCTV software source    #
+# code. It does not apply to the AI model files. All rights to     #
+# use, modify, distribute, or otherwise exploit the AI model       #
+# files are governed exclusively by the BigBrother CCTV AI Model   #
+# License.                                                         #
+#                                                                  #
+#                                                                  #
 #	                                                           #
-# BigBrother is free open source software but if you find it       #                                
+# BigBrother is free open source software but if you find it       #
 # useful please consider making a donation to the Communications   #
 # Museum Trust at www.communicationsmuseum.org.uk/donate           #
 ####################################################################

@@ -1,5 +1,5 @@
 CHECKINSTALLOPTIONS = --pkgname=org.bigbrothercctv.bigbrother -A all --pkggroup=Video \
---pkglicense=GPL --nodoc --maintainer='bigbrothercctv.org' \
+--pkglicense='GPLv3 for software and BigBrother AI Model License for AI model' --nodoc --maintainer='bigbrothercctv.org' \
 --requires='ffmpeg,python3,python3-opencv \(\>=4.10\)'
 INSTALLDIR = /usr/local/bigbrother
 
@@ -16,7 +16,7 @@ installbinary:
 	cp ./bigbrother_camera.conf  $(INSTALLDIR)
 	cp ./bigbrother_event.conf  $(INSTALLDIR)
 	cp ./bigbrotherd.service /etc/systemd/system
-	cp ./License.txt  $(INSTALLDIR)
+	cp ./LICENSE*  $(INSTALLDIR)
 	cp ./README.txt  $(INSTALLDIR)
 	cp ./markup_y5onnx.py $(INSTALLDIR)
 	cp ./bbeventmonitor_y5onnx $(INSTALLDIR)
@@ -32,7 +32,7 @@ deb:
 
 rpm:
 
-	tar cf ./bigbrother.tar  ./*.sh ./bigbrotherd ./mirrorwebroot ./bblogger ./bigbrother.conf ./bigbrother_camera.conf ./bigbrotherd.service ./License.txt ./README.txt ./bigbrother_event.conf ./markup_y5onnx.py ./markup_y5onnx.py ./bbeventmonitor_y5onnx ./onnx
+	tar cf ./bigbrother.tar  ./*.sh ./bigbrotherd ./mirrorwebroot ./bblogger ./bigbrother.conf ./bigbrother_camera.conf ./bigbrotherd.service ./LICENSE ./LICENSE-AIMODEL ./README.txt ./bigbrother_event.conf ./markup_y5onnx.py ./markup_y5onnx.py ./bbeventmonitor_y5onnx ./onnx
 	gzip ./bigbrother.tar
 	mv ./bigbrother.tar.gz ./RPM/SOURCES/org.bigbrothercctv.bigbrother.tar.gz	
 	rpmbuild -v -bb --clean ./RPM/SPECS/bigbrother.spec
@@ -50,7 +50,7 @@ pkgng:
 	cp ./bigbrother.conf  ./pkgng-tmp$(INSTALLDIR)
 	cp ./bigbrother_camera.conf  ./pkgng-tmp$(INSTALLDIR)
 	cp ./rc.bigbrother ./pkgng-tmp$(INSTALLDIR)
-	cp ./License.txt  ./pkgng-tmp$(INSTALLDIR)
+	cp ./LICENSE*  ./pkgng-tmp$(INSTALLDIR)
 	cp ./README.txt  ./pkgng-tmp$(INSTALLDIR)
 	cp ./bigbrother_event.conf ./pkgng-tmp$(INSTALLDIR)
 	cp ./markup_y5onnx.py ./pkgng-tmp$(INSTALLDIR)

@@ -1232,6 +1232,42 @@ function getCookie(cname)
   return "";
 }
 
+
+	
+function getOS() 
+{
+  const userAgent = window.navigator.userAgent,
+      platform = window.navigator?.userAgentData?.platform || window.navigator.platform,
+      macosPlatforms = ['macOS', 'Macintosh', 'MacIntel', 'MacPPC', 'Mac68K', 'Mac'],
+      windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE', 'WindowsNT'],
+      iosPlatforms = ['iPhone', 'iPad', 'iPod'];
+  var os = null;
+
+  if (macosPlatforms.indexOf(platform) !== -1) 
+  {
+    os = 'Mac';
+  } else if (iosPlatforms.indexOf(platform) !== -1) 
+  {
+    os = 'iOS';
+  } else if (windowsPlatforms.indexOf(platform) !== -1) 
+  {
+    os = 'Windows';
+  } else if (/Android/.test(userAgent)) 
+  {
+    os = 'Android';
+  } else if (/Linux/.test(platform)) 
+  {
+    os = 'Linux';
+  }
+  else
+  {
+   os = 'Other';
+  }
+  return os.toLowerCase();
+}
+
+
+
 </script>
 
 
@@ -1323,7 +1359,7 @@ function getCookie(cname)
 <p class=supersmall id=filteralert style="color:red;"></p>
 
 <div id=filterpanel style='display:none;'>
-	<table cellspacing=0 cellpadding=20 border=0 class=uipanel style='margin:10px;'>
+	<table cellspacing=0 cellpadding=10 border=0 class=uipanel style='margin:10px;'>
 	<tr>
 		<td colspan=4><p>Show only events for:</p></td></tr>
 
@@ -1413,6 +1449,40 @@ function getCookie(cname)
 		<td>&nbsp;</td>
 
 	</tr>
+
+
+
+
+
+
+
+
+
+<tr>
+	   <td colspan=3 align=left>
+		
+		<script language=javascript>
+		
+			if (getOS()=='mac')
+			{
+				document.write("<p class=extremesmall>To select contiguous items in the list hold the SHIFT key</p><p class=extremesmall>To select non-contiguous items in the list hold the COMMAND key</p>");
+			}
+			else if ( (getOS()=='windows') || (getOS()=='linux')  )
+			{
+				document.write("<p class=extremesmall>To select contiguous items in the list hold the SHIFT key</p><p class=extremesmall>To select non-contiguous items in the list hold the CTRL key</p>");
+			}
+		
+		</script>
+		
+	   </td>
+	   <td>&nbsp;</td>
+	</tr>
+
+
+
+
+
+
 
 	<tr>
 	   <td colspan=3 align=right>
@@ -1547,7 +1617,7 @@ function getCookie(cname)
 <center>
 <table cellspacing=0 cellpadding=0 border=0>
 <tr>
-	<td align=center><font size=-1><p>BigBrother &copy; Copyright Andrew Wood 2016-<?php printCurrentYear();?>. Licensed under the GNU Public License 3</p></font></td>
+	<td align=center><font size=-1><p>BigBrother &copy; Copyright Andrew Wood 2016-<?php printCurrentYear();?>. Software licensed under the GNU Public License 3. AI Model licensed under BigBrother CCTV AI License.</p></font></td>
 </tr>
 <tr>
         <td align=center><font size=-1><p></p></font></td>

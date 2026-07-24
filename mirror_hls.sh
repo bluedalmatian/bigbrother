@@ -2,7 +2,7 @@
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016-2025 Andrew Wood                                  #
+# Copyright 2016-2026 Andrew Wood                                  #
 #                                                                  #
 # mirror_hls.sh Bourne shell script to perform mirroring for each  #
 # camera. Launched by bigbrotherd                                  #
@@ -22,7 +22,7 @@
 
 
 usagestring="Syntax error.  Usage: $0 -cam proto://camera/url:port -name CameraName -log /path/to/log/file -cmd /path/to/ffmpeg -webroot /path/to/webroot -mbits 0.5M -fps 20 -res widthxheight"
-copyrightstring="BigBrother Copyright Andrew Wood 2016-2025"
+copyrightstring="BigBrother Copyright Andrew Wood 2016-2026"
 
 
 echoUsage()
@@ -206,7 +206,7 @@ do
 
 	### See https://trac.ffmpeg.org/wiki/Limiting%20the%20output%20bitrate for -b:v and -bufsize parameters 
 
-	$ffmpegcommand -timeout 10000000 -loglevel fatal -i $sourceurl -vcodec libx264 -preset ultrafast -tune zerolatency -acodec aac -strict -2 -b:a 16k -framerate $framerate -s $resolution -b:v $bitrate -bufsize $bitrate -g 5 -segment_list_size 1 -segment_wrap 1 -hls_flags delete_segments -hls_init_time 0.3 -hls_time 0.3 -f hls -metadata title="$camname" $webroot/$camname.m3u8  &
+	$ffmpegcommand -timeout 10000000 -loglevel fatal -i $sourceurl -vcodec libx264 -preset ultrafast -tune zerolatency -acodec aac -strict -2 -b:a 16k -framerate $framerate -s $resolution -b:v $bitrate -bufsize $bitrate -g 4 -force_key_frames "expr:gte(t,n_forced*2)"  -hls_list_size 3 -hls_init_time 0.5 -hls_flags delete_segments+program_date_time+temp_file+independent_segments -hls_time 0.5 -hls_allow_cache 0 -f hls -hls_segment_filename "${webroot}/${camname}%05d.ts" -metadata title="$camname" $webroot/$camname.m3u8  &
 	
 
 	pid=$!

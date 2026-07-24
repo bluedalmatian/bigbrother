@@ -1,0 +1,176 @@
+BIGBROTHER CCTV AI MODEL LICENSE
+Version 1.1 June 27th 2026
+Copyright (c) 2026 Andrew Wood
+
+This License governs the use, reproduction, modification, and distribution of the BigBrother CCTV AI model, including all associated weights, parameters, ONNX files, 
+configuration files, and derivative versions thereof (the "Model").
+
+Relationship to BigBrother CCTV: This License applies solely to the Model. Nothing in this License modifies, replaces, limits, or expands the terms under which BigBrother CCTV is licensed under the GNU General Public License version 3 (GPLv3) or any later version.
+
+
+---
+
+1. DEFINITIONS
+
+"Model" means the BigBrother CCTV AI model and all associated files and derivatives.
+
+"BigBrother CCTV" means the software project published by the copyright holder under the GNU General Public License version 3 (GPLv3) or any later version. 
+
+"Approved Version" means:
+
+(a) the official version of BigBrother CCTV as published by the copyright holder; or
+(b) a modification or derivative work of BigBrother CCTV that has been explicitly approved in writing by the copyright holder.
+
+---
+
+2. GRANT OF RIGHTS
+
+Subject to the terms of this License, permission is granted to use, reproduce, modify, and distribute the Model for both non-commercial and commercial purposes, 
+provided that all use complies with Section 3.
+
+Subject to Section 3, permitted uses include:
+
+(a) personal, educational, research, and evaluation use;
+(b) internal business use;
+(c) deployment within customer-owned or customer-operated systems;
+(d) installation, configuration, maintenance, and support services provided to third parties;
+(e) integration into systems based on Approved Versions of BigBrother CCTV.
+
+---
+
+3. RESTRICTIONS ON USE
+
+The Model may only be used in conjunction with an Approved Version of BigBrother CCTV.
+
+Without prior written permission from the copyright holder, you may not:
+
+(a) use the Model with any version of BigBrother CCTV that is not an Approved Version;
+
+(b) use the Model with any other software, system, or platform;
+
+(c) integrate, adapt, or deploy the Model in connection with any independent or competing product or service;
+
+(d) use the Model as a general-purpose machine learning model outside the scope of BigBrother CCTV;
+
+(e) sell, license, sublicense, or distribute the Model as a standalone product;
+
+(f) distribute the Model in any way that enables it to be used outside an Approved Version;
+
+(g) remove, alter, or obscure any copyright notices contained in the Model.
+
+---
+
+4. REDISTRIBUTION
+
+Redistribution of the Model, modified or unmodified, is permitted only if:
+
+(a) a complete copy of this License accompanies the redistribution;
+(b) all copyright notices are preserved;
+(c) any modifications are clearly identified;
+(d) the Model is only redistributed for use with an Approved Version;
+(e) the redistribution complies with all restrictions in Section 3.
+
+---
+
+5. OWNERSHIP
+
+The Model is licensed, not sold.
+
+All right, title, and interest in and to the Model remain with the copyright holder.
+
+No trademark rights, patent rights, or rights in training datasets, training methodologies, source materials, or development processes are granted by this License.
+
+---
+
+6. COMMERCIAL LICENSING
+
+The copyright holder reserves the right to offer the Model under separate commercial or alternative licensing terms.
+
+The copyright holder may grant additional rights, permissions, exceptions, waivers, or alternative licenses to any person or entity at their sole discretion. 
+No recipient is entitled to receive the same terms granted to any other party.
+
+---
+
+7. TERMINATION
+
+Any violation of this License automatically terminates all rights granted under it.
+
+Upon termination, all use, distribution, and reproduction of the Model must cease immediately.
+
+---
+
+8. DISCLAIMER OF WARRANTY
+
+THE MODEL IS PROVIDED "AS IS" AND "AS AVAILABLE", WITH ALL FAULTS, DEFECTS, AND ERRORS.
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE COPYRIGHT HOLDER DISCLAIMS ALL WARRANTIES, REPRESENTATIONS, CONDITIONS, AND GUARANTEES OF ANY KIND, WHETHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE, INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, ACCURACY, RELIABILITY, AVAILABILITY, SECURITY, QUALITY, PERFORMANCE, OR RESULTS.
+
+THE MODEL IS A STATISTICAL MACHINE LEARNING SYSTEM AND MAY PRODUCE FALSE POSITIVES, FALSE NEGATIVES, MISCLASSIFICATIONS, MISSED EVENTS, DELAYED DETECTIONS, INCOMPLETE RESULTS, OR OTHER ERRONEOUS OUTPUTS.
+
+THE COPYRIGHT HOLDER MAKES NO REPRESENTATION OR WARRANTY THAT THE MODEL WILL DETECT, IDENTIFY, CLASSIFY, REPORT, OR ANALYZE ANY EVENT, OBJECT, PERSON, CONDITION, OR ACTIVITY CORRECTLY OR CONSISTENTLY.
+
+THE COPYRIGHT HOLDER MAKES NO REPRESENTATION OR WARRANTY THAT THE MODEL IS SUITABLE FOR ANY SECURITY, SAFETY, SURVEILLANCE, INVESTIGATIVE, LEGAL, REGULATORY, COMPLIANCE, OR OPERATIONAL PURPOSE.
+
+THE USER IS SOLELY RESPONSIBLE FOR VALIDATING ALL OUTPUTS GENERATED BY THE MODEL AND FOR DETERMINING WHETHER THE MODEL IS APPROPRIATE FOR ANY PARTICULAR USE.
+
+---
+
+9. LIMITATION OF LIABILITY
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE COPYRIGHT HOLDER, CONTRIBUTORS, DISTRIBUTORS, OR ANY ENTITY PROVIDING THE MODEL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, CONSEQUENTIAL, PUNITIVE, OR ENHANCED DAMAGES.
+
+THIS EXCLUSION INCLUDES, WITHOUT LIMITATION, DAMAGES FOR LOSS OF PROFITS, LOSS OF REVENUE, LOSS OF BUSINESS, LOSS OF DATA, LOSS OF EVIDENCE, LOSS OF GOODWILL, BUSINESS INTERRUPTION, SERVICE INTERRUPTION, SECURITY INCIDENTS, SYSTEM FAILURES, PROPERTY DAMAGE / LOSS, PERSONAL INJURY, REGULATORY PENALTIES, FINES, LEGAL COSTS, OR THIRD-PARTY CLAIMS, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE AGGREGATE LIABILITY OF THE COPYRIGHT HOLDER SHALL NOT EXCEED THE GREATER OF (A) ONE POUND STERLING (£1), OR (B) THE AMOUNT, IF ANY, PAID DIRECTLY TO THE COPYRIGHT HOLDER BY THE CLAIMANT FOR THE MODEL. 
+
+THE FOREGOING LIMITATIONS SHALL APPLY REGARDLESS OF THE THEORY OF LIABILITY, WHETHER IN CONTRACT, TORT, NEGLIGENCE, STRICT LIABILITY, STATUTE, OR OTHERWISE.
+
+---
+
+10. HIGH-RISK USES
+
+THE MODEL IS NOT DESIGNED, INTENDED, OR LICENSED FOR USE IN ANY APPLICATION WHERE FAILURE, DELAY, INACCURACY, OR MISSED DETECTION COULD RESULT IN DEATH, PERSONAL INJURY, PHYSICAL HARM, PROPERTY DAMAGE / LOSS, CRIMINAL LIABILITY, REGULATORY LIABILITY, OR SIGNIFICANT FINANCIAL LOSS.
+
+WITHOUT LIMITING THE FOREGOING, THE MODEL SHALL NOT BE USED AS THE SOLE BASIS FOR SURVEILLANCE, EMERGENCY RESPONSE, LAW ENFORCEMENT ACTIONS, ARREST DECISIONS, DETENTION DECISIONS, USE-OF-FORCE DECISIONS, MEDICAL DECISIONS, LIFE-SAFETY SYSTEMS, OR OTHER HIGH-RISK ACTIVITIES.
+
+---
+
+11. USER RESPONSIBILITY
+
+THE USER ASSUMES ALL RISKS ASSOCIATED WITH THE INSTALLATION, CONFIGURATION, DEPLOYMENT, OPERATION, AND USE OF THE MODEL.
+
+THE USER IS SOLELY RESPONSIBLE FOR VERIFYING MODEL OUTPUTS, IMPLEMENTING HUMAN REVIEW PROCESSES, MAINTAINING APPROPRIATE SECURITY CONTROLS, AND COMPLYING WITH ALL APPLICABLE LAWS, REGULATIONS, AND THIRD-PARTY RIGHTS.
+
+THE USER IS SOLELY RESPONSIBLE FOR COMPLIANCE WITH ALL APPLICABLE PRIVACY, DATA PROTECTION, SURVEILLANCE, EMPLOYMENT, BIOMETRIC, AND SIMILAR LAWS AND REGULATIONS.
+
+---
+
+12. INDEMNIFICATION
+
+THE USER AGREES TO DEFEND, INDEMNIFY, AND HOLD HARMLESS THE COPYRIGHT HOLDER FROM AND AGAINST ANY CLAIMS, DEMANDS, ACTIONS, LOSSES, DAMAGES, LIABILITIES, COSTS, AND EXPENSES (INCLUDING REASONABLE ATTORNEYS' FEES) ARISING OUT OF OR RELATING TO:
+
+(a) THE USER'S USE OF THE MODEL;
+(b) ANY PRODUCTS, SERVICES, OR SYSTEMS INCORPORATING THE MODEL;
+(c) RELIANCE ON OUTPUTS GENERATED BY THE MODEL;
+(d) VIOLATION OF THIS LICENSE; OR
+(e) VIOLATION OF APPLICABLE LAW OR THE RIGHTS OF ANY THIRD PARTY.
+
+---
+
+13. SURVIVAL
+
+The provisions of Sections 5, 8, 9, 10, 11, 12, 13, 14 and 15 shall survive the termination or expiration of this License and shall continue in full force and effect to the extent necessary to give them effect. 
+
+---
+
+14. SEVERABILITY
+
+If any provision of this License is held to be invalid, illegal, or unenforceable, the remaining provisions shall remain in full force and effect.
+
+---
+
+15. GOVERNING LAW
+
+This License shall be governed by and construed in accordance with the laws of England and Wales, excluding conflict-of-law principles.
+
+Any dispute arising out of or relating to this License shall be subject to the exclusive jurisdiction of the courts of England and Wales.

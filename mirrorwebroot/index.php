@@ -10,7 +10,7 @@
 		$nodaemonerrmsg=$nodaemonerrmsg."<tr><td><img src=bb.png width=100 valign=middle></td>";
 		$nodaemonerrmsg=$nodaemonerrmsg."<td valign=middle><img src=transparent.png width=100% height=2><p class=statusmsg><h2><font color=#FFFFFF face='Arial'>CCTV not available, BigBrother is not running</font></h2></p></td></tr>";
 		$nodaemonerrmsg=$nodaemonerrmsg."<tr height=*><td colspan=2>&nbsp;</td></tr></table></center>";
-		$nodaemonerrmsg=$nodaemonerrmsg."<meta http-equiv='refresh' content='1'>";
+		$nodaemonerrmsg=$nodaemonerrmsg."<meta http-equiv='refresh' content='1'><script>setTimeout(() => window.location.reload(), 1000);</script>";
 		exit($nodaemonerrmsg);
 	}
 	function requiredIncludeFail($errno, $errstr, $errfile, $errline)
@@ -318,12 +318,16 @@ p.eventalert {
 
 </head>
 
-
+<script src=stall.js></script>
 <script language=JavaScript>
 
 var msgareastring = "";
 var groupNotFound = false;
 var cameraNotFound = false;
+
+
+
+
 
 
 
@@ -380,6 +384,7 @@ var aieventsdetected=true;  //are there any events in log - determines if button
 var aieventsviewed=true;  //has user viewed all events that have occured - determines if button orange (updated by ajax call)
 var eventsnotified=[]; //array will hold events that this client session has been sent over ajax and which we have notified user of
 
+
 var eventMsgsShown=0; //used to scroll display
 
 var eventAudio = new Audio('event.mp3');
@@ -388,7 +393,10 @@ var speechSynth = window.speechSynthesis;
 
 var pageLoadedTimestamp=Math.round(Date.now() / 1000); //convert timestamp now from ms to sec
 
-
+function reload()
+{
+	window.location.reload();
+}
 
 function checkFullscreen()
 {
@@ -832,7 +840,7 @@ function isCameraShown(name)
 	if (cam==null)
 	{
 		return false;
-	}
+	}Time
 	else
 	{
 		return true;
@@ -867,7 +875,15 @@ function processAIEventResponse()
     {
        //PHP script will only return 412 if it needs to give an error msg to user
 		appendMsg("<p class=statusmsg><img src=i-red.png width=32 height=32 align=middle valign=middle class=statusicon>"+getDateTime()+" Error checking for monitored events, server returned HTTP status: "+aipoll_xhr.status+" ("+aipoll_xhr.responseText+")</p>");   
-
+		
+		
+		
+    }
+	if (aipoll_xhr.status==418)
+    {
+       //PHP script will only return 418 if BB is not running
+		appendMsg("<p class=statusmsg><img src=i-red.png width=32 height=32 align=middle valign=middle class=statusicon>"+getDateTime()+" Error checking for monitored events, server returned HTTP status: "+aipoll_xhr.status+" ("+aipoll_xhr.responseText+")</p>");   
+		reload();
 		
 		
     }
@@ -968,8 +984,19 @@ function processAIEventResponse()
 						eventAudio.play();
 						if (speak)
 						{
+							//Priotritise voices matching these traits in order (always end with default):
+							const priorities = [
+									v => v.lang === "en-GB",
+									v => v.lang.startsWith("en"),
+									v => v.default
+									];
+							
+							
 							var txttospeak=events[x].cameraname+","+eventDesc(events[x].typecode);
+							const voicesAvailable = speechSynthesis.getVoices();
+							const chosenVoice = pickVoice(voicesAvailable,priorities);
 							var newUtter =new SpeechSynthesisUtterance(txttospeak);
+							newUtter.voice = chosenVoice;
 							speechSynth.speak(newUtter);
 						}
 					}
@@ -990,6 +1017,17 @@ function processAIEventResponse()
 		
     }
 
+}
+
+
+function pickVoice(voices, priorities) 
+{
+  for (const test of priorities) 
+  {
+    const match = voices.find(test);
+    if (match) return match;
+  }
+  return voices[0];
 }
 
 function getTimestampNow()
@@ -1106,7 +1144,7 @@ function getDateTime()
 	var min = String(today.getMinutes()).padStart(2, '0');
 	var sec = String(today.getSeconds()).padStart(2, '0');
 	
-	today = yyyy + '-' + dd + '-' + dd + ' '+ hr+ ':'+ min+ ':'+sec;
+	today = yyyy + '-' + dd + '-' + mm + ' '+ hr+ ':'+ min+ ':'+sec;
 	return today;
 }
 
@@ -1116,6 +1154,43 @@ function clearCameraHighlight(ele)
 	{
 		ele.style.border="none";
 	}
+}
+
+function doLicenseOverlay(gpl)
+{
+	hideHelpOverlay();
+	if (gpl)
+	{
+		//show GPL
+		var msg="<p><b><img src=i-blue.png width=32 height=32 align=middle valign=middle>Software License. This does not apply to AI Model</b></p>";
+		msg=msg+"<iframe src=LICENSE width=95% height=95% id=licenseframe></iframe>";
+	}
+	else
+	{
+		//show BB AI Model License
+		var msg="<p><b><img src=i-blue.png width=32 height=32 align=middle valign=middle>AI Model License.</b></p>";
+		msg=msg+"<iframe src=LICENSE-AIMODEL id=licenseframe></iframe>";
+	}
+	var overlay=document.getElementById("helpoverlay");
+			
+			overlay.innerHTML="<table bgcolor=#677383 width=100% cellspacing=0 cellpadding=0 border=0><tr><td width=* height=40>&nbsp;</td><td bgcolor=#5e4868 id=helpXbutton width=40 height=40 onmouseover='mouseOverXButton(this);' onmouseout='mouseOutXButton(this);'><img src=X.png onclick='hideHelpOverlay();' style='cursor:pointer;' width=40></td></tr>";
+			overlay.innerHTML=overlay.innerHTML+"<tr><td colspan=2>"+msg+"</td></tr>";
+			
+			
+			
+			overlay.innerHTML=overlay.innerHTML+"</table>";
+			overlay.style.display="block";
+			overlay.style.position="absolute";
+			overlay.style.zIndex=3000;
+			overlay.style.left="10px";
+			overlay.style.top="10px";
+			overlay.style.width=(window.innerWidth-40)+"px";
+			overlay.style.height=(window.innerHeight-40)+"px";
+			
+			var license=document.getElementById("licenseframe");
+			license.style.width=(window.innerWidth-40)+"px";
+			license.style.height=(window.innerHeight-200)+"px";
+			return;
 }
 
 function showParamHelp()
@@ -1135,7 +1210,7 @@ function showParamHelp()
 		
 		{
 			
-			msg=msg+"<br><br><center><p>BigBrother &copy; Copyright Andrew Wood 2016-2026. Licensed under the GNU Public License 3</p></center>";
+			msg=msg+"<br><br><center><p>BigBrother &copy; Copyright Andrew Wood 2016-2026. Software licensed under the <a href=# onclick='doLicenseOverlay(true);'>GNU Public License 3</a>. <a href=# onclick='doLicenseOverlay(false);'>AI Model licensed under BigBrother CCTV AI Model License</a>.</p></center>";
 			
 			
 			
@@ -1149,8 +1224,8 @@ function showParamHelp()
 			overlay.style.zIndex=3000;
 			overlay.style.left="10px";
 			overlay.style.top="10px";
-			overlay.style.width=(window.innerWidt-20)+"px";
-			overlay.style.height=(window.innerHeight-20)+"px";
+			overlay.style.width=(window.innerWidth-40)+"px";
+			overlay.style.height=(window.innerHeight-40)+"px";
 			
 			return;
 		}
@@ -1201,11 +1276,8 @@ function onLoad()
 		displayPendingMessages();
 		checkAIEvents();
 
-		setTimeout(windowResized, 1000,true) //delayed call to allow time for videojs to init internally
-		setTimeout(setStalledHandlers, 1000,true) //delayed call to allow time for videojs to init internally
-		
-		
-		//event listeners for video.js dont work, the events never fire, so we have to poll
+		setTimeout(windowResized, 3000,true) //delayed call to allow time for videojs to init internally
+		initStalledHandler();
 		setInterval(checkPaused,1000);
 		
 		if(aieventmonitoring==false)
@@ -1216,110 +1288,9 @@ function onLoad()
 
 }
 
-function checkPaused()
-{
-	
-
-	
-	
-		var videoeles=document.getElementsByClassName("video-js");
-		for (var i=0; i < videoeles.length; i++)
-		{
-			var id=videoeles[i].getAttribute('id');
-			//NOTE you would expect videoeles[i] to be the <video> tag with id=camname BUT IT IS NOT!!!!
-			//video.js has altered the document tree at run time and wrapped the <video> in a <div>
-			//the <div> now has the id=camname and the <video> is within the <div> with id=camname_html5_api
-			
-			//videoeles[i] is a <div> generated by video.js even though in HTML source it is a <video>!
-			//the actual <video> has been moved down within the div and has an id of CAMERANAME_html5_api
-			//this is contrary to the video.js documentation (what limited docs there is)
-			
-			var videotag=document.getElementById(id+"_html5_api");
-	
-			
-			console.log("Checking if "+id+" is paused: "+videotag.paused);
-			
-			
-			
-			
-			if (videotag.paused)
-			{
-				pause(id,true);
-			}
-			else
-			{
-				pause(id,false);
-			}
-
-			console.log("readyState for "+id+" is :"+videotag.readyState)
-		}
-}
-
-function isStalled()
-{
-	var now=getTimestampNow();
-	if (now-pageLoadedTimestamp > 5)
-	{
-		//page loaded > 5 seconds ago
-	}
-	else
-	{
-		//page loaded < 5 seconds ago so ignoring stall
-	}
-
-	 var videoeles=document.getElementsByClassName("video-js");
-         for (var i=0; i < videoeles.length; i++)
-         {
-                        var id=videoeles[i].getAttribute('id');
-                        //NOTE you would expect videoeles[i] to be the <video> tag with id=camname BUT IT IS NOT!!!!
-                        //video.js has altered the document tree at run time and wrapped the <video> in a <div>
-                        //the <div> now has the id=camname and the <video> is within the <div> with id=camname_html5_api
-
-                        //videoeles[i] is a <div> generated by video.js even though in HTML source it is a <video>!
-                        //the actual <video> has been moved down within the div and has an id of CAMERANAME_html5_api
-                        //this is contrary to the video.js documentation (what limited docs there is)
-
-                        var videotag=document.getElementById(id+"_html5_api");
-			videotag.currentTime = 0;
-			videotag.play();
-			console.log("reloaded video due to stall: "+id);
-	}
-
-}
 
 
-function setStalledHandlers()
-{
 
-
-		 var videoeles=document.getElementsByClassName("video-js");
-                for (var i=0; i < videoeles.length; i++)
-                {
-                        var id=videoeles[i].getAttribute('id');
-                        //NOTE you would expect videoeles[i] to be the <video> tag with id=camname BUT IT IS NOT!!!!
-                        //video.js has altered the document tree at run time and wrapped the <video> in a <div>
-                        //the <div> now has the id=camname and the <video> is within the <div> with id=camname_html5_api
-
-                        //videoeles[i] is a <div> generated by video.js even though in HTML source it is a <video>!
-                        //the actual <video> has been moved down within the div and has an id of CAMERANAME_html5_api
-                        //this is contrary to the video.js documentation (what limited docs there is)
-
-                        var videotag=document.getElementById(id+"_html5_api");
-
-
-                        console.log("Adding stalled handler for "+id);
-
-						videotag.addEventListener('stalled',  evt => { 
-							isStalled();		
-						});
-						videotag.addEventListener('waiting',  evt => { 
-                            isStalled();            
-                        });
-
-
-                }
-
-}
 
 function windowResized(calledFromOnLoad=false)
 {
@@ -1624,7 +1595,7 @@ function goMinimalUI()
 </table>
 <table cellspacing=0 cellpadding=0 border=0>
 <tr>
-	<td align=center><font size=-1><p>BigBrother &copy; Copyright Andrew Wood 2016-<?php printCurrentYear();?>. Licensed under the GNU Public License 3</p></font></td>
+	<td align=center><font size=-1><p>BigBrother &copy; Copyright Andrew Wood 2016-<?php printCurrentYear();?>. Software licensed under the <a href="LICENSE">GNU Public License 3</a>. AI Model licensed under <a href="LICENSE-AIMODEL">BigBrother CCTV AI License.</a></p></font></td>
 </tr>
 <tr>
         <td align=center><font size=-1><p>FFMPEG &copy; Copyright The FFMPEG Developers 2000-<?php printCurrentYear();?>. FFMPEG 

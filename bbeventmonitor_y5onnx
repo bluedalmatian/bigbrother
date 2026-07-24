@@ -30,6 +30,7 @@
 
 
 from datetime import datetime,timedelta
+from concurrent.futures import ThreadPoolExecutor
 import re,sys,os
 import cv2
 import numpy as np
@@ -40,6 +41,7 @@ import calendar
 import tempfile
 import shutil
 import subprocess
+from queue import Queue, Empty
 
 ##################################################################################################################################################################
 class Detection:
@@ -134,6 +136,15 @@ class Detection:
         IoU = intersectionarea / unionarea
     
         return IoU
+        
+
+        
+    def centroidDistance(self, d2):
+        cx1 = (self.startX + self.endX) / 2
+        cy1 = (self.startY + self.endY) / 2
+        cx2 = (d2.startX + d2.endX) / 2
+        cy2 = (d2.startY + d2.endY) / 2
+        return ((cx2 - cx1)**2 + (cy2 - cy1)**2) ** 0.5
 
 			
 #END OF CLASS Detection
@@ -399,7 +410,7 @@ def LogEvent(code, cameraname,frame,throw=False):
     now=datetime.now()
     datestr=now.strftime("%Y-%m-%d %H:%M:%S")
     mydir=os.path.abspath(os.path.dirname(__file__)) #gives dir without trailing /    
-             
+         
     try:
         datestrforframe=now.strftime("%Y-%m-%d--%H%M%S") #avoid using colons as it conflicts with Windows permitted file names
         dayname=calendar.day_name[now.weekday()]
@@ -489,6 +500,7 @@ def LogIfOfInterest(id,frame,confidence,startX,startY,endX,endY,tid):
 ###############################################################################
 
 
+
 ###############################################################################
 def isRepeatDetection(typecode,startX,startY,endX,endY,):
     #must be called while holding eventLogLock
@@ -558,9 +570,10 @@ def processFrame(threadidx,frame):
             #Draw text onto image at location xy 
             cv2.rectangle(frame, (left, top), (left + bwidth, top + bheight), BLUE, 3*THICKNESS)
             label = "{}:{:.2f}".format(classNames[class_ids[i]], confidences[i])
+            label=label+" "+" ps:"+starttimestr
             text_size = cv2.getTextSize(label, FONT_FACE, FONT_SCALE, THICKNESS)
             dim, baseline = text_size[0], text_size[1]
-            # Use text size to create a BLACK rectangle.
+            # Use text size to create a rectangle.
             cv2.rectangle(frame, (left,top), (left + dim[0], top + dim[1] + baseline), BLUE, cv2.FILLED);
             # Display text inside the rectangle.
             cv2.putText(frame, label, (left, top + dim[1]), FONT_FACE, FONT_SCALE, WHITE, THICKNESS, cv2.LINE_AA)
@@ -614,6 +627,68 @@ def signalHandler(signum, frame):
 ###############################################################################
 
 
+###############################################################################
+def processFrameWrapper(threadidx, frame):
+    try:
+        processFrame(threadidx, frame)
+    finally:
+        sema.release()
+###############################################################################
+
+###############################################################################
+def loadModel(modelPath):
+    net = cv2.dnn.readNetFromONNX(modelPath)
+
+    try:
+        net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+        net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+
+        # test run (tiny dummy input to confirm it actually works)
+        blob = np.zeros((1, 3, 640, 640), dtype=np.float32)
+        net.setInput(blob)
+        net.forward()
+
+        print("Using CUDA for DNN")
+        Log("Using CUDA for DNN")
+
+    except Exception as e:
+        print("CUDA not available, falling back to CPU:", str(e))
+        Log("CUDA not available, falling back to CPU")
+
+        net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
+        net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
+
+    return net
+###############################################################################
+
+
+###############################################################################
+def watchdog():
+    while not exit_event.is_set():
+        if time.time() - last_frame_time > 15:
+            print("FATAL: Camera timeout, exiting")
+            exit_event.set()
+            os._exit(1)     # force process exit
+
+        time.sleep(1)
+###############################################################################
+
+###############################################################################
+def reader():
+    global last_frame_time
+
+    while not exit_event.is_set():
+        ret, frame = camera.read()
+
+        if ret:
+            last_frame_time = time.time()
+            try:
+                frame_queue.put(frame, timeout=1)
+            except:
+                pass
+###############################################################################
+
+
 displayargcount=str((len(sys.argv)-1))
 if (len(sys.argv) < 9):
     print ("Usage: "+sys.argv[0]+" /path/to/generallog /path/to/eventlog EVENTLOGBYTYPE CameraName GroupName CameraURL EventCodeA EventIgnoreTimesA ... EventCodeN EventIgnoreTimesN")
@@ -657,7 +732,7 @@ eventignoretimes=[] #to be used after validation is complete
 #Alter these 2 values to adjust accuracy of detection
 confidenceUpperThreshold=0.6 #if this is new detection, it must meet or exceed this threshold
 confidenceLowerThreshold=0.4 #discard all detections less than this
-iouThreshold=0.5 #overlap threshold when detecting duplicates
+iouThreshold=0.65 #overlap threshold when detecting duplicates
 maxAge=25 #seconds since Detection obj last updated before it 
 scoremin=0.5#To filter low probability class scores where one object has been ID'd as > 1 class
 nmsmin=0.45
@@ -672,9 +747,7 @@ THICKNESS = 1
 ####################################################################
 
 
-
-
-
+last_frame_time = time.time()
 
 
 
@@ -874,17 +947,29 @@ if ( (fileIsReadable(modelPath)==False)    ):
 maxThreads=4
 models=[]
 locks=[]
-models.append(cv2.dnn.readNetFromONNX(modelPath))
-models.append(cv2.dnn.readNetFromONNX(modelPath))
-models.append(cv2.dnn.readNetFromONNX(modelPath))
-models.append(cv2.dnn.readNetFromONNX(modelPath))
 
 
+models.append(loadModel(modelPath))
+models.append(loadModel(modelPath))
+models.append(loadModel(modelPath))
+models.append(loadModel(modelPath))
+
+
+print("CUDA device count:", cv2.cuda.getCudaEnabledDeviceCount())
+Log("CUDA device count:", cv2.cuda.getCudaEnabledDeviceCount())
+
 
 locks.append(threading.Lock())
 locks.append(threading.Lock())
 locks.append(threading.Lock())
 locks.append(threading.Lock())
+
+
+#use semaphore to limit number of frames waiting to be processed to limit memory use
+maxInFlight = maxThreads
+sema = threading.Semaphore(maxInFlight)
+
+executor = ThreadPoolExecutor(max_workers=maxThreads)
 
 
 now=datetime.now()
@@ -920,44 +1005,42 @@ threadidx=0
 framestocheck=[1, 10, 20, 30]
 
 
+frame_queue = Queue(maxsize=10)
+
+threading.Thread(target=reader, daemon=True).start()
+threading.Thread(target=watchdog, daemon=True).start()
+
+
 while(exit_event.is_set()==False):
-    #read a frame
-    ftotal=ftotal+1
-    ret, frame = camera.read()
-    if (ret):
-       #Got frame
-        framereaderrorcount=0
-        f=f+1
-        if ( f not in framestocheck):
-            continue
-        if (f==30):
-            f=0
-            continue
-        
-        print("Checking frame "+str(f))
-        worker = threading.Thread(target=processFrame, args=(threadidx,frame))
-        worker.start()
-        if (threadidx==(maxThreads-1)):
-            threadidx=0
-        else:
-            threadidx=threadidx+1
-        
-      
+ 
+    try:
+        frame = frame_queue.get(timeout=1)
+    except Empty:
+        continue
+
+    ftotal += 1
+
+    f += 1
+
+    if f not in framestocheck:
+        continue
+
+    if f == 30:
+        f = 0
+        continue
+
+    print("Checking frame " + str(f))
+
+    if sema.acquire(blocking=False):
+        executor.submit(processFrameWrapper, threadidx, frame.copy())
+
+    if threadidx == (maxThreads - 1):
+        threadidx = 0
     else:
-        print("could not read frame")
-        framereaderrorcount=framereaderrorcount+1
-        time.sleep(0.1)
-        if (framereaderrorcount>100):
-            print("ERROR: Failed to read 100 frames in succession, stream has died, ftotal="+str(ftotal))
-            Log("ERROR: Failed to read 100 frames in succession, stream has died. If this is happening for reasons other than camera/network problems it is due to lack of sufficient CPU power to prevent OpenCV buffer overflowing")
-            exit_event.set()
-            break
+        threadidx += 1
             
-lx=1
-for l in locks:
-    print("Waiting to acquire lock "+str(lx))
-    l.acquire()
-    lx=lx+1
+
+executor.shutdown(wait=True)
 print("Acquired all thread locks so all threads stopped")
 camera.release()
 cv2.destroyAllWindows()
