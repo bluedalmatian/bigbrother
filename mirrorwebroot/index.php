@@ -840,7 +840,7 @@ function isCameraShown(name)
 	if (cam==null)
 	{
 		return false;
-	}Time
+	}
 	else
 	{
 		return true;
