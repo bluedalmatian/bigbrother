@@ -55,12 +55,14 @@
 		$groupnamesToShow=array();
 
 		//Then see if any GET values were given and if so & valid, override the defaults
-		$perRowGET=$_GET['perRow'];
-		$minimalUIGET=$_GET['minimalUI'];
-		$cameraNameGET=$_GET['cameraName'];
-		$groupNameGET=$_GET['groupName'];
-		$miniStatusGET=$_GET['miniStatus'];
-		$ignoreEventsGET=$_GET['ignoreEvents'];
+		$perRowGET=$_GET['perRow']  ?? null;
+		$minimalUIGET=$_GET['minimalUI']  ?? null;
+		$cameraNameGET=$_GET['cameraName'] ?? null;
+		$groupNameGET=$_GET['groupName']  ?? null;
+		$miniStatusGET=$_GET['miniStatus']  ?? null;
+		$ignoreEventsGET=$_GET['ignoreEvents']  ?? null;
+		
+		
 
 
 
@@ -69,13 +71,13 @@
 			$aieventmonitoring=false;
 		}
 		
-		$minimalUIGET=strtolower($minimalUIGET);
+		$minimalUIGET=strtolower((string)$minimalUIGET);
 		if ($minimalUIGET=="true")
 		{
 			$minimalUI=true;
 		}
 		
-		$miniStatusGET=strtolower($miniStatusGET);
+		$miniStatusGET=strtolower((string)$miniStatusGET);
 		if ( ($miniStatusGET=="true") && ($minimalUI) )
 		{
 			//miniStatus should only be effective when minimalUI enabled
@@ -148,7 +150,7 @@
 			}
                 }
 
-		if (onlyContainsNumbers(NULL,NULL,NULL,$perRowGET))
+		if  ( $perRowGET!=null && onlyContainsNumbers(NULL,NULL,NULL,$perRowGET))
 		{
 			$camsPerTR=$perRowGET;		
 		}
@@ -157,54 +159,57 @@
 
 	$globalconffile = fopen($GLOBALCONFFILEPATH, "r") or die("Unable to open global config file");
 	$lineno=0;
-	while(!feof($globalconffile)) 
-	{
-		$lineno++;
-  		$line=fgets($globalconffile);
-		if ( ($line[0]=="\n") || ($line[0]=="#") || ($line[0]=="") )
-		{
-			//blank line or comment line or blank line at EOF
-			continue;
-		}
-		$elements=explode(" ",$line);
-		if (sizeof($elements)!=2)
-		{
-			exit("Syntax error in ".$GLOBALCONFFILEPATH." on line ".$lineno.". Each line must be in format <b>keyword</b> <i>value</i> but found ".$line);
-		}
+	while (($line = fgets($globalconffile)) !== false)
+    {
+      $lineno++;
 
-		else if ($elements[0]=="allownewfilefromweb")
-		{
-			$elements[1]=strtolower($elements[1]);
-			if ($elements[1]=="true\n")
-			{
-				$allownewfilefromweb=true;
-			}
-			else
-			{
-				$allownewfilefromweb=false;
+      if ($line === "" || $line[0] === "\n" || $line[0] === "#")
+      {
+          // blank line or comment line
+          continue;
+      }
 
-			}
-		}
-		else if ($elements[0]=="cameraconf")
-		{
-			$elements[1]=stripBackslashN($elements[1]);
-			$cameraconffilepath=$elements[1];
-		}
-		else if ($elements[0]=="speakevents")
-		{
-			$elements[1]=strtolower($elements[1]);
-			if ($elements[1]=="true\n")
-			{
-				$speak=true;
-			}
-			else
-			{
-				$speak=false;
+      $elements = explode(" ", trim($line));
 
-			}
-		}
-	}
-	fclose($globalconffile);
+      if (sizeof($elements) != 2)
+      {
+          exit("Syntax error in ".$GLOBALCONFFILEPATH." on line ".$lineno.". Each line must be in format <b>keyword</b> <i>value</i> but found ".$line);
+      }
+
+      if ($elements[0] == "allownewfilefromweb")
+      {
+        $elements[1] = strtolower($elements[1]);
+
+        if ($elements[1] == "true")
+        {
+            $allownewfilefromweb = true;
+        }
+        else
+        {
+            $allownewfilefromweb = false;
+        }
+      }
+      else if ($elements[0] == "cameraconf")
+      {
+        $cameraconffilepath = $elements[1];
+      }
+      else if ($elements[0] == "speakevents")
+      {
+        $elements[1] = strtolower($elements[1]);
+
+        if ($elements[1] == "true")
+        {
+            $speak = true;
+        }
+        else
+        {
+            $speak = false;
+        }
+      }
+    }
+
+   fclose($globalconffile);
+
 
 	if  ($cameraconffilepath=="")
 	{
@@ -214,51 +219,59 @@
 
 	//read camera conf and parse into array
 	$cameraconffile = fopen($cameraconffilepath, "r") or die("Unable to open camera config file ".$cameraconffilepath);
-        $lineno=0;
+    $lineno=0;
 	$allCameras=array(); //indexed array of all Camera obj, in groups and not
 	$nullGroupCameras=array(); //indexed array of Camera objs which are not in any group
 	$groupsByName=array(); //assoc array of group names, each ele is indexed array of Camera objs
-        while(!feof($cameraconffile))
-        {
-                $lineno++;
-                $line=fgets($cameraconffile);
-		if ( ($line[0]=="\n") || ($line[0]=="#") || ($line[0]=="") )
-                {
-                        //blank line or comment line or blank line at EOF
-                        continue;
-                }
-                $elements=preg_split('/\s+/', $line);
-		if (sizeof($elements) < 5) //at time of writing there are 6 mandatory params (more maybe added later), we only need to read upto 5 here.
+    while (($line = fgets($cameraconffile)) !== false)
+	{
+		$lineno++;
+
+		if ($line === '' || $line[0] === "\n" || $line[0] === "#")
 		{
-			exit("Syntax error in ".$cameraconffilepath." on line ".$lineno." Too few parameters");
+			// blank line or comment line
+			continue;
 		}
-		$camera=new Camera($elements);
-		if ($camera->initCheck()) 
+
+		$elements = preg_split('/\s+/', trim($line));
+
+		if (count($elements) < 5)
 		{
-			//we have a valid camera obj
+			exit("Syntax error in " . $cameraconffilepath ." on line " . $lineno ." Too few parameters");
+		}
+
+		$camera = new Camera($elements);
+
+		if ($camera->initCheck())
+		{
+			// we have a valid camera obj
 			if ($camera->IsMirroringRequired())
 			{
-				$allCameras[]=$camera;
-				if ($camera->GetGroupName()==NULL)
+				$allCameras[] = $camera;
+
+				if ($camera->GetGroupName() === NULL)
 				{
-					//camera has no group so put it in $nullGroupCameras
-					$nullGroupCameras[]=$camera;
+					// camera has no group
+					$nullGroupCameras[] = $camera;
 				}
 				else
 				{
-					//camera has a group so put it in $groupsByName
-					if (array_key_exists($camera->GetGroupName(),$groupsByName)==false)                
-			                {
-                        			$groupsByName[$camera->GetGroupName()]=array();
-                			}
+					// camera has a group
+					$groupName = $camera->GetGroupName();
 
-			                ($groupsByName[$camera->GetGroupName()])[]=$camera;
+					if (!array_key_exists($groupName, $groupsByName))
+					{
+						$groupsByName[$groupName] = array();
+					}
 
+					$groupsByName[$groupName][] = $camera;
 				}
 			}
 		}
 	}
-	fclose($cameraconffile);
+
+fclose($cameraconffile);
+
 ?>
 <html>
 <head>
@@ -313,12 +326,116 @@ p.eventalert {
 	background-color:#484848;
 }
 
+.ptzcontrol{
+	cursor: pointer;
+	width: 12px;
+	height: 12px;
+	touch-action:none;
+	transition: all 0.08s ease;
+        border-radius: 2px;
+        margin-left:5px;
+        margin-right:5px;
+    filter: drop-shadow(3px 3px 1px rgba(0, 0, 0, 1))
+			drop-shadow(-1px -1px 1px rgba(0, 0, 0, 1));
+		
+}
+
+.ptzcontrol:active{
+     transform: scale(0.6);
+     background-color: rgba(255, 255, 255, 0.15);
+     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+    
+}
+
+.ptzcontrolbar {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 10px;
+    z-index: 10;
+}
+
+.ptzcontrolbar table {
+    width:100%;
+    table-layout:fixed;
+}
+
+
+.ptzspeedgroup {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.slider {
+    width: 40px;
+    height: 12px;
+    position: relative;
+    filter: drop-shadow(3px 3px 1px rgba(0, 0, 0, 1))
+            drop-shadow(-1px -1px 1px rgba(0, 0, 0, 1));
+}
+.ptzcontroltext {
+    color: white;
+    font-family: Arial, Verdana, sans-serif;
+    font-size: 6px;
+    line-height: 6px;
+    white-space: nowrap;
+	filter: drop-shadow(3px 3px 1px rgba(0, 0, 0, 1))
+            drop-shadow(-1px -1px 1px rgba(0, 0, 0, 1));
+}
+
+.slider input {
+    width: 40px;
+    height: 10px;
+    margin: 0;
+    padding: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+/* White track */
+.slider input::-webkit-slider-runnable-track {
+    height: 2px;
+    background: white;
+    border: none;
+}
+
+.slider input::-moz-range-track {
+    height: 2px;
+    background: white;
+    border: none;
+}
+
+/* Small white knob */
+.slider input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 8px;
+    height: 8px;
+    margin-top: -3px;
+    border-radius: 50%;
+    background: white;
+    border: none;
+}
+
+.slider input::-moz-range-thumb {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: white;
+    border: none;
+}
+
+
 </style>
 
 
 </head>
 
 <script src=stall.js></script>
+<script src=ptz.js></script>
 <script language=JavaScript>
 
 var msgareastring = "";
@@ -1278,6 +1395,7 @@ function onLoad()
 
 		setTimeout(windowResized, 3000,true) //delayed call to allow time for videojs to init internally
 		initStalledHandler();
+		initFullscreenHandler();
 		setInterval(checkPaused,1000);
 		
 		if(aieventmonitoring==false)
@@ -1675,7 +1793,7 @@ is a trademark of Fabrice Bellard</p></font></td>
 <div id=helpoverlay style="display:none;  background-color: #7c7c7b; padding:5px;">
 <!Will contain help contents when mini status bar is in use>
 </div>
-
+<audio src=ptzerror.mp3 id=ptzerroraudio></audio>
 
 <script language=JavaScript>
  if (cameraNotFound)

@@ -2,7 +2,7 @@
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016-2025 Andrew Wood                                  #
+# Copyright 2016-2026 Andrew Wood                                  #
 #                                                                  #
 # UI code to display all cameras defined for mirroring	           #
 #                                                                  #
@@ -24,6 +24,7 @@
 
 
 
+	global $PTZCONFFILEPATH;
 	
 	set_error_handler(NULL);
 	echo("<table cellspacing=0 cellpadding=0  bgcolor=gray  id=cameragrid>");
@@ -44,6 +45,14 @@
 
                            echo("<td valign=top width=640 class=videotd style=\"position:relative;\">");
                            $camera->GenerateHTML();
+						   
+						   if ($camera->checkIfPTZ($PTZCONFFILEPATH)) //$camera will ignore if null str i.e ptz not enabled for system
+						   {
+							   
+								$camera->generatePTZHTML();
+								
+						   }
+						   
                            echo("</td>");
 
                                 $camsprinted++;
@@ -83,6 +92,12 @@
                 }
                 echo("<td valign=top width=640>");
                 $camera->GenerateHTML();
+				if ($camera->checkIfPTZ($PTZCONFFILEPATH)) //$camera will ignore if null str i.e ptz not enabled for system
+				{
+							   
+					$camera->generatePTZHTML();
+								
+				}
                 echo("</td>");
 
                 $camsprinted++;

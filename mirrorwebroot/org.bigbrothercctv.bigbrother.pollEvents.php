@@ -9,7 +9,7 @@ ob_start();
 	function controlFileIncludeFail($errno, $errstr, $errfile, $errline)
 	{
 		
-		$nodaemonerrmsg=$nodaemonerrmsg."<p class=statusmsg><font face=face='Arial','Verdana'>CCTV not available,BigBrother is not running</font></p>";
+		$nodaemonerrmsg="<p class=statusmsg><font face=face='Arial','Verdana'>CCTV not available,BigBrother is not running</font></p>";
 		$nodaemonerrmsg=$nodaemonerrmsg."<meta http-equiv='refresh' content='1'><script>window.location.reload();</script>";
 		do418($nodaemonerrmsg);
 		exit($nodaemonerrmsg);
@@ -17,7 +17,7 @@ ob_start();
 	function requiredIncludeFail($errno, $errstr, $errfile, $errline)
 	{
 		
-        $requiredincludefailerrmsg=$requiredincludefailerrmsg."<p class=statusmsg><font face=face='Arial','Verdana'>Error: A required file is missing or could not be read</font></p>";
+        $requiredincludefailerrmsg="<p class=statusmsg><font face=face='Arial','Verdana'>Error: A required file is missing or could not be read</font></p>";
 		$requiredincludefailerrmsg=$requiredincludefailerrmsg."<meta http-equiv='refresh' content='1'>";
 		do412($requiredincludefailerrmsg);
 		exit($requiredincludefailerrmsg);
@@ -83,32 +83,36 @@ function readFileBackwards($numlines, $path)
 	$output=readFileBackwards(100,"/usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.aieventlog.txt");
 	$lines=preg_split('/\n/', $output);
 	
-	foreach ($lines as $line)
+foreach ($lines as $lineno => $line)
+{
+    $line = trim($line);
+
+    // Blank line or comment
+    if ($line === '' || $line[0] === '#') 
 	{
-		if ( ($line[0]=="\n") || ($line[0]=="#") || ($line[0]=="") )
-        {
-             //blank line or comment line or blank line at EOF
-              continue;
-        }
-		$elements=preg_split('/\s+/', $line);
-		if (sizeof($elements) < 4) //at time of writing there are 4 mandatory params (more maybe added later), we only need to read upto 4 here.
-		{
-			do412("Syntax error in AI Event Log on line ".$lineno." Too few parameters");
-			exit("Syntax error in AI Event Log on line ".$lineno." Too few parameters");
-		}
-		$event=new Event($elements);
-		if ($event->initCheck()) 
-		{
-			//we have a valid Event obj
-			$allEvents[]=$event;
-				
-		}
-		else
-		{
-			do412("<p>ERROR: Init of Event failed</p>");
-			exit("<p>ERROR: Init of Event failed</p>");
-		}
-	}
+        continue;
+    }
+
+    $elements = preg_split('/\s+/', $line, -1, PREG_SPLIT_NO_EMPTY);
+
+    if (count($elements) < 4)
+    {
+        $message = "Syntax error in AI Event Log on line ". ($lineno + 1). ": Too few parameters";
+        do412($message);
+        exit($message);
+    }
+
+    $event = new Event($elements);
+
+    if ($event->initCheck()) 
+	{
+        $allEvents[] = $event;
+    } else 
+	{
+        do412("<p>ERROR: Init of Event failed</p>");
+        exit("<p>ERROR: Init of Event failed</p>");
+    }
+}
 
 	if (sizeof($allEvents)==0)
 	{

@@ -162,41 +162,39 @@ then
 fi
 
 
+# Check all params have been initialised
 
-
-#check all params have been initialised, they are not still the default 0
-if [ $sourceurl == "" ]
+if [ -z "$sourceurl" ]
 then
-	 echoUsage
-	 echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-         exit 1
+    echoUsage
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
 fi
 
-if [ $camname == "" ]
+if [ -z "$camname" ]
 then
-	 echoUsage
-	 echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-         exit 1
+    echoUsage
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
 fi
 
-if [ $logfile == "/dev/null" ]
+if [ "$logfile" == "/dev/null" ]
 then
-	echoUsage
-	exit 1
+    echoUsage
+    exit 1
 fi
 
-if [ $ffmpegcommand == "" ]
+if [ -z "$ffmpegcommand" ]
 then
-        echoUsage
-        exit 1
+    echoUsage
+    exit 1
 fi
 
-if [ $webroot == "" ]
+if [ -z "$webroot" ]
 then
-        echoUsage
-        exit 1
+    echoUsage
+    exit 1
 fi
-
 
 
 #all params ok

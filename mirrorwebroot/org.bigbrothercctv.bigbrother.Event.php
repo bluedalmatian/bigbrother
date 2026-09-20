@@ -56,6 +56,7 @@ class Event
 		$this->cameraname=$elements[2];
 		$this->typecode=$elements[3];
 		$this->filename=$elements[4];
+		$this->unixtimestamp=$elements[5];
 		
 		$datecomponents=preg_split('/-/', $this->eventdate);
 		$timecomponents=preg_split('/:/', $this->eventtime);
@@ -77,8 +78,8 @@ class Event
 		
 		
 									//hr min sec mon day yr
-		$this->unixtimestamp=mktime($timecomponents[0],$timecomponents[1],$timecomponents[2],$datecomponents[1],$datecomponents[2],$datecomponents[0]);
-		error_log('Event generating unix time stamp:'.$this->unixtimestamp." from HH MM SS MON DAY YR".$timecomponents[0].' '.$timecomponents[1].' '.$timecomponents[2].' '.$datecomponents[1].' '.$datecomponents[2].' '.$datecomponents[0]);
+		//$this->unixtimestamp=mktime($timecomponents[0],$timecomponents[1],$timecomponents[2],$datecomponents[1],$datecomponents[2],$datecomponents[0]);
+		//error_log('Event generating unix time stamp:'.$this->unixtimestamp." from HH MM SS MON DAY YR".$timecomponents[0].' '.$timecomponents[1].' '.$timecomponents[2].' '.$datecomponents[1].' '.$datecomponents[2].' '.$datecomponents[0]);
 		
 		$this->initOK=true;
 

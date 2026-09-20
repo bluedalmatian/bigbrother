@@ -43,53 +43,39 @@ global $DAEMONPID;
 
 $globalconffile = fopen($GLOBALCONFFILEPATH, "r") or die("Unable to open global config file");
 	$lineno=0;
-	while(!feof($globalconffile)) 
-	{
-		$lineno++;
-  		$line=fgets($globalconffile);
-		if ( ($line[0]=="\n") || ($line[0]=="#") || ($line[0]=="") )
-		{
-			//blank line or comment line or blank line at EOF
-			continue;
-		}
-		$elements=explode(" ",$line);
-		if (sizeof($elements)!=2)
-		{
-			exit("Syntax error in ".$GLOBALCONFFILEPATH." on line ".$lineno.". Each line must be in format <b>keyword</b> <i>value</i> but found ".$line);
-		}
+	while (($line = fgets($globalconffile)) !== false)
+{
+    $lineno++;
 
-		else if ($elements[0]=="allownewfilefromweb")
-		{
-			$elements[1]=strtolower($elements[1]);
-			if ($elements[1]=="true\n")
-			{
-				$allownewfilefromweb=true;
-			}
-			else
-			{
-				$allownewfilefromweb=false;
+    if (trim($line) === '' || ltrim($line)[0] === '#')
+    {
+        continue;
+    }
 
-			}
-		}
-		else if ($elements[0]=="cameraconf")
-		{
-			$elements[1]=stripBackslashN($elements[1]);
-			$cameraconffilepath=$elements[1];
-		}
-		else if ($elements[0]=="speakevents")
-		{
-			$elements[1]=strtolower($elements[1]);
-			if ($elements[1]=="true\n")
-			{
-				$speak=true;
-			}
-			else
-			{
-				$speak=false;
+    $elements = explode(" ", trim($line));
 
-			}
-		}
-	}
+    if (sizeof($elements) != 2)
+    {
+        exit("Syntax error in ".$GLOBALCONFFILEPATH." on line ".$lineno.
+             ". Each line must be in format <b>keyword</b> <i>value</i> but found ".$line);
+    }
+
+    if ($elements[0] == "allownewfilefromweb")
+    {
+        $elements[1] = strtolower($elements[1]);
+        $allownewfilefromweb = ($elements[1] == "true");
+    }
+    else if ($elements[0] == "cameraconf")
+    {
+        $elements[1] = stripBackslashN($elements[1]);
+        $cameraconffilepath = $elements[1];
+    }
+    else if ($elements[0] == "speakevents")
+    {
+        $elements[1] = strtolower($elements[1]);
+        $speak = ($elements[1] == "true");
+    }
+}
 	fclose($globalconffile);
 
 	if  ($cameraconffilepath=="")
@@ -104,46 +90,52 @@ $globalconffile = fopen($GLOBALCONFFILEPATH, "r") or die("Unable to open global 
 	$allCameras=array(); //indexed array of all Camera obj, in groups and not
 	$nullGroupCameras=array(); //indexed array of Camera objs which are not in any group
 	$groupsByName=array(); //assoc array of group names, each ele is indexed array of Camera objs
-        while(!feof($cameraconffile))
+       while (($line = fgets($cameraconffile)) !== false)
+{
+    $lineno++;
+
+    if (trim($line) === '' || ltrim($line)[0] === '#')
+    {
+        // blank line or comment line
+        continue;
+    }
+
+    $elements = preg_split('/\s+/', trim($line));
+
+    if (sizeof($elements) < 5)
+    {
+        exit("Syntax error in ".$cameraconffilepath.
+             " on line ".$lineno." Too few parameters");
+    }
+
+    $camera = new Camera($elements);
+
+    if ($camera->initCheck())
+    {
+        // we have a valid camera obj
+        if ($camera->IsMirroringRequired())
         {
-                $lineno++;
-                $line=fgets($cameraconffile);
-				if ( ($line[0]=="\n") || ($line[0]=="#") || ($line[0]=="") )
+            $allCameras[] = $camera;
+
+            if ($camera->GetGroupName() == NULL)
+            {
+                // camera has no group so put it in $nullGroupCameras
+                $nullGroupCameras[] = $camera;
+            }
+            else
+            {
+                // camera has a group so put it in $groupsByName
+                if (array_key_exists($camera->GetGroupName(), $groupsByName) == false)
                 {
-                        //blank line or comment line or blank line at EOF
-                        continue;
+                    $groupsByName[$camera->GetGroupName()] = array();
                 }
-                $elements=preg_split('/\s+/', $line);
-		if (sizeof($elements) < 5) //at time of writing there are 6 mandatory params (more maybe added later), we only need to read upto 5 here.
-		{
-			exit("Syntax error in ".$cameraconffilepath." on line ".$lineno." Too few parameters");
-		}
-		$camera=new Camera($elements);
-		if ($camera->initCheck()) 
-		{
-			//we have a valid camera obj
-			if ($camera->IsMirroringRequired())
-			{
-				$allCameras[]=$camera;
-				if ($camera->GetGroupName()==NULL)
-				{
-					//camera has no group so put it in $nullGroupCameras
-					$nullGroupCameras[]=$camera;
-				}
-				else
-				{
-					//camera has a group so put it in $groupsByName
-					if (array_key_exists($camera->GetGroupName(),$groupsByName)==false)                
-			                {
-                        			$groupsByName[$camera->GetGroupName()]=array();
-                			}
 
-			                ($groupsByName[$camera->GetGroupName()])[]=$camera;
+                ($groupsByName[$camera->GetGroupName()])[] = $camera;
+            }
+        }
+    }
+}
 
-				}
-			}
-		}
-	}
 	fclose($cameraconffile);
 
 $getfilterconfig=new FilterSettings("GET",$groupsByName);
@@ -321,7 +313,7 @@ function readFilterParamsGET()
 		
 	}
 	
-	if ($filterrorflag)
+	if ($filtererrorflag) 
 	{
 		exit($filtererrorstr);
 	}
@@ -487,7 +479,7 @@ function readFilterParamsCOOKIE()
 		
 	}
 	
-	if ($filterrorflag)
+	if ($filtererrorflag)
 	{
 		exit($filtererrorstr);
 	}
@@ -739,33 +731,36 @@ function readFileBackwards($numlines, $path)
 	$allEvents=array(); 
 	$output=readFileBackwards(1000,"/usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.aieventlog.txt");
 	$lines=preg_split('/\n/', $output);
-	
 	foreach ($lines as $line)
-	{
-		if ( ($line[0]=="\n") || ($line[0]=="#") || ($line[0]=="") )
-        {
-             //blank line or comment line or blank line at EOF
-              continue;
-        }
-		$elements=preg_split('/\s+/', $line);
-		if (sizeof($elements) < 5) //at time of writing there are 5 mandatory params (more maybe added later), we only need to read upto 5 here.
-		{
-		
-			exit("<p>Syntax error in AI Event Log on line ".$lineno." Too few parameters</p>");
-		}
-		$event=new Event($elements);
-		if ($event->initCheck()) 
-		{
-			//we have a valid Event obj
-			$allEvents[]=$event;
-				
-		}
-		else
-		{
-			
-			exit("<p>ERROR: Init of Event failed</p>");
-		}
-	}
+    {
+       $line = trim($line);
+
+       if ($line === '' || $line[0] === '#')
+       {
+          // blank line or comment line
+          continue;
+       }
+
+       $elements = preg_split('/\s+/', $line);
+
+       if (sizeof($elements) < 5)
+       {
+           exit("<p>Syntax error in AI Event Log on line ".$lineno." Too few parameters</p>");
+       }
+
+       $event = new Event($elements);
+
+       if ($event->initCheck())
+       {
+          // we have a valid Event obj
+          $allEvents[] = $event;
+       }
+       else
+      {
+          exit("<p>ERROR: Init of Event failed</p>");
+      }
+   }
+
 
 
 

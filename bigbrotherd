@@ -39,7 +39,7 @@ class ParseException(Exception):
 #######################################
 #System wide knobs
 
-bbversion=2.3 ##only change version no here and in no other file
+bbversion=2.4 ##only change version no here and in no other file
 exedir=os.path.dirname(os.path.realpath(__file__)) ##gives dir with no trailing /
 globalconffile=exedir+"/bigbrother.conf"
 dashfspecified=False
@@ -58,6 +58,7 @@ user="" #this is the username we will try to switch to
 allownewfilefromweb=False
 eventconffilepath="" #this is the camera event monitoring conf file
 speakevents=False
+ptzconffilepath="" #this is the camera PTZ conf file
 
 ##this knob to be calculated automatically
 mirrorwebroot=exedir+"/mirrorwebroot"
@@ -228,6 +229,7 @@ def readGlobalConfig():
     global allownewfilefromweb
     global mirrorwebroot
     global eventconffilepath
+    global ptzconffilepath
 
     try:
             conffile=open(globalconffile,'r')
@@ -253,6 +255,8 @@ def readGlobalConfig():
                 logfilepath=cols[1]
             elif (cols[0]=="cameraeventconf"):
                 eventconffilepath=cols[1]
+            elif (cols[0]=="cameracontrolconf"):
+                ptzconffilepath=cols[1]
             elif (cols[0]=="user"):
                 user=cols[1]
             elif (cols[0]=="allownewfilefromweb"):
@@ -283,6 +287,9 @@ cameras=[] #List of dictionaries of the configs of each cam
 
 eventtasks=[] #List of dictionaries with the event monitoring configs of each cam
 eventlogdirstrings=[] #List of paths to top level log directories for each cam
+
+ptzcamnames=[] # List of camera names for which a valid PTZ config was found
+ptzactive=False #flag to indicate if PTZ config was parsed ok and ptzd should be started
 
 ############################################
 def handler(signum, frame):
@@ -470,8 +477,7 @@ def startEndSane(starthr,startmin,endhr,endmin):
 	endhr=int(endhr)
 	endmin=int(endmin)
 	
-	if (starthr>endhr):
-		return False
+	
 	if ((starthr==endhr) and (startmin>=endmin)):
 		return False
 	return True;
@@ -659,7 +665,7 @@ def parseEventLine(line):
             times=timestr.split("/")
             for  txt in times:
                 #txt must be in format "[20:05-20:10]"
-                x = re.search("^\[[0-9][0-9]:[0-9][0-9]-[0-9][0-9]:[0-9][0-9]\]$", txt)
+                x = re.search(r"^\[\d\d:\d\d-\d\d:\d\d\]$", txt)
                 if x:
                     #matches format
                 
@@ -713,7 +719,130 @@ def parseEventLine(line):
     return action
 ############################################
 
+##########################################################################################
+def readPTZConfig():
+    try:
+        ptzconffile=open(ptzconffilepath,'r')
+        lines=ptzconffile.readlines()
+        ptzconffile.close()
+    except IOError:
+        print("Could not open camera PTZ conf file "+ptzconffilepath)
+        Log("Could not open camera PTZ conf file "+ptzconffilepath+" exit 10")
+        exit(1)
+    lineno=0
+    for line in lines:
+        if line=="":
+            continue
+        lineno=lineno+1
+        if line[0]=='#':
+            continue
+        if line[0]=='\n':
+            continue
+        try:
+            ptzcamnames.append(parsePTZLine(line))
+        except ParseException as e:
+            print ("Syntax error in "+ptzconffilepath+" on line "+str(lineno))
+            print ("\n")
+            print (e.msg)
+            Log("Syntax error in "+ptzconffilepath+" on line "+str(lineno)+" :"+e.msg)
+            
+            exit(1)
+###########################################################################################
 
+###########################################################################################
+def parsePTZLine(line):
+    #check if config valid and return cam name if so, otherwise throw exception
+    elements=line.split()
+	#elements[0] should be camera name
+    #elements[1] should be url string in form  protocol://user:pass@192.168.111.3:80  protocol should be onvif or onvifs
+    
+    if len(elements) != 3:
+        raise ParseException("Each PTZ config line must be in format : cameraName protocol://url:port invertflag")
+    
+    
+    
+    
+    if onlyContainsLettersOrNumbers(elements[0])==False:
+        raise ParseException("PTZ config for camera "+elements[0]+" invalid. Camera name not in valid format")
+    conf=elements[1]
+    proto=conf[0:6] #will give either "onvif:" or "onvifs"
+    nextstartidx=0
+    if proto=="onvifs":
+        proto="https://"
+        nextstartidx=9
+    elif proto=="onvif:":
+        proto="http://"
+        nextstartidx=8  
+    else:
+        raise ParseException("PTZ config for camera "+elements[0]+" is not onvif:// or onvifs:// protocol")
+    try:
+        atidx=conf.rfind("@")
+    except ValueError as e:
+        raise ParseException("PTZ config for camera "+elements[0]+" not in correct format, could not find @")
+    credentials=conf[nextstartidx:atidx] #gives "user:pass"
+  
+    try:
+        username, password = credentials.split(":", 1)
+    except ValueError:
+        raise ParseException("PTZ config for camera "+elements[0]+" credentials should be user:password, use format protocol://user:password@host:port")
+        
+  
+    hostandport=conf[atidx+1:] #gives "IP:port"
+    if hostandport.startswith("["):
+        # IPv6 address: [2001:db8::1234]:80
+        close_bracket = hostandport.find("]")
+
+        if close_bracket == -1:
+            raise ParseException("PTZ config for camera " + elements[0] +" has an invalid IPv6 address: missing ]")
+
+        host = hostandport[1:close_bracket]
+        
+        if close_bracket + 1 >= len(hostandport) or hostandport[close_bracket + 1] != ":":
+             raise ParseException("PTZ config for camera " + elements[0] +" url must include a port")
+
+        port = hostandport[close_bracket + 2:]
+        
+        if host == "":
+            raise ParseException("PTZ config for camera " + elements[0] +" has an empty IPv6 address")
+
+    else:
+        # IPv4 or hostname
+        hostandportarr = hostandport.rsplit(":", 1)
+
+        if len(hostandportarr) != 2:
+            raise ParseException("PTZ config for camera " + elements[0] +" url must include a port, use format protocol://user:password@host:port")
+
+        host = hostandportarr[0]
+        port = hostandportarr[1]
+ 
+        if host == "":
+            raise ParseException("PTZ config for camera " + elements[0] +" has an empty IP address or hostname")
+
+    if port.isdigit()==False:
+        raise ParseException("config for camera"+elements[0]+" not in correct format, port must be an integer")
+    else:
+        if int(port)<1:
+            raise ParseException("config for camera not in correct format, port must be greater than 0")
+   
+    
+    
+    
+    
+    
+    
+    
+    
+    invert=elements[2]
+    invert=invert.lower()
+    if invert !="true" and invert != "false":
+        raise ParseException("config for camera"+elements[0]+" not in correct format, you need to specify True or False for whether the pan axis is inverted")
+        
+        
+    group=getCameraGroup(elements[0])
+    if (group==False):
+        raise ParseException("Camera Name defined for PTZ config must match a camera in the camera config file")
+    return elements[0]
+################################################################################################
 
 #################################################################################
 def escapeTimeString(inputstr):
@@ -732,6 +861,12 @@ def escapeTimeString(inputstr):
 
 #############################################
 def work():
+	
+    Log("P3 setting up signal handlers")
+    signal.signal(signal.SIGINT, handler)
+    signal.signal(signal.SIGTERM, handler)
+    signal.signal(signal.SIGQUIT, handler)
+    signal.signal(signal.SIGHUP,handler)	
 	
     for cameraconf in cameras:
         Log("P3 Preparing to start "+str(cameraconf))
@@ -839,7 +974,9 @@ def work():
         if (cameraconf['events']!=None):
             #event monitoring for this camera
             L=[]
-            L.append(exedir+"/bbeventmonitor_y5onnx.sh")
+            L.append(exedir+"/bbeventmonitor_ffy5onnx.sh")
+            L.append("-cmd")
+            L.append(ffmpegcommand)
             L.append("-cam")
             L.append(cameraconf['url'])
             L.append("-name")
@@ -864,15 +1001,23 @@ def work():
                 idx=idx+1
  
             Log("Found an event conf: "+str(L))
-            cpid = os.spawnv(os.P_NOWAIT, exedir+'/bbeventmonitor_y5onnx.sh', L)
+            cpid = os.spawnv(os.P_NOWAIT, exedir+'/bbeventmonitor_ffy5onnx.sh', L)
             pids.append(cpid)
             Log("P3 started camera event monitoring process OS PID:"+str(cpid))
             
-    Log("P3 setting up signal handlers")
-    signal.signal(signal.SIGINT, handler)
-    signal.signal(signal.SIGTERM, handler)
-    signal.signal(signal.SIGQUIT, handler)
-    signal.signal(signal.SIGHUP,handler)
+            
+    if ptzactive:
+        #doing PTZ so start ptzd
+         L=[]
+         L.append(exedir+"/bbptzcameracontrollerd_onvif.sh")
+         L.append("-conf")
+         L.append(ptzconffilepath)
+         L.append("-log")
+         L.append(logfilepath)
+         cpid = os.spawnv(os.P_NOWAIT, exedir+'/bbptzcameracontrollerd_onvif.sh', L)
+         pids.append(cpid)
+         Log("P3 started PTZ process OS PID:"+str(cpid))
+            
 	
     pid=os.getpid()
     Log("P3 is process ID "+str(pid)+", writing it to PID file at "+pidfilepath)
@@ -1110,6 +1255,7 @@ def mirroringInit():
         mirrorcontrolfile.write("$BBVERSION="+str(bbversion)+";\n")
         mirrorcontrolfile.write("$ALLOWNEWFILEFROMWEB="+str(allownewfilefromweb)+";\n")
         mirrorcontrolfile.write("$STARTTIMESTAMP="+str(int(time.time()))+";\n")
+        mirrorcontrolfile.write("$PTZCONFFILEPATH='"+ptzconffilepath+"';\n")
         mirrorcontrolfile.write("?>\n") 
         mirrorcontrolfile.close()
     except:
@@ -1177,29 +1323,49 @@ else:
     Log("no cameraeventconf file was specified, events will not be monitored")
 
 
-#switch to specified user
-Log("P1 switching user to "+user)
+# switch to specified user
+Log("P1 switching user to " + user)
+
 try:
-   	userid=pwd.getpwnam(user).pw_uid
+    userinfo = pwd.getpwnam(user)
+    userid = userinfo.pw_uid
+    grpid = userinfo.pw_gid
+
 except KeyError:
-        Log("Could not switch user, UID for username could not be found. Fatal. P1 Exiting")
-        exit(1)
-try:
-
-	##need to chown of log file to specified user, as if we created it in 1st call
-	##to Log() then it will not have correct ownership after we switch user
-	os.chown(logfilepath,userid,-1)
-	os.setuid(userid)
-except OSError:
-	Log("Could not switch user to user id "+str(userid)+". Fatal. P1 Exiting")
-	exit(1)
+    Log("Could not switch user, UID/GID for username could not be found. Fatal. P1 Exiting")
+    exit(1)
 
 try:
-	Log("Switched user successfully to "+user+" ("+str(userid)+")",True)  
+    # Need to chown log file to specified user, as if we created it
+    # in the first call to Log() it will not have correct ownership
+    # after we switch user.
+    os.chown(logfilepath, userid, grpid)
+
+    # Set supplementary groups for the user first
+    os.initgroups(user, grpid)
+
+    # Drop group privileges before dropping user privileges
+    os.setgid(grpid)
+
+    # Drop user privileges
+    os.setuid(userid)
+
+except OSError as e:
+    Log("Could not switch user/group to " + user +
+        " (UID " + str(userid) +
+        ", GID " + str(grpid) +
+        "). Fatal. Error: " + str(e))
+    exit(1)
+
+try:
+    Log("Switched user successfully to " + user +
+        " (UID " + str(userid) +
+        ", GID " + str(grpid) + ")", True)
+
 except IOError:
-	print("Could not write to log file after switching to user "+user+" ("+str(userid)+"). Fatal. P1 Exiting")
-	exit(1)
-
+    print("Could not write to log file after switching user to " +
+          user + ". Fatal. P1 Exiting")
+    exit(1)
 
 if ( directoryIsWritable(mirrorwebroot) ):
         mirroringconfigvalid=True
@@ -1230,6 +1396,21 @@ if eventconffilepath!="":
     for eventtask in eventtasks:
         cam=getCamera(eventtask['cam'])
         cam['events']=eventtask
+
+
+if ptzconffilepath!="":
+    readPTZConfig()
+    if len(ptzcamnames)>0:
+        ptzactive=True
+        Log("P1 PTZ active, config found")
+    else:
+        ptzactive=False
+        Log("P1 PTZ not active, no config found (file present but no valid config in it)")
+else:
+    Log("P1 PTZ not active, no config found")
+
+
+
 
 Log("P1 Camera Config read & parsed OK, forking 1st child (P2)")
 pid=os.fork()

@@ -191,50 +191,53 @@ then
 fi
 
 
-
-
-#check all params have been initialised, they are not still the default null str
-if [ $sourceurl == "" ]
+# Check all params have been initialised
+if [ -z "$sourceurl" ]
 then
-	 echoUsage
-	 echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-         exit 1
+    echoUsage
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
 fi
 
-if [ $camname == "" ]
+if [ -z "$camname" ]
 then
-	 echoUsage
-	 echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-         exit 1
+    echoUsage
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
 fi
-if [ $folder == "" ]
+
+if [ -z "$folder" ]
 then
-	 echoUsage
-	 echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-         exit 1
+    echoUsage
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
 fi
-if [ $group == "" ]
+
+if [ -z "$group" ]
 then
-         echoUsage
-	 echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-         exit 1
+    echoUsage
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
 fi
-if [ $logfile == "/dev/null" ]
+
+if [ "$logfile" == "/dev/null" ]
 then
-         echoUsage
-         exit 1
+    echoUsage
+    exit 1
 fi
-if [ $ffmpegcommand = "" ]
+
+if [ -z "$ffmpegcommand" ]
 then
-         echoUsage
-         echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-         exit 1
+    echoUsage
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
 fi
-if [ $container = "" ]
-then	
-	echoUsage
-	echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-        exit 1
+
+if [ -z "$container" ]
+then
+    echoUsage
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
 fi
 
 

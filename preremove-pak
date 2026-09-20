@@ -1,0 +1,28 @@
+#!/bin/sh
+
+#Debian .deb preremove script used by checkinstall#
+
+INSTALLDIR="/usr/local/bigbrother"
+
+# Stop BigBrother before deleting runtime-generated files.
+systemctl stop bigbrotherd.service 2>/dev/null || true
+
+# Remove everything generated under snapshots.
+# -mindepth 1 preserves the snapshots directory itself until later.
+if [ -d "$INSTALLDIR/mirrorwebroot/snapshots" ]; then
+    find "$INSTALLDIR/mirrorwebroot/snapshots" -mindepth 1 -delete
+fi
+
+# Remove Python bytecode caches generated at runtime.
+if [ -d "$INSTALLDIR/octaquad" ]; then
+    find "$INSTALLDIR/octaquad" \
+        -type d -name __pycache__ \
+        -prune -exec rm -rf {} +
+fi
+
+# Remove the snapshots directory itself.
+rmdir "$INSTALLDIR/mirrorwebroot/snapshots" 2>/dev/null || true
+#Remove eventlog file
+rm -f "$INSTALLDIR/mirrorwebroot/org.bigbrothercctv.bigbrother.aieventlog.txt"
+
+exit 0

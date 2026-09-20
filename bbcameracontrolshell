@@ -1,0 +1,200 @@
+#!/usr/bin/env python
+
+
+####################################################################
+# BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
+# Copyright 2025-2026 Andrew Wood                                  #
+#                                                                  #
+#                                                                  #
+# Send a PTZ command over a UNIX socket to bbptzcameracontrollerd  #
+#                                                                  #
+#                                                                  #
+#                                                                  #
+#                                                                  #
+#                                                                  #
+# www.bigbrothercctv.org                                           #
+#                                                                  #
+# Licensed under the GNU Public License v 3                        #
+# The full license can be read at www.gnu.org/licenses/gpl-3.0.txt #
+# and is included in the License.txt file included with this       #
+# software.                                                        #
+#                                                                  #
+# BigBrother is free open source software but if you find it       #
+# useful please consider making a donation to the Communications   #
+# Museum Trust at www.communicationsmuseums.org.uk/donate          #
+####################################################################
+
+####################################################################
+# Exit codes - these must not be changed as they are interpreted   #
+#              by scripts which call this program		           #
+# 0 OK                                                             #
+# 1 Error occured in this program eg bad arg, socket err	       #
+# 2 Error returned from ptzd     								   #              
+#                                                                  #
+# Socket return codes:						                       #
+# 0 OK (Done)							                           #
+# 1 Incorrect args						                           #
+# 2 ONVIFError exception					                       #
+# 3 general exception						                       #
+# 12 command not recognised by camera                              #
+# 13 no ptz config for camera					                   #
+# 14 dns failed							                           #
+# 15 cameras task queue full                                       #
+####################################################################
+
+
+
+##############################################
+def onlyContainsLettersOrNumbers(str):
+        result=re.search("^[A-Za-z0-9]+$",str)
+        if (result==None):
+                return False
+        else:
+                return True
+##############################################
+
+##############################################
+def convertSocketReturnCodeToErrMsg(code):
+    STATUS_MESSAGES = {
+    "0": "OK (Done)",
+    "1": "Incorrect args",
+    "2": "ONVIFError exception",
+    "3": "General exception",
+    "12": "Command not recognised by camera",
+    "13": "No PTZ config for camera",
+    "14": "DNS failed",
+    "15": "Camera's task queue full",
+    }
+    if code in STATUS_MESSAGES:
+        return STATUS_MESSAGES[code]
+    else:
+        return "Unknown status code: " + code
+##############################################
+
+
+
+
+import sys,os,re,socket
+
+
+mydir=os.path.abspath(os.path.dirname(__file__)) #gives dir without trailing /
+SERVER_ADDRESS=mydir+'/org.bigbrothercctv.bigbrother.ptz.onvif.sock'
+
+# Create a UDS socket
+sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+
+
+
+if (len(sys.argv) < 7):
+    print("Usage: "+sys.argv[0]+" -conf /path/to/ptz.conf -cam cameraName -cmd command -speed n")
+    print("Valid commands: L (move left)  R (move right) U (move up) D (move down) IN (zoom in) OUT (zoom out) RESET (go to home) SETHOME (set current position as home) ")
+    print("STARTd where d is either L,R,U,D,IN,OUT,UL,UR,DL,DR (start a continuous move in that direction) STOPALL (stop any movement), SHOWFUNCS (show capabilities of this camera)")
+    print("KEEPMOVING (send a keep alive for a camera movement already in progress to prevent auto-stop timeout)")
+    print("KEEPMOVING must be sent every 2 seconds (or faster) to prevent a movement automatically stopping")
+    print("Valid speeds: -2 to 2 in steps of 0.5 with 0=normal speed, negative numbers in steps of 0.5 to go slower, positive numbers in steps of 0.5 to go faster")
+    print("Speed is mandatory if command is STARTd, L, R, U, D, IN, OUT, UL, DL, UR, DR ")
+    exit(1)
+elif   (len(sys.argv) > 7) and (len(sys.argv) < 9):
+    print("Usage: "+sys.argv[0]+" -conf /path/to/ptz.conf -cam cameraName -cmd command -speed n")
+    print("Valid commands: L (move left)  R (move right) U (move up) D (move down) IN (zoom in) OUT (zoom out) RESET (go to home) SETHOME (set current position as home)")
+    print("STARTd where d is either L,R,U,D,IN,OUT,UL,UR,DL,DR (start a continuous move in that direction) STOPALL (stop any movement), SHOWFUNCS (show capabilities of this camera)")
+    print("KEEPMOVING (send a keep alive for a camera movement already in progress to prevent auto-stop timeout)")
+    print("KEEPMOVING must be sent every 2 seconds (or faster) to prevent a movement automatically stopping")
+    print("Valid speeds: -2 to 2 in steps of 0.5 with 0=normal speed, negative numbers in steps of 0.5 to go slower, positive numbers in steps of 0.5 to go faster")
+    print("Speed is mandatory if command is STARTd, L, R, U, D, IN, OUT, UL, DL, UR, DR ")
+    exit(1)
+    
+confPath=""
+camName=""
+cmd=""
+speed=""
+    
+    
+for i in range(len(sys.argv)):
+   if i==0:
+       continue
+   if sys.argv[i]=="-conf":
+       confPath=sys.argv[i+1]
+   elif sys.argv[i]=="-cam":
+       camName=sys.argv[i+1]
+   elif sys.argv[i]=="-cmd":
+       cmd=sys.argv[i+1]
+   elif sys.argv[i]=="-speed":
+       speed=sys.argv[i+1]
+   
+if confPath=="" or camName=="" or cmd=="":
+    print("Usage: "+sys.argv[0]+" -conf /path/to/ptz.conf -cam cameraName -cmd command -speed n")
+    print("Valid commands: L (move left)  R (move right) U (move up) D (move down) IN (zoom in) OUT (zoom out) RESET (go to home) SETHOME (set current position as home)")
+    print("STARTd STOPd where d is either L,R,U,D,IN,OUT,UL,DL,UR,DR (start / stop a continuous move in that direction) STOPALL (stop any movement), SHOWFUNCS (show capabilities of this camera)")
+    print("KEEPMOVING (send a keep alive for a camera movement already in progress to prevent auto-stop timeout)")
+    print("KEEPMOVING must be sent every 2 seconds (or faster) to prevent a movement automatically stopping")
+    print("Valid speeds: -2 to 2 in steps of 0.5 with 0=normal speed, negative numbers in steps of 0.5 to go slower, positive numbers in steps of 0.5 to go faster")
+    print("Speed is mandatory if command is STARTd, L, R, U, D, IN, OUT, UL ,DL ,UR ,DR")
+    exit(1)   
+
+speedrequired=False
+speedneededcommands=["STARTL","STARTR","STARTU","STARTD","STARTUL","STARTUR","STARTDL","STARTDR","STARTIN","STARTOUT","IN","OUT","L","R","U","D"]
+if cmd in speedneededcommands:
+    speedrequired=True
+    if speed=="":
+        print("ERROR: speed not specified. Your command requires a speed to be specified")
+        print("Valid speeds: -2 to 2 in steps of 0.5 with 0=normal speed, negative numbers in steps of 0.5 to go slower, positive numbers in steps of 0.5 to go faster")
+        print("Speed is mandatory if command is STARTd, L, R, U, D, IN, OUT, UL, DL, UR, DR")
+        exit(1)
+else:
+    speed="0"
+
+validspeedstrings=["-2","-1.5","-1","-0.5","0","0.5","1","1.5","2"]
+if speed not in validspeedstrings:
+    print("ERROR: speed invalid , use -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2 0=normal speed, negative numbers in steps of 0.5 to go slower, positive numbers in steps of 0.5 to go faster")
+    exit(1)
+
+
+if onlyContainsLettersOrNumbers(camName)==False:
+    print("ERROR: cameraName invalid format, camera names must only consist of alphanumeric characters")
+    exit(1)
+    
+validcmds=["KEEPMOVING","L","R","U","D","IN","OUT","RESET","SETHOME","SHOWFUNCS","STARTL","STARTR","STARTU","STARTD","STARTIN","STARTOUT","STOPALL","STARTUR","STARTDR","STARTUL","STARTDL"]
+if cmd not in validcmds:
+    print("ERROR: command not valid. Valid commands: L (move left)  R (move right) U (move up) D (move down) IN (zoom in) OUT (zoom out) RESET (go to home) SETHOME (set current position as home)")
+    print("STARTd where d is either L,R,U,D,IN,OUT (start a continuous move in that direction) STOPALL (stop any movement), SHOWFUNCS (show capabilities of this camera)")
+    print("KEEPMOVING (send a keep alive for a camera movement already in progress to prevent auto-stop timeout)")
+    print("KEEPMOVING must be sent every 2 seconds (or faster) to prevent a movement automatically stopping")
+    exit(1)
+
+
+
+try:
+    sock.connect(SERVER_ADDRESS)
+except socket.error as msg:
+    print(msg)
+    sys.exit(1)
+
+try:
+
+    # Send data
+    message = camName+" "+cmd+" "+speed
+    message=message.encode('utf8')
+    sock.sendall(message)
+
+  
+
+    data = sock.recv(10024)
+   
+    strdata=data.decode('utf-8')
+    
+    if len(strdata)>4 and (strdata[:4] =="INFO") :
+        print(strdata)
+        exit(0)
+    
+    if strdata!="0":
+        print("ERROR SERVER RETURNED: "+convertSocketReturnCodeToErrMsg(strdata))
+        exit(2)
+  
+except Exception as e:
+    print("ERROR: "+str(e))
+    exit(1)
+
+finally:
+    sock.close()
+    exit(0)

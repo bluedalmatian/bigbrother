@@ -190,48 +190,49 @@ then
         echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
         exit 1
 fi
+# Check all params have been initialised
 
-#check all params have been initialised, they are not still the default 0
-if [ $sourceurl == "" ]
+if [ -z "$sourceurl" ]
 then
-	 echoUsage
-	 echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-         exit 1
+    echoUsage
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
 fi
 
-if [ $camname == "" ]
+if [ -z "$camname" ]
 then
-	 echoUsage
-	 echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-         exit 1
-fi
-if [ $folder == "" ]
-then
-	 echoUsage
-	 echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-         exit 1
+    echoUsage
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
 fi
 
-if [ $logfile == "/dev/null" ]
+if [ -z "$folder" ]
 then
-        echoUsage
-        exit 1
+    echoUsage
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
 fi
 
-
-if [ $ffmpegcommand == "" ]
+if [ "$logfile" == "/dev/null" ]
 then
-        echoUsage
-	echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-        exit 1
+    echoUsage
+    exit 1
 fi
 
-if [ $container == "" ]
+if [ -z "$ffmpegcommand" ]
 then
-        echoUsage
-        echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-        exit 1
+    echoUsage
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
 fi
+
+if [ -z "$container" ]
+then
+    echoUsage
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
+fi
+
 
 
 #because $container is used as filename ext we have to ensure it does not contain invalid chars

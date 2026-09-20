@@ -1,5 +1,8 @@
 MAJOR CHANGES FOR EACH VERSION
 ======================================================================================================================================================================
+2.4	Improvements to event detection performance, experimental PTZ support, NVENC for HLS mirroring where available, CUDA GPU for AI event detection where
+        available. Bug fixes for event ignore time parsing. 
+
 2.3	Improvements to event detection performance, improvements to mirroring live view performance including better recovery of stalled camera streams. 
         New separate license for AI model
 

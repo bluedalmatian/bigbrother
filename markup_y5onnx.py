@@ -20,11 +20,30 @@
 # import libraries
 import numpy as np
 import cv2, os, sys
+import py7zr
+
 
 mydir=os.path.abspath(os.path.dirname(__file__)) #gives dir without trailing /
 modeldir=mydir+"/onnx"
-classesPath=modeldir+"/classes.txt" #not currently used class names defined below
-modelPath = modeldir+"/bbrelease-100-640x640.onnx"
+
+                                                     
+#Embedding the 7z password in the code like this is not meant to be secure its meant to force
+#anyone stealing it to read the notice below so they do not inadvertently steal it without knowing
+#what they are doing
+
+# WARNING: The ONNX AI model is NOT under GPL. It is covered by the BB AI Model License.       #
+# Do not use this password to extract it for use in non BigBrother software unless you         #
+# have purchased a commercial license. See www.bigbrothercctv.org/BB-AIMODEL-LICENSE-1.1.txt   #
+#                                                                    DO NOT STEAL   READ ^^^   # 
+with py7zr.SevenZipFile(modeldir + "/bbrelease-100-640x640.7z",mode="r",password="vR7!qL2#xN9@kT4$mP8&zW6^cH3*Ys5") as archive:
+    print("Files inside the 7z archive:")
+    print(archive.getnames())
+    data = archive.read(["bbrelease-100-640x640.onnx"])
+    model_bytes = data["bbrelease-100-640x640.onnx"].read()
+    model_buffer = np.frombuffer(model_bytes, dtype=np.uint8)
+
+
+
 
 if len(sys.argv)!=4:
     print("")
@@ -63,17 +82,12 @@ else:
     print("Using OpenCV "+cvversionelements[0]+"."+cvversionelements[1])
 
 # read a network model 
-net = cv2.dnn.readNetFromONNX(modelPath)
+net = cv2.dnn.readNetFromONNX(model_buffer)
 
 # dictionary with the object class id and names on which the model is trained
-classNames = { 0: 'person',1: 'car', 2: 'truck', 3: 'motorcycle', 4: 'van',5: 'bus',6: 'bicycle'}
+classNames = { 0: 'person',1: 'car', 2: 'truck', 3: 'motorcycle', 4: 'van',5: 'bus',6: 'bicycle', 7: 'selftest'}
 
 
-
-#Use NPU########################################################
-#net.setPreferableBackend(cv2.dnn.DNN_BACKEND_INFERENCE_ENGINE)
-#net.setPreferableTarget(cv2.dnn.DNN_TARGET_NPU)
-################################################################
     
 # Load the image
 frame = cv2.imread(inputpath)
