@@ -1,0 +1,1121 @@
+#!/usr/bin/env python
+
+
+####################################################################
+# BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
+# Copyright 2025-2026 Andrew Wood                                  #
+#                                                                  #
+#                                                                  #
+# bbptzcameracontrollerd_onvif control PTZ of a specified camera   #
+# using Octaquad library which requires Python Zeep SOAP lib       #
+# On Debian this is provided by python3-zeep package               #
+#                                                                  #
+#                                                                  #
+#                                                                  #
+# www.bigbrothercctv.org                                           #
+#                                                                  #
+# Licensed under the GNU Public License v 3                        #
+# The full license can be read at www.gnu.org/licenses/gpl-3.0.txt #
+# and is included in the License.txt file included with this       #
+# software.                                                        #
+#                                                                  #
+# BigBrother is free open source software but if you find it       #
+# useful please consider making a donation to the Communications   #
+# Museum Trust at www.communicationsmuseums.org.uk/donate          #
+####################################################################
+
+####################################################################
+# Exit codes - these must not be changed as they are interpreted   #
+#              by scripts which call this program		           #
+# Program exit codes:						                       #
+# 0 OK								                               #
+# 1 Incorrect args						                           #
+# 3 general Exception						                       #
+# 10 ptz conf file invalid/unreadable				               #
+# 11 log file not writable					                       #
+# 								                                   #
+# Socket return codes:						                       #
+# 0 OK (Done)							                           #
+# 1 Incorrect args						                           #
+# 2 ONVIFError exception					                       #
+# 3 general exception						                       #
+# 12 command not recognised by camera                              #
+# 13 no ptz config for camera					                   #
+# 14 dns failed							                           #
+# 15 cameras task queue full                                       #
+####################################################################
+
+from octaquad.onvif import ONVIFCamera,ONVIFError
+from datetime import datetime
+import time,re,os,sys,socket,signal,ipaddress
+import threading
+import shlex
+import atexit
+import queue
+import traceback
+
+
+
+#######################################
+class ParseException(Exception):
+         def __init__(self, value):
+                self.msg = value
+#######################################
+
+
+##################################################################################################################################################################
+class PTZConfig:
+        #A PTZConfig represents a parsed and validated PTZ config for a camera read from the ptz config file
+        #the host parameter passed to constructor can be either an IP4/6 address or a DNS hostname
+        #if it is a hostname the constructor will attempt to resolve it and populate the ip4addresses/ip6addresses arrays
+        #with addresses. A user should threfore call PTZConfig.isHostIP() and if True use the value directly from PTZConfig.getHost()
+        #otherwise PTZConfig.getHost() is a hostname and it should call PTZConfig.getIP4Addresses() & PTZConfig.getIP6Addresses()
+        #and use values in there. If those arrays are both empty, DNS resolution failed
+        
+       
+    
+    def __init__(self, camName, protocol, user, passwd,host, port,invert):
+        self.camName=camName
+        self.protocol = protocol
+        self.user=user
+        self.passwd=passwd
+        self.host = host
+        self.port= int(port)
+        self.ip4addresses=[]
+        self.ip6addresses=[]       
+        if self.isHostIP()==False:
+            self.resolveIPAddresses(self.host)
+        self.invert=invert
+        self.sem=threading.Semaphore(1)
+        self.maxnormaltasks=16
+        self.queue=queue.Queue(self.maxnormaltasks+1)
+        self.queuelock=threading.Lock()
+        self.normaltasks=0
+        self.thread=threading.Thread(target=self.threadFunc)
+        self.thread.start()
+        self.ismoving=False
+        self.timestamp=0
+
+    def __str__(self):
+        return "camera: "+self.camName+" protocol: "+self.protocol+" user: "+self.user+" passwd: "+self.passwd+" host: "+self.host+" port: "+str(self.port)+" invert: "+str(self.invert)
+        
+    def lock(self):
+    	self.sem.acquire()
+    
+    def unlock(self):
+    	self.sem.release()
+    
+    def stopCamera(self):
+        self.lock()
+        try:
+            settings = {"XMAX": 1,"XMIN": -1,"XNOW": 0.5,"YMAX": 1,"YMIN": -1,"YNOW": 0.5, "Move": 0.1, "PanMove":0.1, "ZoomMove": 0.01, "Velocity": 0.1,"Zoom": 0,"positionrequest": None,"ptz": None,"active": False,"ptz_configuration_options": None,"media_profile": None,"invert_pan":self.getInvert()}
+            
+            if self.isHostIP():
+                iptouse=self.getHost()
+	            #was given IP address
+            elif len(self.getIP4Addresses())>0:
+	            #was given host name, using IP4 address from DNS
+	            iptouse=self.getIP4Addresses()[0]
+            elif len(self.getIP6Addresses())>0:
+	            #was given host name, using IP6 address from DNS
+	            iptouse=self.getIP6Addresses()[0]
+            else:
+                Log("ERROR: Host name for camera could not be resolved to an IP address. Check PTZ configuration and check DNS is working.Could not send a STOP cmd to camera during startup/shutdown")
+                return
+                
+            setup_move(self.camName,self.getProtocol()+iptouse,self.getPort(),self.getUser(),self.getPassword(),settings)
+            stop_move(settings, pantilt=True, zoom=True)
+            self.ismoving = False
+            self.timestamp = 0
+        except Exception as e:
+            Log("ERROR: Could not stop camera " + self.getCameraName() +" during startup/shutdown: " + str(e))
+            print("Could not stop camera " + self.getCameraName() +" during startup/shutdown:", str(e))
+        finally:
+            self.unlock()
+        
+    def checkTimeout(self):
+        if self.ismoving:
+            timestampnow = int(time.time())
+            if (timestampnow - self.timestamp) >3:
+                self.doRequest("STOPALL",0)
+                print(self.camName+" stopped moving due to timeout\n")
+                Log(self.camName+" stopped moving due to timeout\n")
+  
+            
+    def setIsMoving(self,val):
+        if val:
+            self.ismoving=True
+            self.timestamp=int(time.time())
+        else:
+            self.ismoving=False
+            self.timestamp=0
+    	
+  
+            
+    def addToQueue(self, task):
+        with self.queuelock:
+            if self.normaltasks >= self.maxnormaltasks:
+                return False
+
+            try:
+                self.queue.put_nowait(task)
+                self.normaltasks += 1
+                return True
+            except queue.Full:
+                return False
+                
+    def addStopToQueue(self, task):
+        with self.queuelock:
+            try:
+                self.queue.put_nowait(task)
+                return True
+            except queue.Full:
+                return False
+    
+    def getNextTask(self):
+        try:
+            task = self.queue.get(timeout=1)
+
+            # STOP doesn't count as a normal task
+            if task["cmd"] != "STOPALL":
+                with self.queuelock:
+                    self.normaltasks -= 1
+
+            return task
+
+        except queue.Empty:
+            return None
+        
+    def getThread(self):
+        return self.thread
+
+    def isIP4(self,string):
+        try:
+            ipaddress.IPv4Network(string)
+            return True
+        except ValueError:
+            return False	
+
+    def isIP6(self,string):
+        try:
+            ipaddress.IPv6Network(string)
+            return True
+        except ValueError:
+            return False
+
+
+    def isHostIP(self):
+        if self.isIP4(self.host):
+            return True
+        elif self.isIP6(self.host):
+            return True
+        else:
+            return False
+
+    def getProtocol(self):
+    	return self.protocol
+    	
+    def getUser(self):
+        return self.user
+	
+    def getPassword(self):
+        return self.passwd
+
+    def getHost(self):
+        return self.host
+    
+    def getPort(self):
+        return self.port
+
+
+    def resolveIPAddresses(self,hostname):
+        try:
+            results = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC)
+            for result in results:
+                family, _, _, _, sockaddr = result
+                address = sockaddr[0]
+
+                if family == socket.AF_INET:
+                    self.ip4addresses.append(address)
+                elif family == socket.AF_INET6:
+                    self.ip6addresses.append(address)
+            #Hostname resolved and ip4addresses & ip6addresses arrays populated with results 
+            if (len(self.ip4addresses) >0) or (len(self.ip6addresses) >0):
+                return True
+            else:
+                return False
+
+        except socket.gaierror as e:
+            #Hostname could not be resolved
+            return False 
+
+    def getIP4Addresses(self):
+        return self.ip4addresses
+
+    def getIP6Addresses(self):
+        return self.ip6addresses
+    
+    def getInvert(self):
+        return self.invert
+    
+    def getCameraName(self):
+        return self.camName
+
+    def threadFunc(self):
+        while not exit_event.is_set():
+            task=self.getNextTask()
+            if task is None:
+                continue
+            self.lock()
+            print("threadFunc for camera "+self.getCameraName()+" got task: "+str(task))
+            resultcode=self.doRequest(task["cmd"],task["speed"])
+            connection = task["socket"]
+            try:
+                connection.sendall(resultcode.encode())
+            except OSError as e:
+                print("threadFunc for camera "+self.getCameraName()+" send failed:", e)
+            finally:
+                connection.close()
+            
+            self.unlock()
+        
+        self.stopCamera()
+        print("threadFunc for camera "+self.getCameraName()+" exiting")
+
+
+    def doRequest(self,cmd,speedadjustment):
+        #note you must return strings not integers, these are passed back over socket connection as return code
+        validcmds=["KEEPMOVING","L","R","U","D","IN","OUT","RESET","SETHOME","SHOWFUNCS","STARTL","STARTR","STARTU","STARTD","STARTIN","STARTOUT","STARTUL","STARTUR","STARTDL","STARTDR","STOPALL"]
+        if cmd in validcmds:
+            #we have valid cmd and camName
+            if self.isHostIP():
+                iptouse=self.getHost()
+	            #was given IP address
+            elif len(self.getIP4Addresses())>0:
+	            #was given host name, using IP4 address from DNS
+	            iptouse=self.getIP4Addresses()[0]
+            elif len(self.getIP6Addresses())>0:
+	            #was given host name, using IP6 address from DNS
+	            iptouse=self.getIP6Addresses()[0]
+            else:
+	            Log("ERROR: Host name for camera could not be resolved to an IP address. Check PTZ configuration and check DNS is working")
+	            return "14"
+        else:
+            Log("ERROR: Invalid argument given on socket connection, command is invalid")
+            return "1"
+
+        try:
+            #at this point we have valid cmd and an IP address to connect to camera
+           
+            #speedadjustment will increase or decrease speed from its default of 100% like this:
+            #-2   → 10%
+            #-1.5 → 25%
+            #-1   → 50%
+            #-0.5 → 75%
+            #0   → 100%
+            #+0.5 → 125%
+            #+1   → 150%
+            #+1.5 → 175%
+            #+2   → 200%
+           
+
+            multipliers = {-2:0.1,-1.5:0.25,-1:0.5,-0.5: 0.75,0:1.0,0.5: 1.25,1:1.5,1.5: 1.75,2:2.0}
+            validspeedadjusters=[-2,-1.5,-1,-0.5,0,0.5,1,1.5,2]
+           
+            if speedadjustment not in validspeedadjusters:
+                Log("ERROR: Invalid argument given on socket connection, speedadjustment is invalid")
+                return "1"
+                
+            multiplier=multipliers[speedadjustment]
+            if cmd in ["STARTU","STARTD"]:
+                vel=0.2*multiplier
+            elif cmd in ["STARTIN","STARTOUT"]:
+                vel=0.01*multiplier
+            else:
+                vel=1*multiplier
+                
+            if cmd in ["STARTL","STARTR","STARTUL","STARTUR","STARTDL","STARTDR"]:
+                pm=0.2*multiplier
+                vel=0.2*multiplier
+            else:
+                pm=0.08*multiplier
+                
+            if cmd in ["IN","OUT"]:
+                zm=(0.01*multiplier)+0.005 #add 0.005 on otherwise on some cameras the very slow speeds will cause no zoom at all
+            else:
+                zm=0.01
+                
+                
+            if cmd in ["L","R","U","D"]:
+                mv=0.1*multiplier
+            else:
+                mv=0.1
+                
+            settings = {"XMAX": 1,"XMIN": -1,"XNOW": 0.5,"YMAX": 1,"YMIN": -1,"YNOW": 0.5, "Move": mv, "PanMove":pm, "ZoomMove": zm, "Velocity": vel,"Zoom": 0,"positionrequest": None,"ptz": None,"active": False,"ptz_configuration_options": None,"media_profile": None,"invert_pan":self.getInvert()}
+
+            
+            setup_move(self.camName,self.getProtocol()+iptouse,self.getPort(),self.getUser(),self.getPassword(),settings)
+
+            if cmd in ["STARTL","STARTR","STARTU","STARTD","STARTIN","STARTOUT","STARTUL","STARTUR","STARTDL","STARTDR","STOPALL"]:
+                spaces = settings["ptz_configuration_options"].Spaces
+
+            if cmd in  ["STARTL","STARTR","STARTU","STARTD","STARTUL","STARTUR","STARTDL","STARTDR"]:
+                if not hasattr(spaces, "ContinuousPanTiltVelocitySpace"):
+                    return "12"
+                    
+            if cmd in ["STARTIN","STARTOUT"]:
+                if not hasattr(spaces, "ContinuousZoomVelocitySpace"):
+                    return "12"
+            
+            if cmd=='KEEPMOVING':
+               if self.ismoving:
+                   self.timestamp=int(time.time())
+            elif cmd=='U':
+                move_up(settings)
+            elif cmd=='D':
+                move_down(settings)
+            elif cmd=='L':
+                move_left(settings)
+            elif cmd=='R':
+                move_right(settings)
+            elif cmd=='IN':
+                zoom_in(settings)
+            elif cmd=='OUT':
+                zoom_out(settings)
+            elif cmd=='RESET':
+                reset(settings)
+            elif cmd=='SETHOME':
+                set_home(settings)
+            elif cmd=='STARTL':
+                start_left(settings)
+                self.setIsMoving(True)
+            elif cmd=='STARTR':
+                start_right(settings)
+                self.setIsMoving(True)
+            elif cmd=='STARTU':
+                start_up(settings)
+                self.setIsMoving(True)
+            elif cmd=='STARTD':
+                start_down(settings)
+                self.setIsMoving(True)
+            elif cmd=='STARTIN':
+                start_zoom_in(settings)
+                self.setIsMoving(True)
+            elif cmd=='STARTOUT':
+                start_zoom_out(settings)
+                self.setIsMoving(True)
+            elif cmd=='STARTUL':
+                start_up_left(settings)
+                self.setIsMoving(True)
+            elif cmd=='STARTUR':
+                start_up_right(settings)
+                self.setIsMoving(True)
+            elif cmd=='STARTDL':
+                start_down_left(settings)
+                self.setIsMoving(True)
+            elif cmd=='STARTDR':
+                start_down_right(settings)
+                self.setIsMoving(True)
+            elif cmd == 'STOPALL': 
+                stop_move(settings, pantilt=True, zoom=True)
+                self.setIsMoving(False)
+            elif cmd=='SHOWFUNCS':
+                cap=printCapabilities(self.camName,self.getProtocol()+iptouse,self.getPort(),self.getUser(),self.getPassword(),settings)
+                return "INFO "+cap
+            else:
+                Log("ERROR: Invalid command for camera "+self.camName)
+                return "3"
+                
+            Log("Done OK for camera "+self.camName+" returning 0 to client")
+            return "0"
+			 
+        except ONVIFError as e:
+            if "The ReferenceToken type doesn't accept collections as value" in str(e):
+                #this ONVIFError was caused by the camera not supporting the desired command
+                estr=str(e)
+                Log("ERROR: ONVIFError Exception: "+estr+"  for camera "+self.camName+" due to lack of command support returning 12 to client")
+                print(estr)
+                return "12"
+            else:
+                #generic ONVIFError
+                estr=str(e)
+                Log("ERROR: ONVIFError Exception: "+estr+" for camera "+self.camName+" returning 2 to client")
+                print(str(e))
+                return "2"
+        
+        except Exception as e:
+            estr=str(e)
+            Log("ERROR: Generic Exception: "+estr+" for camera "+self.camName+" returning 3 to client")
+            print(estr)
+            return "3"
+
+#END OF CLASS PTZConfig
+##################################################################################################################################################################
+
+
+
+
+
+
+#shutdown flag
+exit_event = threading.Event()
+
+
+
+############################################
+def handler(signum, frame):
+   
+    Log("bbptzcameracontrollerd_onvif got signal "+str(signum)+" waiting for threads to exit...")
+    exit_event.set()
+    timeoutthread.join()
+    for cam in ptzconfigs:
+     
+        cam.getThread().join()
+    Log(" bbptzcameracontrollerd_onvif finished handling signal")
+#############################################
+
+
+##############################################
+def cleanup():
+    if os.path.exists(SERVER_ADDRESS):
+        os.unlink(SERVER_ADDRESS)
+##############################################
+
+##############################################
+def onlyContainsLettersOrNumbers(str):
+        result=re.search("^[A-Za-z0-9]+$",str)
+        if (result==None):
+                return False
+        else:
+                return True
+##############################################
+
+
+
+
+#############################################
+def Log(msg,throw=False):
+        try:
+                now=datetime.now()
+                datestr=now.strftime("%Y-%m-%d %H:%M")
+                file=open(logfilepath,'a')
+                pid=str(os.getpid())
+
+                #if given just \n\n output it with no datetime prepended
+                if msg=="\n\n":
+                        file.write(msg)
+                        file.close()
+                        return()
+
+                if msg[len(msg)-1]!="\n":
+                        msg=msg+"\n"
+                file.write(datestr+" "+"[bbptzcameracontrollerd_onvif] "+"[PID "+pid+"] "+msg)
+                file.close()
+        except IOError as e:
+                if (throw):
+                        raise e
+                else:
+                        print ("ERROR: Could not open Log file an IOError was thrown, ignoring")
+###############################################
+
+
+###########################################
+def readPTZConfig():
+    global ptzconfigs
+    try:
+        conffile=open(ptzconffilepath,'r')
+        lines=conffile.readlines()
+        conffile.close()
+    except IOError:
+        print("Could not open camera PTZ conf file "+ptzconffilepath)
+        Log("Could not open camera PTZ conf file "+ptzconffilepath+" exit 10")
+        exit(10)
+    lineno=0
+    for line in lines:
+        if line=="":
+            continue
+        lineno=lineno+1
+        if line[0]=='#':
+            continue
+        if line[0]=='\n':
+            continue
+        try:
+            elements=line.split()
+            ptzconf=parsePTZLine(line)
+            if getCameraConfig(ptzconf.getCameraName())==False:
+                ptzconfigs.append(ptzconf)
+            else:
+                raise ParseException("Duplicate config for camera "+ptzconf.getCameraName())
+        except ParseException as e:
+            print ("Syntax error in "+ptzconffilepath+" on line "+str(lineno))
+            print ("\n")
+            print (e.msg)
+            Log("Syntax error in "+ptzconffilepath+" on line "+str(lineno)+" :"+e.msg+" exit 10")
+            exit(10)
+###########################################
+
+###############################################
+def parsePTZLine(line):
+    elements=line.split()
+	#elements[0] should be camera name
+    #elements[1] should be url string in form  protocol://user:pass@192.168.111.3:80  protocol should be onvif or onvifs
+    
+    if len(elements) != 3:
+        raise ParseException("Each PTZ config line must be in format : cameraName protocol://url:port invertflag")
+    
+	
+	
+    if onlyContainsLettersOrNumbers(elements[0])==False:
+        raise ParseException("Config for camera "+elements[0]+" invalid. Camera name not in valid format")
+    conf=elements[1]
+    proto=conf[0:6] #will give either "onvif:" or "onvifs"
+    nextstartidx=0
+    if proto=="onvifs":
+        proto="https://"
+        nextstartidx=9
+    elif proto=="onvif:":
+        proto="http://"
+        nextstartidx=8  
+    else:
+        raise ParseException("Config for camera "+elements[0]+" is not onvif:// or onvifs:// protocol")
+    try:
+        atidx = conf.rfind("@")
+    except ValueError as e:
+        raise ParseException("config for camera "+elements[0]+" not in correct format, could not find @")
+    credentials=conf[nextstartidx:atidx] #gives "user:pass"
+	
+	
+    try:
+        username, password = credentials.split(":", 1)
+    except ValueError:
+        raise ParseException("PTZ config for camera "+elements[0]+" credentials should be user:password, use format protocol://user:password@host:port")
+    
+	
+	
+ 
+    hostandport = conf[atidx + 1:]
+
+    if hostandport.startswith("["):
+        # IPv6 address: [2001:db8::1234]:80
+        close_bracket = hostandport.find("]")
+
+        if close_bracket == -1:
+            raise ParseException("PTZ config for camera " + elements[0] +" has an invalid IPv6 address: missing ]")
+
+        host = hostandport[1:close_bracket]
+
+        if close_bracket + 1 >= len(hostandport) or hostandport[close_bracket + 1] != ":":
+             raise ParseException("PTZ config for camera " + elements[0] +" url must include a port")
+
+        port = hostandport[close_bracket + 2:]
+        
+        if host == "":
+            raise ParseException("PTZ config for camera " + elements[0] +" has an empty IPv6 address")
+
+    else:
+        # IPv4 or hostname
+        hostandportarr = hostandport.rsplit(":", 1)
+
+        if len(hostandportarr) != 2:
+            raise ParseException("PTZ config for camera " + elements[0] +" url must include a port, use format protocol://user:password@host:port")
+
+        host = hostandportarr[0]
+        port = hostandportarr[1]
+ 
+        if host == "":
+            raise ParseException("PTZ config for camera " + elements[0] +" has an empty IP address or hostname")
+
+ 
+ 
+    if port.isdigit()==False:
+        raise ParseException("config for camera"+elements[0]+" not in correct format, port must be an integer")
+    else:
+        if int(port)<1:
+            raise ParseException("config for camera not in correct format, port must be greater than 0")
+   
+    invert=elements[2]
+    invert=invert.lower()
+    if invert=="true":
+        ptzc=PTZConfig(elements[0],proto,username,password,host,port,True)
+    elif invert=="false":
+        ptzc=PTZConfig(elements[0],proto,username,password,host,port,False)
+    else:
+        raise ParseException("config for camera"+elements[0]+" not in correct format, you need to specify True or False for whether the pan axis is inverted")
+    return ptzc
+###############################################
+
+#######################################################
+def do_move(settings):
+    if settings["active"]:
+        settings["ptz"].Stop({'ProfileToken': settings["positionrequest"].ProfileToken})
+    settings["positionrequest"].Position.Zoom = None
+    settings["ptz"].AbsoluteMove(settings["positionrequest"])
+#######################################################
+
+#######################################################
+def reset(settings):
+    settings["ptz"].GetStatus({'ProfileToken': settings["positionrequest"].ProfileToken})
+    settings["ptz"].GotoHomePosition(settings["positionrequest"])
+#######################################################
+
+#######################################################
+def set_home(settings):
+    req = settings["ptz"].create_type('SetHomePosition')
+    req.ProfileToken = settings["positionrequest"].ProfileToken
+    settings["ptz"].SetHomePosition(req)
+#######################################################
+
+
+#######################################################
+def move_up(settings):
+    status = settings["ptz"].GetStatus(
+        {'ProfileToken': settings["positionrequest"].ProfileToken}
+    )
+
+    settings["positionrequest"].Position.PanTilt.x = status.Position.PanTilt.x
+    settings["positionrequest"].Position.PanTilt.y = status.Position.PanTilt.y + settings["Move"]
+   
+
+    do_move(settings)
+#######################################################
+
+#######################################################
+def move_down(settings):
+    status = settings["ptz"].GetStatus(
+        {'ProfileToken': settings["positionrequest"].ProfileToken}
+    )
+
+    settings["positionrequest"].Position.PanTilt.x = status.Position.PanTilt.x
+    settings["positionrequest"].Position.PanTilt.y = status.Position.PanTilt.y - settings["Move"]
+    
+    do_move(settings)
+#######################################################
+
+#######################################################
+def move_right(settings):
+    status = settings["ptz"].GetStatus(
+        {'ProfileToken': settings["positionrequest"].ProfileToken}
+    )
+
+    settings["positionrequest"].Position.PanTilt.x = status.Position.PanTilt.x - pan_direction(settings)
+    settings["positionrequest"].Position.PanTilt.y = status.Position.PanTilt.y
+    
+
+    do_move(settings)
+#######################################################
+
+#######################################################
+def move_left(settings):
+    status = settings["ptz"].GetStatus(
+        {'ProfileToken': settings["positionrequest"].ProfileToken}
+    )
+
+    settings["positionrequest"].Position.PanTilt.x = status.Position.PanTilt.x + pan_direction(settings)
+    settings["positionrequest"].Position.PanTilt.y = status.Position.PanTilt.y
+   
+
+    do_move(settings)
+#######################################################
+
+#######################################################
+def zoom_in(settings):
+    relative_zoom(settings, settings["ZoomMove"])
+#######################################################
+
+#######################################################
+def zoom_out(settings):
+    relative_zoom(settings, -settings["ZoomMove"])
+#######################################################
+
+#######################################################
+def relative_zoom(settings, amount):
+    request = settings["ptz"].create_type('RelativeMove')
+    request.ProfileToken = settings["media_profile"].token
+    request.Translation = {
+        "Zoom": {
+            "x": amount
+        }
+    }
+    settings["ptz"].RelativeMove(request)
+
+#######################################################
+
+#######################################################
+def printCapabilities(camname,ip,port,user,passwd,settings):
+    cap = settings["ptz"].GetServiceCapabilities()
+    mycam = ONVIFCamera(ip, port, user, passwd)
+    services = mycam.devicemgmt.GetServices({'IncludeCapability': False})
+    service_list = "\n".join(f"{svc.Namespace} -> {svc.XAddr}"for svc in services)
+    infostr="Camera "+camname+" reports it supports the following ONVIF services/APIs:\n" + service_list
+    return(str(cap)+" "+infostr+" \nPTZ options: "+str(settings["ptz_configuration_options"].Spaces))
+#######################################################
+
+#######################################################
+def setup_move(camname,ip,port,user,passwd,requestconfig):
+    try:
+        mycam = ONVIFCamera(ip, port, user, passwd)
+    except Exception:
+        traceback.print_exc()
+        raise
+
+  
+
+    # Create media service object
+    media = mycam.create_media_service()
+ 
+    # Create ptz service object
+    #ptz , ptz_configuration_options, media_profile, positionrequest are all elements of requestconfig
+    
+    requestconfig["ptz"] = mycam.create_ptz_service()
+    # Get target profile
+    requestconfig["media_profile"] = media.GetProfiles()[0]
+
+    request = requestconfig["ptz"].create_type('GetConfigurationOptions')
+    request.ConfigurationToken = requestconfig["media_profile"].PTZConfiguration.token
+    requestconfig["ptz_configuration_options"] = requestconfig["ptz"].GetConfigurationOptions(request)
+    
+    requestconfig["supports_continuous"] = (hasattr(requestconfig["ptz_configuration_options"].Spaces,"ContinuousPanTiltVelocitySpace"))
+    
+
+    
+
+    request_configuration = requestconfig["ptz"].create_type('GetConfiguration')
+    request_configuration.PTZConfigurationToken  = requestconfig["media_profile"].PTZConfiguration.token
+    ptz_configuration = requestconfig["ptz"].GetConfiguration(request_configuration)
+
+    request_setconfiguration = requestconfig["ptz"].create_type('SetConfiguration')
+    request_setconfiguration.PTZConfiguration = ptz_configuration
+
+    
+    requestconfig["positionrequest"]= requestconfig["ptz"].create_type('AbsoluteMove')
+    requestconfig["positionrequest"].ProfileToken = requestconfig["media_profile"].token
+
+    if  requestconfig["positionrequest"].Position is None :
+        requestconfig["positionrequest"].Position =  requestconfig["ptz"].GetStatus({'ProfileToken':  requestconfig["media_profile"].token}).Position
+        requestconfig["positionrequest"].Position.PanTilt.space =  requestconfig["ptz_configuration_options"].Spaces.AbsolutePanTiltPositionSpace[0].URI
+        requestconfig["positionrequest"].Position.Zoom.space =  requestconfig["ptz_configuration_options"].Spaces.AbsoluteZoomPositionSpace[0].URI
+
+    if  requestconfig["positionrequest"].Speed is None :
+        requestconfig["positionrequest"].Speed =  requestconfig["ptz"].GetStatus({'ProfileToken': requestconfig["media_profile"].token}).Position
+        requestconfig["positionrequest"].Speed.PanTilt.space =  requestconfig["ptz_configuration_options"].Spaces.PanTiltSpeedSpace[0].URI
+ 
+        
+
+#######################################################
+
+######################################################
+def getCameraConfig(camname):
+    #Return PTZConfig obj for specified camera or False if not found
+    global ptzconfigs
+    for cam in ptzconfigs:
+        if cam.getCameraName()==camname:
+            return cam
+    return False
+######################################################
+
+
+######################################################
+def pan_direction(settings):
+    value=settings["PanMove"]
+    return -value if settings["invert_pan"] else value
+######################################################
+
+
+#######################################################
+def continuous_move(settings, pan=0.0, tilt=0.0, zoom=0.0):
+    req = settings["ptz"].create_type("ContinuousMove")
+    req.ProfileToken = settings["media_profile"].token
+
+    status = settings["ptz"].GetStatus(
+        {'ProfileToken': settings["media_profile"].token}
+    )
+
+    req.Velocity = status.Position
+
+    spaces = settings["ptz_configuration_options"].Spaces
+
+    if hasattr(spaces, "ContinuousPanTiltVelocitySpace"):
+        req.Velocity.PanTilt.space = (
+            spaces.ContinuousPanTiltVelocitySpace[0].URI
+        )
+
+    if hasattr(spaces, "ContinuousZoomVelocitySpace"):
+        req.Velocity.Zoom.space = (
+            spaces.ContinuousZoomVelocitySpace[0].URI
+        )
+
+    req.Velocity.PanTilt.x = pan
+    req.Velocity.PanTilt.y = tilt
+
+    if req.Velocity.Zoom is not None:
+        req.Velocity.Zoom.x = zoom
+     
+
+    settings["ptz"].ContinuousMove(req)
+#######################################################
+
+
+#######################################################
+def stop_move(settings, pantilt=True, zoom=True):
+    request = settings["ptz"].create_type('Stop')
+    request.ProfileToken = settings["media_profile"].token
+    request.PanTilt = pantilt
+    request.Zoom = zoom
+
+    settings["ptz"].Stop(request)
+#######################################################
+
+
+#######################################################
+def start_left(settings):
+    continuous_move(
+        settings,
+        pan=pan_direction(settings)
+    )
+#######################################################
+
+
+#######################################################
+def start_right(settings):
+    continuous_move(
+        settings,
+        pan=-pan_direction(settings)
+    )
+#######################################################
+
+
+#######################################################
+def start_up(settings):
+    continuous_move(
+        settings,
+        tilt=settings["Velocity"]
+    )
+#######################################################
+
+
+#######################################################
+def start_down(settings):
+    continuous_move(
+        settings,
+        tilt=-settings["Velocity"]
+    )
+#######################################################
+
+
+#######################################################
+def start_zoom_in(settings):
+    continuous_move(
+        settings,
+        zoom=settings["Velocity"]
+    )
+#######################################################
+
+
+#######################################################
+def start_zoom_out(settings):
+    continuous_move(
+        settings,
+        zoom=-settings["Velocity"]
+    )
+#######################################################
+
+
+
+#######################################################
+def start_up_left(settings):
+    continuous_move(
+        settings,
+        pan=pan_direction(settings),
+        tilt=settings["Velocity"]
+    )
+#######################################################
+
+#######################################################
+def start_up_right(settings):
+    continuous_move(
+        settings,
+        pan=-pan_direction(settings),
+        tilt=settings["Velocity"]
+    )
+#######################################################
+
+#######################################################
+def start_down_left(settings):
+    continuous_move(
+        settings,
+        pan=pan_direction(settings),
+        tilt=-settings["Velocity"]
+    )
+#######################################################
+
+#######################################################
+def start_down_right(settings):
+    continuous_move(
+        settings,
+        pan=-pan_direction(settings),
+        tilt=-settings["Velocity"]
+    )
+#######################################################
+
+
+
+##############################################################################
+def housekeeping():
+    global ptzconfigs
+    #thread routine executed by housekeeping thread only
+    
+    while (exit_event.is_set()==False):
+        time.sleep(2)
+        for cam in ptzconfigs:
+            cam.lock()
+            cam.checkTimeout()
+            cam.unlock()
+##############################################################################
+
+
+
+
+
+
+
+
+
+################################################################################
+#MAIN
+################################################################################
+mydir=os.path.abspath(os.path.dirname(__file__)) #gives dir without trailing /
+SERVER_ADDRESS=mydir+'/org.bigbrothercctv.bigbrother.ptz.onvif.sock'
+atexit.register(cleanup)
+
+
+
+if (len(sys.argv) < 3):
+	print("Usage: "+sys.argv[0]+" ptzconffile logfile\n")
+	print("Example: "+sys.argv[0]+" /path/to/bigbrother_ptz.conf /path/to/bigbrother.log\n")
+	exit(1)
+ptzconffilepath=sys.argv[1]
+logfilepath=sys.argv[2]
+ptzconfigs=[]
+
+
+signal.signal(signal.SIGINT, handler)
+signal.signal(signal.SIGTERM, handler)
+signal.signal(signal.SIGQUIT, handler)
+signal.signal(signal.SIGHUP,handler)
+
+
+try:
+	Log("bbptzcameracontrollerd_onvif started...",True)
+except IOError:
+        print("ERROR: Could not open log file "+logfilepath+", check the file permissions")
+        exit(11)
+
+
+mydir=os.path.abspath(os.path.dirname(__file__)) #gives dir without trailing /
+
+
+
+try:
+    os.unlink(SERVER_ADDRESS)
+except FileNotFoundError:
+    pass
+
+
+#read camera IP/port/user/pass from conf file and store in ptzconfigs
+readPTZConfig()
+#if we get past here ptzconfigs contains valid configs for PTZ operations or is empty if no configs defined
+
+
+
+
+
+
+sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+sock.bind(SERVER_ADDRESS)
+os.chmod(SERVER_ADDRESS, 0o660)
+sock.listen(32)
+sock.settimeout(1.0)
+
+
+
+
+#setup and start housekeeping thread timeout cameras that have been left moving without a keepalive
+timeoutthread=threading.Thread(target=housekeeping, args=())
+timeoutthread.start()
+
+
+
+#send a STOPALL to every cam in case this prog previosly crashed while a cam was moving and has just restarted
+for cam in ptzconfigs:
+    cam.stopCamera()
+
+
+while not exit_event.is_set():
+    try:
+        print("main thread waiting for connection...")
+        connection, _ = sock.accept()
+        print("main thread got connection...")
+
+        data = connection.recv(2048)
+        if not data:
+            connection.close()
+            continue
+
+        args = data.decode().split()
+        print("main thread got " + str(args))
+
+        if len(args)<3:
+            connection.sendall(b"1")
+            connection.close()
+            continue
+
+        cam = getCameraConfig(args[0])
+        
+        speed=args[2]
+        validspeeds=["-2","-1.5","-1","-0.5","0","0.5","1","1.5","2"]
+        if speed not in validspeeds:
+            connection.sendall(b"1")
+            connection.close()
+            continue
+
+        speed=float(speed)
+
+        if cam == False:
+            connection.sendall(b"13")
+            connection.close()
+            continue
+
+        request = {
+            "cmd": args[1],
+            "socket": connection,
+            "speed": speed
+        }
+
+
+        if request["cmd"] == "STOPALL":
+            if not cam.addStopToQueue(request):
+                connection.sendall(b"15")
+                connection.close()
+                continue
+        else:
+            if not cam.addToQueue(request):
+                connection.sendall(b"15")
+                connection.close()
+                continue
+
+        # IMPORTANT:
+        # Do not close connection here.
+        # Worker owns it now.
+
+    except socket.timeout:
+        continue
+
+Log("bbptzcameracontrollerd_onvif main thread finished")
+print("bbptzcameracontrollerd_onvif main thread finished")
+sys.exit()
+
+#######################################
+#END MAIN
+#######################################
+
+

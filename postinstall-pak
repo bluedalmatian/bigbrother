@@ -21,11 +21,13 @@ chown bigbrother:cctvwriters  $INSTALLDIR/bigbrother_camera.conf
 chmod 660 $INSTALLDIR/bigbrother_camera.conf
 chown bigbrother:cctvwriters  $INSTALLDIR/bigbrother_event.conf
 chmod 660 $INSTALLDIR/bigbrother_event.conf
+chown bigbrother:cctvwriters  $INSTALLDIR/bigbrother_control.conf
+chmod 660 $INSTALLDIR/bigbrother_control.conf
 chown bigbrother:cctvwriters  $INSTALLDIR/bigbrotherd
 chmod 750 $INSTALLDIR/bigbrotherd
 chown bigbrother:cctvwriters  $INSTALLDIR/*.sh
 chmod 750 $INSTALLDIR/*.sh
-mkdir $INSTALLDIR/mirrorwebroot/snapshots
+mkdir -p $INSTALLDIR/mirrorwebroot/snapshots
 chown -R bigbrother:cctvviewers  $INSTALLDIR/mirrorwebroot
 chmod 750 $INSTALLDIR/mirrorwebroot
 chmod g+xs  $INSTALLDIR/mirrorwebroot
@@ -33,11 +35,19 @@ chmod 640 $INSTALLDIR/mirrorwebroot/*
 chmod 770 $INSTALLDIR/mirrorwebroot/snapshots
 chmod g+s $INSTALLDIR/mirrorwebroot/snapshots
 chown bigbrother:cctvwriters  $INSTALLDIR/markup_y5onnx.py
-chown bigbrother:cctvwriters  $INSTALLDIR/bbeventmonitor_y5onnx
+chmod 750 $INSTALLDIR/markup_y5onnx.py
+chown bigbrother:cctvwriters  $INSTALLDIR/bbeventmonitor_ffy5onnx
+chmod 750 $INSTALLDIR/bbeventmonitor_ffy5onnx
+chown bigbrother:cctvwriters  $INSTALLDIR/bbptzcameracontrollerd_onvif
+chmod 750 $INSTALLDIR/bbptzcameracontrollerd_onvif
+chown bigbrother:cctvwriters  $INSTALLDIR/bbcameracontrolshell
+chmod 750 $INSTALLDIR/bbcameracontrolshell
 chown -R bigbrother:cctvwriters  $INSTALLDIR/onnx
+chown -R bigbrother:cctvwriters  $INSTALLDIR/octaquad
 chmod 750 $INSTALLDIR/onnx
 chmod 640 $INSTALLDIR/onnx/*
-
+chmod 750 $INSTALLDIR/octaquad
+chmod 740 $INSTALLDIR/octaquad/*
 
 systemctl daemon-reload
 

@@ -77,6 +77,9 @@ function reloadStream(player,id)
 	//This is a level 2 reset of a stalled player
 	console.log("reloadStream called for "+id);
 	
+	
+
+	
 	var oldPlayer = players[id];
 
 	if (oldPlayer) 
@@ -134,6 +137,11 @@ function reloadStream(player,id)
 														
 													}
 												});
+												
+			initFullscreenHandler();
+				
+												
+					
 }
 
 function clearPausedFlag(id)
@@ -244,7 +252,7 @@ function initStalledHandler()
 						
 						let player=videojs(id);
 						players[id]=player;
-						containers[id] = document.getElementById(id).parentNode;
+						containers[id] = document.getElementById(id + "_playercontainer");
 					
 						player.on('pause', () => {
 													let useractive=players[id].userActive();

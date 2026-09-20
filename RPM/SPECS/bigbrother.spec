@@ -1,6 +1,6 @@
 %define _topdir		%(pwd)/RPM
 %define name            org.bigbrothercctv.bigbrother
-%define version		2.3
+%define version		2.4
 
 
 Summary:        bigbrothercctv.org BigBrother
@@ -12,7 +12,7 @@ Source:         %{name}.tar.gz
 Prefix:         /usr
 Group:          System Environment/Daemons
 BuildArch: 	noarch
-Requires:	ffmpeg,python,bash,python3-opencv >= 4.10
+Requires:	ffmpeg,python,bash,python3-opencv >= 4.10,python3-zeep,python3-py7zr
 
 %description
 BigBrother wrapper daemon for FFMPEG to provide CCTV recording & mirroring
@@ -34,6 +34,7 @@ mkdir $RPM_BUILD_ROOT/usr/local/bigbrother/
 mkdir $RPM_BUILD_ROOT/usr/local/bigbrother/mirrorwebroot
 mkdir $RPM_BUILD_ROOT/usr/local/bigbrother/mirrorwebroot/snapshots
 mkdir $RPM_BUILD_ROOT/usr/local/bigbrother/onnx
+mkdir $RPM_BUILD_ROOT/usr/local/bigbrother/octaquad
 mkdir $RPM_BUILD_ROOT/etc
 mkdir $RPM_BUILD_ROOT/etc/systemd
 mkdir $RPM_BUILD_ROOT/etc/systemd/system
@@ -50,6 +51,7 @@ systemctl daemon-reload
 %attr (644,bigbrother,cctvwriters) /usr/local/bigbrother/README.txt
 %attr (644,bigbrother,cctvwriters) /usr/local/bigbrother/LICENSE*
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bblogger
+%attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bbcameracontrolshell
 %attr (660,bigbrother,cctvwriters) /usr/local/bigbrother/bigbrother.conf
 %attr (660,bigbrother,cctvwriters) /usr/local/bigbrother/bigbrother_camera.conf
 %attr (660,bigbrother,cctvwriters) /usr/local/bigbrother/bigbrother_event.conf
@@ -61,10 +63,15 @@ systemctl daemon-reload
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/extract.sh
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bbeventmonitor_y5onnx.sh
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bbeventmonitor_y5onnx
+%attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bbptzcameracontrollerd_onvif
+%attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bbptzcameracontrollerd_onvif.sh
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/markup_y5onnx.py
 %attr (750,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot
 %attr (640,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot/*
 %attr (770,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot/snapshots
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/onnx
 %attr (640,bigbrother,cctvwriters) /usr/local/bigbrother/onnx/*
+%attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/octaquad
+%attr (740,bigbrother,cctvwriters) /usr/local/bigbrother/octaquad/*
 %attr (644,root,root)/etc/systemd/system/bigbrotherd.service
+

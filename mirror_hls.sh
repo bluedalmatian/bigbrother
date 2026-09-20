@@ -5,7 +5,7 @@
 # Copyright 2016-2026 Andrew Wood                                  #
 #                                                                  #
 # mirror_hls.sh Bourne shell script to perform mirroring for each  #
-# camera. Launched by bigbrotherd                                  #
+# camera. Launched by bigbrotherd. NVENC enabled version           #
 #                                                                  #
 # www.bigbrothercctv.org       	                                   #
 #                                                                  #
@@ -122,58 +122,61 @@ done
 
 
 
+# Check all params have been initialised
 
-
-#check all params have been initialised, they are not still the default 0
-if [ $sourceurl == "" ]
+if [ -z "$sourceurl" ]
 then
-	 echoUsage
-	 echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-         exit 1
+    echoUsage
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
 fi
 
-if [ $camname == "" ]
+if [ -z "$camname" ]
 then
-	 echoUsage
-	 echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-         exit 1
+    echoUsage
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
 fi
 
-if [ $logfile == "/dev/null" ]
+if [ "$logfile" == "/dev/null" ]
 then
-	echoUsage
-	exit 1
+    echoUsage
+    exit 1
 fi
 
-if [ $ffmpegcommand == "" ]
+if [ -z "$ffmpegcommand" ]
 then
-        echoUsage
-        exit 1
+    echoUsage
+    exit 1
 fi
 
-if [ $webroot == "" ]
+if [ -z "$webroot" ]
 then
-        echoUsage
-        exit 1
-fi
-if [ $bitrate == "" ]
-then
-        echoUsage
-        exit 1
-fi
-if [ $framerate == "" ]
-then
-        echoUsage
-        exit 1
+    echoUsage
+    exit 1
 fi
 
-if [ $resolution == "" ]
+if [ -z "$bitrate" ]
 then
-        echoUsage
-        exit 1
+    echoUsage
+    exit 1
 fi
 
-#all params ok
+if [ -z "$framerate" ]
+then
+    echoUsage
+    exit 1
+fi
+
+if [ -z "$resolution" ]
+then
+    echoUsage
+    exit 1
+fi
+
+# All params ok
+
+
 
 
 pid=0 # dont match anything at startup
@@ -205,8 +208,53 @@ do
 	###  -f hls		(output format)
 
 	### See https://trac.ffmpeg.org/wiki/Limiting%20the%20output%20bitrate for -b:v and -bufsize parameters 
+	
+	
+	#Probe NVENC encoder for outputing H264
+	$ffmpegcommand -y -hide_banner -loglevel error \
+		-f lavfi -i testsrc2=size=1280x720:rate=30 \
+		-f lavfi -i sine=frequency=1000:sample_rate=48000 \
+		-t 2 \
+		-c:v h264_nvenc \
+		-c:a aac \
+		-f mpegts /dev/null
+		#-f mpegts /dev/null > /tmp/nvenc_probe_${camname}.log 2>&1
+	nvencprobe_rc=$? #0 if ffmpeg exited OK indicating NVENC available
 
-	$ffmpegcommand -timeout 10000000 -loglevel fatal -i $sourceurl -vcodec libx264 -preset ultrafast -tune zerolatency -acodec aac -strict -2 -b:a 16k -framerate $framerate -s $resolution -b:v $bitrate -bufsize $bitrate -g 4 -force_key_frames "expr:gte(t,n_forced*2)"  -hls_list_size 3 -hls_init_time 0.5 -hls_flags delete_segments+program_date_time+temp_file+independent_segments -hls_time 0.5 -hls_allow_cache 0 -f hls -hls_segment_filename "${webroot}/${camname}%05d.ts" -metadata title="$camname" $webroot/$camname.m3u8  &
+	#Use following 2 lines,and the one above if you need to see why NVENC is failing
+	#cat /tmp/nvenc_probe_${camname}.log | $bblogger $logfile
+	#echo "DEBUG: $camname probe retcode=$nvencprobe_rc" | $bblogger $logfile
+
+	if [ $nvencprobe_rc -eq 0 ]
+	then
+		echo "$camname $0 NVENC available, using GPU to encode output" | "$bblogger" "$logfile"
+		videocodec="h264_nvenc"
+	else
+		echo "$camname $0 NVENC not available, using CPU to encode output" | "$bblogger" "$logfile"
+		videocodec="libx264"
+		
+	fi
+	#End Probe NVENC encoder for outputing H264
+	
+	hwdecode_args="" #default if using CPU
+	
+	#Probe NVDEC decoder for decoding whatever codec camera is delivering, but only if we are also using NVENC
+	if [ $nvencprobe_rc -eq 0 ]
+	then
+		 $ffmpegcommand -hide_banner -loglevel error -hwaccel cuda -hwaccel_output_format cuda -i "$sourceurl" -map 0:v:0 -frames:v 30 -f null /dev/null  #try to decode cameras video with NVDEC
+		 nvdecprobe_rc=$? #0 if ffmpeg exited OK indicating NVDEC available for this video
+		 if [ "$nvdecprobe_rc" -eq 0 ]
+		 then 
+			echo "$camname $0 NVDEC available, using GPU to decode input" | "$bblogger" "$logfile"
+			hwdecode_args="-hwaccel cuda -hwaccel_output_format cuda"
+		 else
+			echo "$camname $0 NVDEC not available, using CPU to decode input, GPU will still be used for encoding output" | "$bblogger" "$logfile"
+			hwdecode_args=""
+		 fi
+	fi
+
+
+	$ffmpegcommand $hwdecode_args -timeout 10000000 -y -loglevel fatal -i $sourceurl -vcodec $videocodec -preset ultrafast -tune zerolatency -acodec aac -strict -2 -b:a 16k -framerate $framerate -s $resolution -b:v $bitrate -bufsize $bitrate -g 4 -force_key_frames "expr:gte(t,n_forced*2)"  -hls_list_size 3 -hls_init_time 0.5 -hls_flags delete_segments+program_date_time+temp_file+independent_segments -hls_time 0.5 -hls_allow_cache 0 -f hls -hls_segment_filename "${webroot}/${camname}%05d.ts" -metadata title="$camname" $webroot/$camname.m3u8  &
 	
 
 	pid=$!

@@ -2,24 +2,24 @@
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #		      
 # Copyright 2016-2026 Andrew Wood                                  #
 #                                                                  #
-# This copy of the README file relates to version 2.3		   #
+# This copy of the README file relates to version 2.4		       #
 #                                                                  #
-# www.bigbrothercctv.org			                   #
-#                           					   #
+# www.bigbrothercctv.org			                               #
+#                           					                   #
 #                                                                  #
 #                                                                  #
 # SOFTWARE LICENSE                                                 #
 #                                                                  #
 # The BigBrother CCTV software is licensed under the GNU General   #
 # Public License Version 3 (GPLv3). A copy of the GPLv3 is         #
-# included in the file LICENSE and is available at:	           #
+# included in the file LICENSE and is available at:	               #
 # www.gnu.org/licenses/gpl-3.0.txt                                 #
 #                                                                  #
 #                                                                  #
 # AI MODEL LICENSE                                                 #
 #                                                                  #
 # The BigBrother CCTV AI model files are NOT licensed under the    #
-# GPL. Such AI models are licensed      		           #
+# GPL. Such AI models are licensed      		                   #
 # separately under the BigBrother CCTV AI Model License and are    #
 # subject to their own terms, conditions, restrictions.            #
 # A copy of the BigBrother CCTV AI Model License is included in    #
@@ -34,7 +34,7 @@
 # License.                                                         #
 #                                                                  #
 #                                                                  #
-#	                                                           #
+#	                                                               #
 # BigBrother is free open source software but if you find it       #
 # useful please consider making a donation to the Communications   #
 # Museum Trust at www.communicationsmuseum.org.uk/donate           #
@@ -79,10 +79,17 @@ It offers the following features:
 		Requires third party web server software with PHP support (such as
 		Apache HTTPD, Nginx or Lighttpd) to be running on the same host
 
+
+
+    Unofficial experimental support for PTZ control using the ONVIF protocol.
+	BigBrother has not been officially tested or approved for ONVIF compatability
+	and compatability may vary by camera. We encourage you to try it and help improve
+	compatability with your cameras.
+	
 	Support for the number of cameras, simultaneous recordings and mirroring
 	is limited only by hardware and network capacity.
 	
-	Configured via two simple text config files, which which defines program
+	Configured via simple text config files, which which defines program
 	settings and the other which defines the camera parameters (name, url etc)
 	and the actions you want to perform on it (recording mode, mirroring mode)
 
@@ -98,14 +105,12 @@ INSTALLATION & CONFIGURATION
 
 Installation
 ------------
-A Debian deb, RedHat/RockyLinux RPM and FreeBSD pkgng package is provided for installation which sets up the necessary
+A Debian deb, and FreeBSD pkgng package is provided for installation which sets up the necessary
 users and associated ownwersip & permissions. However you are responsible for
 creating the directory where you want the recorded files to be placed. This has to
 contain certain subdirectories and have appropriate permissions set so this will
 be described below.
 
-The makefile in the source tree supports generating a FreeBSD pkgng package but at the moment
-an 'offical' pkgng is not published on bigbrothercctv.org
 
 This directory can be placed anywhere on the filesystem and is specified on a per camera
 basis which means you can share one directory amoungst all or several cameras or have
@@ -179,13 +184,13 @@ discussed later in this document.
 
 The init script accepts the standard start|stop|restart arguments
 
-For Debian and CentOS a SystemD unit file is provided and installed to /etc/systemd/system
+For Debian a SystemD unit file is provided and installed to /etc/systemd/system
 The software can then be controlled using systemctl command bigbrotherd
 where command is start|stop|restart|status|enable|disable
 
 Configuration
 -------------
-BigBrother has two plain text config files. The global config file
+BigBrother has plain text config files. The global config file
 contains server wide settings. It's format is one entry per line
 in the format key value
 Blank lines are permitted and comments can be entered by starting
@@ -481,6 +486,43 @@ Remote access to the events log can be provided via Samba in the same way as the
 it can be accessed and the images easily viewed from any Windows PC, Linux PC or Mac. The instructions in
 Appendix A which detail how to set up Samba to access the recordings can also be applied to create an events share.
 
+================
+PTZ CONTROL
+================
+
+BigBrother has experimental (unoffical) support for controlling pan/tilt/zoom cameras that implement the ONVIF
+protocol for PTZ. It has not been tested or approved by ONVIF and may or may not work correctly depending on 
+which camera you have. If you encounter problems please contact us via bigbrothercctv.org and help us debug and improve
+support. Likewise it would be useful to know which cameras you have successfully used it with.
+
+It is recommended to use a camera which supports ONVIF Profile T for best results.
+
+To enable PTZ you need to set an optional parameter in the global config file:
+
+cameracontrolconf /path/to/camera_control.conf
+
+In the camera_control.conf file you enter one line for each PTZ camera in the following format:
+
+CamName url boolean-for-axis-reversal
+
+For example:
+CamName onvif://user:pass@host:port True
+
+The protocol must be either onvif:// (for ONVIF over HTTP) or onvifs:// (for ONVIF over HTTPS).
+You will need to configure an ONVIF capable username & password on your camera and give that user PTZ permissions.
+Consult your camera documentation for the port used for ONVIF HTTP/HTTPS connections
+The URL can include the username & password: onvif://user:password@host:port
+
+The host can either be a DNS hostname or an IPv4 address or an IPv6 address in [].
+
+Note that some cameras use an inverted axis for pan and tilt. If you find that the camera is moving in reverse flip the True/False flag.
+
+Once enabled, PTZ controls will appear in the mirroring live view webpage, also there is a command line utility provided (bbcameracontrolshell)
+which can be used to send commands to a camera from a shell script or cron job. This allows you to setup a patrol schedule for a camera centrally using cron
+rather than having to do it manually on each camera. Running bbcameracontrolshell without any arguments will print out a list of supported commands.
+The syntax for use is: bbcameracontrolshell -conf /path/to/ptz.conf -cam CAMERANAME -cmd COMMAND -speed X
+-speed is required for some commands and is 0 for default speed. Negative numbers to go slower and positive numbers to go faster in steps of 0.5 between 2 and -2
+
 ====================================================
 APPENDIX A - Remote access to recordings using Samba
 ====================================================
@@ -614,16 +656,3 @@ and GNU Make
 
 To build an RPM cd to the source directory and run make rpm
 
-===============================================================
-APPENDIX C - System Requirements
-===============================================================
-
-Your mileage may vary but as a rough guide on RAM usage, a mirroring process uses around 150MB per camera,
-an event monitoring process uses around 800MB per camera, a recording process uses around 50MB per camera.
-
-An event monitoring process requires at least 2 CPU cores per camera.
-
-A modern 4 core CPU will handle mirroring and recording for around 4 cameras and event monitoring for 2 cameras
-simultaneously.
-
-This will vary depending on what else the system is handling and the bitrate and resolution of the cameras.

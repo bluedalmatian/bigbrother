@@ -148,67 +148,68 @@ echo $elogfile
 echo $eventstr
 echo $groupname
 echo $elogby
+# Check all params have been initialised
 
-#check all params have been initialised, they are not still the default 0
-if [ $sourceurl == "" ]
+if [ -z "$sourceurl" ]
 then
-	 echoUsage
-	echo "camurl param not initialised"
-	 echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-     exit 1
+    echoUsage
+    echo "camurl param not initialised"
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
 fi
 
-if [ $camname == "" ]
+if [ -z "$camname" ]
 then
-	 echoUsage
-	 echo "camname param not initialised"
-	 echo "$0 started with incorrect arguments, cannot continue" | $bblogger $logfile
-      exit 1
+    echoUsage
+    echo "camname param not initialised"
+    echo "$0 started with incorrect arguments, cannot continue" | "$bblogger" "$logfile"
+    exit 1
 fi
 
-if [ $logfile == "/dev/null" ]
+if [ "$logfile" == "/dev/null" ]
 then
-	echoUsage
-	echo "logfile param not initialised"
-	exit 1
+    echoUsage
+    echo "logfile param not initialised"
+    exit 1
 fi
 
-if [ $elogfile == "/dev/null" ]
+if [ "$elogfile" == "/dev/null" ]
 then
-	echoUsage
-	echo "elogfile param not initialised"
-	exit 1
+    echoUsage
+    echo "elogfile param not initialised"
+    exit 1
 fi
 
-if [ $elogby == "" ]
+if [ -z "$elogby" ]
 then
-	echo "elogby param not initialised"
-	echoUsage
-	exit 1
+    echo "elogby param not initialised"
+    echoUsage
+    exit 1
 fi
 
-if [ $elogby != "D" ] && [ $elogby != "C" ]
+if [ "$elogby" != "D" ] && [ "$elogby" != "C" ]
 then
-	echo "elogby invalid"
-	echoUsage
-	exit 1
+    echo "elogby invalid"
+    echoUsage
+    exit 1
 fi
 
-if [ $groupname == "" ]
+if [ -z "$groupname" ]
 then
-	echo "groupname param not initialised"
-	echoUsage
-	exit 1
+    echo "groupname param not initialised"
+    echoUsage
+    exit 1
 fi
 
-if [ $eventstrinit -ne 1 ]
+if [ "$eventstrinit" -ne 1 ]
 then
-	echo "events param not initialised"
-	echoUsage
-	exit 1
+    echo "events param not initialised"
+    echoUsage
+    exit 1
 fi
 
-#all params ok
+# All params ok
+
 
 
 pid=0 # dont match anything at startup

@@ -1,0 +1,72 @@
+#!/bin/sh
+
+# PROVIDE: bigbrotherd
+# REQUIRE: NETWORKING
+# KEYWORD: shutdown
+# Add these lines to /etc/rc.conf.local or /etc/rc.conf
+# to enable this service:
+#
+# bigbrotherd_enable="YES"
+# bigbrotherd_conf="path/to/conf/file"
+#
+
+. /etc/rc.subr
+
+
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+export PATH
+
+name=bigbrotherd
+
+
+pidfile="/usr/local/bigbrother/pid"
+
+
+rcvar=bigbrotherd_enable
+load_rc_config $name
+: ${bigbrotherd_conf=/usr/local/bigbrother/bigbrother.conf}
+
+bigbrotherd_start()
+{
+        /usr/local/bigbrother/bigbrotherd -f "$bigbrotherd_conf" &
+}
+
+bigbrotherd_stop()
+{
+        if [ ! -f "$pidfile" ]; then
+                return 0
+        fi
+
+        pid="$(cat "$pidfile")"
+
+        if ! kill -0 "$pid" 2>/dev/null; then
+                rm -f "$pidfile"
+                return 0
+        fi
+
+        echo "Stopping $name (pid $pid)..."
+        kill -INT "$pid"
+
+        # Wait up to 30 seconds for the daemon to exit
+        i=0
+        while kill -0 "$pid" 2>/dev/null; do
+                i=$((i + 1))
+
+                if [ "$i" -ge 30 ]; then
+                        echo "$name did not stop within 30 seconds"
+                        return 1
+                fi
+
+                sleep 1
+        done
+
+        rm -f "$pidfile"
+        echo "$name stopped"
+        return 0
+}
+
+
+start_cmd=${name}_start
+stop_cmd=${name}_stop
+
+run_rc_command "$1"

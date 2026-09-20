@@ -1,5 +1,5 @@
-name: "bigbrother";
-version: "2.3";
+name: "org.bigbrothercctv.bigbrother";
+version: "2.4";
 origin: "multimedia/bigbrother";
 comment: "BigBrother CCTV recording & mirroring system";
 abi = "FreeBSD:*:*";
@@ -19,7 +19,7 @@ desc: <<EOD
 
   It is licensed under the GNU Public license (GPL) version 3 for the software and 
   BigBrother AI Model License for the AI Model
-  (for the full license see files LICESNE and LICENSE-AIMODEL)
+  (for the full license see files LICENSE and LICENSE-AIMODEL)
 
   It offers the following features:
 
@@ -67,10 +67,12 @@ desc: <<EOD
 EOD
 categories: ["multimedia"]
 deps: {
-  ffmpeg: {origin: "multimedia/ffmpeg", version: "5.1"};
-  python: {origin: "lang/python", version: "3.10"};
-  bash: {origin: "shells/bash" ,version: "3.0"};
-  python-opencv: {origin: "graphics/opencv-python" ,version: "4.10"};
+  ffmpeg: {origin: "multimedia/ffmpeg", version: ">=7.1"};
+  python: {origin: "lang/python", version: "3.12"};
+  bash: {origin: "shells/bash", version: ">=3.0"};
+  opencv: {origin: "graphics/opencv", version: ">=4.10"};
+  py312-zeep: {origin: "net/py-zeep", version: ">=4.3.3"};
+  py312-py7zr: {origin: "archivers/py-py7zr"};
 }
 files: {
  /usr/local/bigbrother/README.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 644};
@@ -80,13 +82,17 @@ files: {
  /usr/local/bigbrother/bigbrother.conf: {uname: 'bigbrother', gname: 'cctvwriters',perm: 660};
  /usr/local/bigbrother/bigbrother_camera.conf: {uname: 'bigbrother', gname: 'cctvwriters',perm: 660};
  /usr/local/bigbrother/bigbrother_event.conf: {uname: 'bigbrother', gname: 'cctvwriters',perm: 660};
+ /usr/local/bigbrother/bigbrother_control.conf: {uname: 'bigbrother', gname: 'cctvwriters',perm: 660};
  /usr/local/bigbrother/bigbrotherd: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/mirror_hls.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/mirror_mjpg.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
- /usr/local/bigbrother/bbeventmonitor_y5onnx.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
- /usr/local/bigbrother/bbeventmonitor_y5onnx: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/bbptzcameracontrollerd_onvif: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/bbptzcameracontrollerd_onvif.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/bbcameracontrolshell: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/bbeventmonitor_ffy5onnx.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/bbeventmonitor_ffy5onnx: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/markup_y5onnx.py: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
- /usr/local/bigbrother/rc.bigbrother: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/rc.bigbrotherd: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/record_bycamera.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/record_byday.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/extract.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
@@ -121,8 +127,22 @@ files: {
  /usr/local/bigbrother/mirrorwebroot/V.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/V-white.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/X.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/controlL.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/controlR.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/controlU.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/controlD.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/controlUL.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/controlUR.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/controlDL.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/controlDR.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/controlIN.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/controlOUT.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/controlRESET.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/controlSETHOME.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/index.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/video.js: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/stall.js: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/ptz.js: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/video-js.css: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/LICENSE: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/LICENSE-AIMODEL: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
@@ -136,10 +156,50 @@ files: {
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.showEvents.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.FilterSettings.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.Event.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /usr/local/bigbrother/mirrorwebroot/stall.js: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /usr/local/bigbrother/onnx/bbrelease-100-640x640.onnx: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
- /usr/local/bigbrother/onnx/classes.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.pollEvents.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.cameraControlONVIFPTZ.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
+ /usr/local/bigbrother/onnx/bbrelease-100-640x640.7z: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
  /usr/local/bigbrother/onnx/LICENSE-AIMODEL: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
+ /usr/local/bigbrother/octaquad/onvif/cli.py: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/onvif/version.txt: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/onvif/exceptions.py: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/onvif/__init__.py: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/onvif/definition.py: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/onvif/client.py: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/LICENSE: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/ptz.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/doorcontrol.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/envelope: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/accesscontrol.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/imaging.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/bw-2.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/rw-2.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/replay.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/b-2.xsd: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/ws-discovery.xsd: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/recording.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/devicemgmt.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/t-1.xsd: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/analyticsdevice.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/addressing: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/xmlmime: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/advancedsecurity.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/analytics.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/bf-2.xsd: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/events.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/ws-addr.xsd: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/receiver.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/media.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/r-2.xsd: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/display.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/remotediscovery.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/include: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/xml.xsd: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/deviceio.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/search.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/onvif.xsd: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/types.xsd: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
+ /usr/local/bigbrother/octaquad/wsdl/actionengine.wsdl: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640}; 
 }
 
 scripts: {
@@ -162,8 +222,8 @@ EOD;
 
 	post-install =  <<EOD
 mkdir -p /usr/local/etc/rc.d
-ln -s /usr/local/bigbrother/rc.bigbrother /usr/local/etc/rc.d/bigbrother
-echo 'To start BigBrother at boot time add bigbrotherd_enable="YES and bigbrotherd_conf="/path/to/conf.file" to /etc/rc.conf'
+ln -s /usr/local/bigbrother/rc.bigbrotherd /usr/local/etc/rc.d/bigbrotherd
+echo 'To start BigBrother at boot time add bigbrotherd_enable="YES" and bigbrotherd_conf="/path/to/conf.file" to /etc/rc.conf'
 chown -R bigbrother:cctvwriters /usr/local/bigbrother
 chown -R bigbrother:cctvviewers /usr/local/bigbrother/mirrorwebroot
 chmod 755 /usr/local/bigbrother
@@ -174,11 +234,23 @@ chown -R bigbrother:cctvviewers /usr/local/bigbrother/mirrorwebroot/snapshots
 chmod 770 /usr/local/bigbrother/mirrorwebroot/snapshots
 chmod g+s /usr/local/bigbrother/mirrorwebroot/snapshots
 chown -R bigbrother:cctvwriters /usr/local/bigbrother/onnx
+chown -R bigbrother:cctvwriters /usr/local/bigbrother/octaquad
 chmod 750 /usr/local/bigbrother/onnx
+chmod 750 /usr/local/bigbrother/octaquad
+chmod 740 /usr/local/bigbrother/octaquad/*
 EOD;
 
 	post-deinstall = <<EOD
-rm /usr/local/etc/rc.d/bigbrother
+# Remove runtime-generated files and directories.
+if [ -d /usr/local/bigbrother/mirrorwebroot/snapshots ]; then
+        find /usr/local/bigbrother/mirrorwebroot/snapshots -mindepth 1 -delete
+        rmdir /usr/local/bigbrother/mirrorwebroot/snapshots 2>/dev/null || true
+fi
+# Remove Python bytecode caches created at runtime.
+find /usr/local/bigbrother/octaquad -type d -name __pycache__ -prune -exec rm -rf {} +
+#Remove event log file
+rm /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.aieventlog.txt
+rm /usr/local/etc/rc.d/bigbrotherd
 echo "You will need to manually remove the log file and config files if they were not in /usr/local/bigbrother"
 echo "and also any bigbrotherd_ entries in /etc/rc.conf"
 pw userdel bigbrother

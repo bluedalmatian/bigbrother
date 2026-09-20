@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+#THIS FILE IS ABANDONED AS OF 7TH SEP 2026
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
 # Copyright 2016-2026 Andrew Wood                                  #
@@ -407,7 +407,8 @@ def Log(msg,throw=False):
 
 #############################################
 def LogEvent(code, cameraname,frame,throw=False):
-    now=datetime.now()
+    now=datetime.now().astimezone()
+    unixtimestampgmt = int(now.timestamp())
     datestr=now.strftime("%Y-%m-%d %H:%M:%S")
     mydir=os.path.abspath(os.path.dirname(__file__)) #gives dir without trailing /    
          
@@ -450,7 +451,7 @@ def LogEvent(code, cameraname,frame,throw=False):
         file=open(liveeventlogpath,'a')
         components=filepath.split("/")
         filepath=components[len(components)-1] # get just filename
-        file.write(datestr+" "+cameraname+" "+code+" "+filepath+"\n")
+        file.write(datestr+" "+cameraname+" "+code+" "+filepath+" "+str(unixtimestampgmt)+"\n")
         file.close()
     except IOError as e:
         if (throw):
@@ -730,7 +731,7 @@ eventignoretimes=[] #to be used after validation is complete
 
 ####################################################################
 #Alter these 2 values to adjust accuracy of detection
-confidenceUpperThreshold=0.6 #if this is new detection, it must meet or exceed this threshold
+confidenceUpperThreshold=0.75 #if this is new detection, it must meet or exceed this threshold
 confidenceLowerThreshold=0.4 #discard all detections less than this
 iouThreshold=0.65 #overlap threshold when detecting duplicates
 maxAge=25 #seconds since Detection obj last updated before it 

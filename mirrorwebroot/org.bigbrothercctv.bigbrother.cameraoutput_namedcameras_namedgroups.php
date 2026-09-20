@@ -2,7 +2,7 @@
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
-# Copyright 2016 Andrew Wood                                       #
+# Copyright 2016-2026 Andrew Wood                                  #
 #                                                                  #
 # UI code to display named cameras & cameras in named groups       #
 # defined for mirroring  as specified in an HTTP GET variable      #
@@ -18,7 +18,8 @@
 # useful please consider making a donation to the Communications   #
 # Museum Trust at www.communicationsmuseum.org.uk/donate           #
 ####################################################################
-
+	
+	global $PTZCONFFILEPATH;
 
 	
 	set_error_handler(NULL);
@@ -62,6 +63,12 @@
 
                            echo("<td valign=top width=640 class=videotd style=\"position:relative;\">");
                            $camera->GenerateHTML();
+						   if ($camera->checkIfPTZ($PTZCONFFILEPATH)) //$camera will ignore if null str i.e ptz not enabled for system
+						   {
+							   
+								$camera->generatePTZHTML();
+								
+						   }
                            echo("</td>");
 
                                 $camsprinted++;
@@ -78,13 +85,12 @@
                  
         }
 
-
-    	if (sizeof($camnamesToShow)>0)
-        {
-                
-                 $camsprinted=0;
-
-        }
+if (!$minimalUI && $camsprinted > 0)
+{
+    echo("</tr>");
+    echo("<tr class=spacertr><td colspan=".$camsPerTR." height=10 width=100%>&nbsp;</td></tr>");
+    $camsprinted = 0;
+}
 
 
 
@@ -139,6 +145,12 @@
             }
             echo("<td valign=top width=640 class=videotd style=\"position:relative;\">");
             $camera->GenerateHTML();
+			if ($camera->checkIfPTZ($PTZCONFFILEPATH)) //$camera will ignore if null str i.e ptz not enabled for system
+			{
+							   
+				$camera->generatePTZHTML();
+								
+			}
             echo("</td>");
 
             $camsprinted++;
@@ -151,7 +163,7 @@
                 $camsprinted=0;
             }
         }
-		
+
         
 		echo("</table>");
 ?>
