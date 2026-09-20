@@ -67,7 +67,7 @@ deb: installbinary
 	rm -f data.tar.* ; \
 	cd extracted ; \
 	tar --no-recursion --owner=0 --group=0 --numeric-owner -cf ../data.tar \
-       $$(find . -mindepth 1 \( -path './usr/local/bigbrother*' -o -path './etc/systemd/system*' \))
+       $$(find . -mindepth 1 \( -path './usr/local/bigbrother*' -o -path './etc/systemd/system*' \)) ; \
 	cd .. ; \
 	gzip -n data.tar ; \
 	ar r pkg.deb debian-binary control.tar.* data.tar.gz ; \
