@@ -117,7 +117,6 @@ files: {
  /usr/local/bigbrother/mirrorwebroot/P-white.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/questionmark-blue.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/refresh.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /usr/local/bigbrother/mirrorwebroot/reload.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/fullscreen.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/hup.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/minimalUIicon.png: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
