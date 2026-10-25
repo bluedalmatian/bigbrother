@@ -4,7 +4,8 @@
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
 # Copyright 2016-2026 Andrew Wood                                  #
 #                                                                  #
-# bbeventmonitor uses a YOLO5 model converted to ONNX format       #
+# bbeventmonitor uses an RT-DETRv2 model in ONNX format run with   #
+# onnxruntime (Debian python3-onnxruntime package)                 #
 # This version uses an ffmpeg subprocess to connect to cam         #
 # and read frames and pipes them to OpenCV rather than having      #
 # OpenCV connect to cam directly.                                  #
@@ -45,6 +46,7 @@ import subprocess
 from queue import Queue, Empty
 import getpass,pwd
 import py7zr
+import onnxruntime as ort
 
 ##################################################################################################################################################################
 class Detection:
@@ -152,7 +154,28 @@ class Detection:
 			
 #END OF CLASS Detection
 ##################################################################################################################################################################			
-	
+
+#############################################################################################################################################################################################################################	
+def testNVIDIA(cameraurl, ffmpeg_command):
+    cmd = [ffmpeg_command,"-hide_banner","-loglevel", "error","-nostdin","-hwaccel", "cuda","-hwaccel_output_format", "cuda","-timeout", "10000000","-i", cameraurl,"-frames:v", "1","-f", "image2","-vcodec","mjpeg","-"]
+
+
+    try:
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=15
+        )
+
+        return result.returncode == 0
+
+    except subprocess.TimeoutExpired:
+        return False
+#############################################################################################################################################################################################################################	
+    
+    
+
 
 #################################################################################################
 def unescapeTimeString(inputstr):
@@ -409,7 +432,7 @@ def Log(msg,throw=False):
 
                 #if given just \n\n output it with no datetime prepended
                 if msg=="\n\n":
-                        file.write(str)
+                        file.write(msg)
                         file.close()
                         return()
 
@@ -542,54 +565,36 @@ def processFrame(threadidx,frame):
     tsstart=time.time()
     locks[threadidx].acquire()
     
+    # Plain resize to 640x640, RGB, scaled 0-1 (no letterbox, no mean/std)
     blob = cv2.dnn.blobFromImage(frame, 1/255.0, (640, 640), swapRB=True,crop=False)
-    dnn=models[threadidx]
-    dnn.setInput(blob)
-    outputs = dnn.forward(dnn.getUnconnectedOutLayersNames())
-
-    class_ids = []
-    confidences = []
-    boxes = []
+    sess=models[threadidx]
 
     width = frame.shape[1] 
     height = frame.shape[0]
 
-    rows = outputs[0].shape[1]
-    image_height, image_width = frame.shape[:2]   
-    x_factor = width / 640
-    y_factor =  height / 640
-    
-    for r in range(rows):
-        row = outputs[0][0][r]
-        confidence = row[4]
-        if confidence >= confidenceLowerThreshold:
-            classes_scores = row[5:]
-            class_id = np.argmax(classes_scores)
-            if (classes_scores[class_id] > scoremin):
-                confidences.append(confidence)
-                class_ids.append(class_id)
-                cx, cy, w, h = row[0], row[1], row[2], row[3]
-                left = int((cx - w/2) * x_factor)
-                top = int((cy - h/2) * y_factor)
-                bwidth = int(w * x_factor)
-                bheight = int(h * y_factor)
-                box = np.array([left, top, bwidth, bheight])
-                boxes.append(box)               
-    
-    indices = cv2.dnn.NMSBoxes(boxes, confidences, confidenceLowerThreshold, nmsmin)
+    det_labels, det_boxes, det_scores = runModel(sess, blob, width, height)
 
-    for i in indices:           
-        box = boxes[i]
-        left = box[0]
-        top = box[1]
-        bwidth = box[2]
-        bheight = box[3]             
+    # RT-DETR needs no NMS - just discard detections below the lower threshold
+    keep = det_scores >= confidenceLowerThreshold
+
+    for (x1, y1, x2, y2), class_id, confidence in zip(det_boxes[keep], det_labels[keep], det_scores[keep]):
+        class_id = int(class_id)
+        confidence = float(confidence)
+        if class_id not in classNames:
+            continue
+
+        left = int(max(0, min(width - 1, x1)))
+        top = int(max(0, min(height - 1, y1)))
+        right = int(max(0, min(width - 1, x2)))
+        bottom = int(max(0, min(height - 1, y2)))
+        bwidth = right - left
+        bheight = bottom - top
         
 
         if markup:
             #Draw text onto image at location xy 
             cv2.rectangle(frame, (left, top), (left + bwidth, top + bheight), BLUE, 3*THICKNESS)
-            label = "{}:{:.2f}".format(classNames[class_ids[i]], confidences[i])
+            label = "{}:{:.2f}".format(classNames[class_id], confidence)
             label=label+" "+" ps:"+starttimestr
             text_size = cv2.getTextSize(label, FONT_FACE, FONT_SCALE, THICKNESS)
             dim, baseline = text_size[0], text_size[1]
@@ -604,7 +609,7 @@ def processFrame(threadidx,frame):
         y_bottom_right=(top+bheight)-1
         
         eventLogLock.acquire()
-        LogIfOfInterest(classNames[class_ids[i]],frame,confidences[i],x_top_left,y_top_left,x_bottom_right,y_bottom_right,threadidx)
+        LogIfOfInterest(classNames[class_id],frame,confidence,x_top_left,y_top_left,x_bottom_right,y_bottom_right,threadidx)
         eventLogLock.release()
     
     tsend=time.time()
@@ -656,31 +661,107 @@ def processFrameWrapper(threadidx, frame):
 ###############################################################################
 
 ###############################################################################
-def loadModel(model_buffer):
-    net = cv2.dnn.readNetFromONNX(model_buffer)
+def runModel(sess, blob, width, height):
+    #Run RT-DETR model on a 640x640 blob, return (labels, boxes xyxy in frame pixels, scores)
+    #Supported export formats:
+    # - Official RT-DETRv2 export: inputs "images" + "orig_target_sizes" (int64 [w,h]),
+    #   outputs "labels", "boxes" (xyxy in original image pixels), "scores"
+    # - Raw export: outputs "pred_logits" + "pred_boxes" (cx,cy,w,h normalised 0-1)
+    # - Single output: (1, num_queries, 4 + num_classes), boxes cx,cy,w,h
+    if OFFICIAL_EXPORT:
+        feeds = {}
+        for name in MODEL_IN_NAMES:
+            if "size" in name:
+                feeds[name] = np.array([[width, height]], dtype=np.int64)
+            else:
+                feeds[name] = blob
+        outs = dict(zip(MODEL_OUT_NAMES, sess.run(MODEL_OUT_NAMES, feeds)))
+        labels = outs["labels"].reshape(-1).astype(int)
+        boxes = outs["boxes"].reshape(-1, 4).astype(np.float32)
+        scores = outs["scores"].reshape(-1).astype(np.float32)
+        return labels, boxes, scores
 
-    try:
-        net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
-        net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+    if RAW_EXPORT:
+        a, b = sess.run(MODEL_OUT_NAMES, {MODEL_IN_NAMES[0]: blob})
+        if a.shape[-1] == 4:
+            raw_boxes, logits = a, b
+        else:
+            logits, raw_boxes = a, b
+        raw_boxes = raw_boxes.reshape(-1, 4)
+        probs = 1.0 / (1.0 + np.exp(-logits.reshape(raw_boxes.shape[0], -1)))   # sigmoid
+        sx, sy = width, height
+    else:
+        pred = sess.run(None, {MODEL_IN_NAMES[0]: blob})[0]
+        pred = pred.reshape(-1, pred.shape[-1])
+        raw_boxes, probs = pred[:, :4], pred[:, 4:]
+        if raw_boxes.max() > 2.0:
+            sx, sy = width / 640, height / 640
+        else:
+            sx, sy = width, height
 
-        # test run (tiny dummy input to confirm it actually works)
-        blob = np.zeros((1, 3, 640, 640), dtype=np.float32)
-        net.setInput(blob)
-        net.forward()
-
-        print("Trying CUDA for DNN")
-        Log("Trying CUDA for DNN")
-
-    except Exception as e:
-        print("CUDA not available, falling back to CPU:", str(e))
-        Log("CUDA not available, falling back to CPU")
-
-        net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
-        net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
-
-    return net
+    labels = probs.argmax(axis=1).astype(int)
+    scores = probs.max(axis=1).astype(np.float32)
+    cx, cy, w, h = raw_boxes[:, 0], raw_boxes[:, 1], raw_boxes[:, 2], raw_boxes[:, 3]
+    boxes = np.stack([(cx - w/2) * sx, (cy - h/2) * sy, (cx + w/2) * sx, (cy + h/2) * sy], axis=1)
+    return labels, boxes, scores
 ###############################################################################
 
+###############################################################################
+def setModelFormat(sess):
+    global MODEL_IN_NAMES, MODEL_OUT_NAMES, OFFICIAL_EXPORT, RAW_EXPORT
+    MODEL_IN_NAMES = [i.name for i in sess.get_inputs()]
+    MODEL_OUT_NAMES = [o.name for o in sess.get_outputs()]
+    OFFICIAL_EXPORT = {"labels", "boxes", "scores"}.issubset(set(MODEL_OUT_NAMES))
+    RAW_EXPORT = (not OFFICIAL_EXPORT) and len(MODEL_OUT_NAMES) == 2
+###############################################################################
+
+###############################################################################
+def loadModel(model_bytes):
+    #try each available execution provider in order of preference, use the first that
+    #loads the model and passes a test run
+    available = ort.get_available_providers()
+    candidates = []
+    if "OpenVINOExecutionProvider" in available:
+        candidates.append([("OpenVINOExecutionProvider", {"device_type": "NPU"})])
+    if "CoreMLExecutionProvider" in available:
+        candidates.append(["CoreMLExecutionProvider"])
+    if "VitisAIExecutionProvider" in available:
+        candidates.append(["VitisAIExecutionProvider"])
+    if "CUDAExecutionProvider" in available:
+        candidates.append(["CUDAExecutionProvider"])
+    if "MIGraphXExecutionProvider" in available:
+        candidates.append(["MIGraphXExecutionProvider"])
+    if "ACLExecutionProvider" in available:
+        candidates.append(["ACLExecutionProvider"])
+    candidates.append(["CPUExecutionProvider"])
+
+    for providers in candidates:
+        try:
+            opts = ort.SessionOptions()
+            opts.inter_op_num_threads = 1
+            opts.add_session_config_entry("session.intra_op.allow_spinning", "0")
+            if providers == ["CPUExecutionProvider","ACLExecutionProvider"]:
+                opts.intra_op_num_threads = ORT_THREADS
+            else:
+                opts.intra_op_num_threads = 1 #accelerator does the heavy work, CPU only handles any fallback ops
+
+            print("Trying NN exe provider:", providers)
+            sess = ort.InferenceSession(model_bytes, sess_options=opts, providers=providers)
+            setModelFormat(sess)
+            runModel(sess, np.zeros((1, 3, 640, 640), dtype=np.float32), 640, 640)
+            print("Using NN exe provider:", sess.get_providers())
+            Log("Using NN exe provider: "+str(sess.get_providers()))
+            print("Model inputs: "+str(MODEL_IN_NAMES)+" outputs: "+str(MODEL_OUT_NAMES))
+            Log("Model inputs: "+str(MODEL_IN_NAMES)+" outputs: "+str(MODEL_OUT_NAMES))
+            return sess
+        except Exception as e:
+            print("NN exe provider failed:", providers, str(e))
+            Log("NN exe provider failed: "+str(providers)+" "+str(e))
+
+    print("FATAL: Could not run the model with any execution provider")
+    Log("FATAL: Could not run the model with any execution provider")
+    exit(1)
+###############################################################################
 
 ###############################################################################
 def watchdog():
@@ -700,7 +781,17 @@ def reader():
     global FRAMEW
     global FRAMEH
 
-    cmd = [ffmpeg_command,"-hide_banner","-loglevel", "error","-nostdin","-timeout","10000000","-i", cameraurl,"-vf", "fps=2,scale="+str(FRAMEW)+":"+str(FRAMEH),"-pix_fmt", "bgr24","-f", "rawvideo","-"]
+    if nvidia:
+        #use GPU
+        Log("Using NVIDIA GPU for ffmpeg")
+        print("Using NVIDIA GPU for ffmpeg")
+        cmd = [ffmpeg_command,"-hide_banner","-loglevel", "error","-nostdin","-hwaccel", "cuda","-hwaccel_output_format", "cuda","-timeout", "10000000","-i", cameraurl,"-vf",f"fps=4,scale_cuda={FRAMEW}:{FRAMEH},hwdownload,format=bgr24","-pix_fmt", "bgr24","-f", "rawvideo","-"]
+    else:
+        #use CPU
+        Log("Using CPU for ffmpeg")
+        print("Using CPU for ffmpeg")
+        cmd = [ffmpeg_command,"-hide_banner","-loglevel", "error","-nostdin","-timeout","10000000","-i", cameraurl,"-vf", "fps=5,scale="+str(FRAMEW)+":"+str(FRAMEH),"-pix_fmt", "bgr24","-f", "rawvideo","-"]
+
     process = None
     try:
         print("Starting ffmpeg subprocess")
@@ -776,6 +867,9 @@ def fileIsExe(filepath):
 
 #######################################
 
+
+
+
 displayargcount=str((len(sys.argv)-1))
 if (len(sys.argv) < 10):
     print ("Usage: "+sys.argv[0]+" /path/to/ffmpeg /path/to/generallog /path/to/eventlog EVENTLOGBYTYPE CameraName GroupName CameraURL EventCodeA EventIgnoreTimesA ... EventCodeN EventIgnoreTimesN")
@@ -830,8 +924,7 @@ confidenceUpperThreshold=0.75 #if this is new detection, it must meet or exceed 
 confidenceLowerThreshold=0.4 #discard all detections less than this
 iouThreshold=0.65 #overlap threshold when detecting duplicates
 maxAge=25 #seconds since Detection obj last updated before it 
-scoremin=0.5#To filter low probability class scores where one object has been ID'd as > 1 class
-nmsmin=0.45
+ORT_THREADS=1 #CPU threads onnxruntime uses per model for inference, increase if frames are processed too slowly
 ####################################################################
 markup=False #useful for debugging, markup logged frame with detection
 BLUE   = (255,178,50)
@@ -1015,18 +1108,28 @@ cv2.setNumThreads(1)#controls how many threads OpenCVs internal engine uses for 
 #all validated, ready to to look for events
 Log("All parameters validated, ready to look for events...")
 
-cmd = [ffmpeg_command,"-timeout","10000000","-hide_banner","-loglevel", "error","-i", cameraurl,"-frames:v", "1","-f", "image2pipe","-vcodec", "mjpeg","-"]  #connect to the camera and get one frame, then quit.
 
-result = subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=10)
+nvidia=testNVIDIA(cameraurl,ffmpeg_command)
+if nvidia==False:
+	#test using cuda gpu failed, test camera using ffmpeg on cpu to see if camera available at all
+    cmd = [ffmpeg_command,"-timeout","10000000","-hide_banner","-loglevel", "error","-i", cameraurl,"-frames:v", "1","-f", "image2pipe","-vcodec", "mjpeg","-"]  #connect to the camera and get one frame, then quit.
+    result = subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=10)
 
-if result.returncode == 0:
-    print("Camera works, ffmpeg connected OK during test")
-    Log("Camera works, ffmpeg connected OK during test")
-else:
-    print("Camera failed, ffmpeg could not connect during test")
-    Log("Camera failed, ffmpeg could not connect during test")
-    print(result.stderr.decode())
-    exit(1)
+    if result.returncode == 0:
+        print("Camera works, ffmpeg connected OK during test using CPU for ffmpeg")
+        Log("Camera works, ffmpeg connected OK during test using CPU for ffmpeg")
+    else:
+        print("Camera failed, ffmpeg could not connect during test")
+        Log("Camera failed, ffmpeg could not connect during test")
+        print(result.stderr.decode())
+        exit(1)
+else:        
+    print("Camera works, ffmpeg connected OK during test using GPU for ffmpeg")
+    Log("Camera works, ffmpeg connected OK during test using GPU for ffmpeg")
+    #grab a frame so we can determine the camera resolution below
+    cmd = [ffmpeg_command,"-timeout","10000000","-hide_banner","-loglevel", "error","-i", cameraurl,"-frames:v", "1","-f", "image2pipe","-vcodec", "mjpeg","-"]
+    result = subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=10)
+        
 #at this point cameraurl is valid, ffmpeg connected ok and produced a valid frame 
 
 #We need to get frame size this camera is delivering we use the test frame we just got
@@ -1061,9 +1164,13 @@ if (int(cvversionelements[0])<5) and (int(cvversionelements[1])<10):
 
 
 modeldir=mydir+"/onnx"
-modelPath=modeldir + "/bbrelease-100-640x640.7z"
+modelPath=modeldir + "/bbrelease.7z"
 
-
+if ( (fileIsReadable(modelPath)==False)    ):
+    print("ERROR: Could not open ONNX model file check the onnx exists and is readable")
+    Log("ERROR: Could not open ONNX model file check the onnx exists and is readable")
+    exit(1)
+    
 
                                                     
 #Embedding the 7z password in the code like this is not meant to be secure its meant to force
@@ -1074,11 +1181,11 @@ modelPath=modeldir + "/bbrelease-100-640x640.7z"
 # Do not use this password to extract it for use in non BigBrother software unless you         #
 # have purchased a commercial license. See www.bigbrothercctv.org/BB-AIMODEL-LICENSE-1.1.txt   #
 #                                                DO NOT STEAL   READ ^^^                       # 
-with py7zr.SevenZipFile(modelPath,mode="r",password="vR7!qL2#xN9@kT4$mP8&zW6^cH3*Ys5") as archive:
+with py7zr.SevenZipFile(modelPath,mode="r",password="vR8!qL2#xN6@kT4$mP8&zW6^cH1*Ys5") as archive:
     print("Files inside the 7z archive:")
     print(archive.getnames())
-    data = archive.read(["bbrelease-100-640x640.onnx"])
-    model_bytes = data["bbrelease-100-640x640.onnx"].read()
+    data = archive.read(["bbrelease-640x640Q.onnx"])
+    model_bytes = data["bbrelease-640x640Q.onnx"].read()
     model_buffer = np.frombuffer(model_bytes, dtype=np.uint8)
 
  
@@ -1086,11 +1193,6 @@ with py7zr.SevenZipFile(modelPath,mode="r",password="vR7!qL2#xN9@kT4$mP8&zW6^cH3
 # dictionary with the object class id and names on which the model is trained
 classNames = { 0: 'person',1: 'car', 2: 'truck', 3: 'motorcycle', 4: 'van', 5: 'bus', 6: 'bicycle', 7: 'selftest'}
 
-if ( (fileIsReadable(modelPath)==False)    ):
-    print("ERROR: Could not open ONNX model files check the onnx directory exists and contains model files which are readable")
-    Log("ERROR: Could not open ONNX model files check the onnx directory exists and contains model files which are readable")
-    exit(1)
-    
 #setup one model (deep neural net) for each thread
 maxThreads=1
 models=[]
@@ -1098,13 +1200,12 @@ locks=[]
 
 
 for x in range(maxThreads):
-    models.append(loadModel(model_buffer))
+    models.append(loadModel(model_bytes))
     locks.append(threading.Lock())
 
 
 print("CUDA device count:", cv2.cuda.getCudaEnabledDeviceCount())
 Log("CUDA device count: "+str(cv2.cuda.getCudaEnabledDeviceCount()))
-
 
 
 
@@ -1131,37 +1232,54 @@ threadidx = 0
 
 
 
-frame_queue = Queue(maxsize=10)
+frame_queue = Queue(maxsize=20)
+
+#reset watchdog timer now, startup (7z extraction, model load and test run) can take longer than
+#the 15 sec watchdog timeout on slow CPUs, which would otherwise trigger a false camera timeout
+last_frame_time = time.time()
 
 threading.Thread(target=reader, daemon=True).start()
 threading.Thread(target=watchdog, daemon=True).start()
 
+prev_small = None     #small greyscale copy of previous frame, for motion detection
+pending_frame = None  #frame with most motion seen while the model was busy
+pending_score = -1.0
 
 while not exit_event.is_set():
 
     try:
         frame = frame_queue.get(timeout=1)
     except Empty:
-        continue
+        frame = None
 
+    if frame is not None:
+        #cheap motion score: fraction of pixels that changed since the previous frame, on a tiny copy
+        small = cv2.cvtColor(cv2.resize(frame, (160, 90), interpolation=cv2.INTER_NEAREST), cv2.COLOR_BGR2GRAY)
+        if prev_small is None:
+            score = 0.0
+        else:
+            score = np.count_nonzero(cv2.absdiff(small, prev_small) > 25) / small.size
+        prev_small = small
 
-    if sema.acquire(blocking=False):
-        executor.submit(
-            processFrameWrapper,
-            threadidx,
-            frame.copy()
-        )
+        #keep the frame with the most motion until the model is free to process it
+        if pending_frame is None or score > pending_score:
+            pending_frame = frame
+            pending_score = score
 
-    if threadidx == (maxThreads - 1):
-        threadidx = 0
-    else:
-        threadidx += 1
+    if pending_frame is not None and sema.acquire(blocking=False):
+        executor.submit(processFrameWrapper, threadidx, pending_frame)
+        pending_frame = None
+        pending_score = -1.0
+
+        if threadidx == (maxThreads - 1):
+            threadidx = 0
+        else:
+            threadidx += 1
 
 
 executor.shutdown(wait=True)
 
 print("Acquired all thread locks so all threads stopped")
-
 
 print("Exiting")
 Log("Exiting")

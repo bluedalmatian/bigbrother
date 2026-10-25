@@ -7,8 +7,8 @@
    viewBox="0 0 210 297"
    version="1.1"
    id="svg1"
-   inkscape:version="1.3.2 (091e20e, 2023-11-25)"
-   sodipodi:docname="drawing.svg"
+   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
+   sodipodi:docname="logo.svg"
    inkscape:export-filename="drawing.png"
    inkscape:export-xdpi="110.91333"
    inkscape:export-ydpi="110.91333"
@@ -28,12 +28,12 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      inkscape:zoom="0.22237051"
-     inkscape:cx="901.64835"
-     inkscape:cy="757.74438"
-     inkscape:window-width="1392"
-     inkscape:window-height="786"
-     inkscape:window-x="0"
-     inkscape:window-y="25"
+     inkscape:cx="901.64833"
+     inkscape:cy="757.74436"
+     inkscape:window-width="1189"
+     inkscape:window-height="991"
+     inkscape:window-x="26"
+     inkscape:window-y="23"
      inkscape:window-maximized="0"
      inkscape:current-layer="g1" />
   <defs
@@ -216,6 +216,36 @@
        r="29.745775"
        gradientTransform="matrix(1,0,0,0.96000001,-396.5503,-185.91158)"
        gradientUnits="userSpaceOnUse" />
+    <radialGradient
+       xlink:href="#linearGradient211"
+       id="rgPupil"
+       cx="467.63422"
+       cy="160.50471"
+       fx="467.63422"
+       fy="160.50471"
+       r="29.745775"
+       gradientTransform="matrix(0.3495665,0,0,0.31643913,-19.71512,77.96149)"
+       gradientUnits="userSpaceOnUse" />
+    <radialGradient
+       xlink:href="#linearGradient149"
+       id="rgIris"
+       cx="470.0437"
+       cy="161.17575"
+       fx="470.0437"
+       fy="161.17575"
+       r="76.964912"
+       gradientTransform="matrix(0.3495665,0,0,0.33081252,-19.71512,75.653695)"
+       gradientUnits="userSpaceOnUse" />
+    <radialGradient
+       xlink:href="#linearGradient210"
+       id="rgGlow"
+       cx="473.56848"
+       cy="362.53357"
+       fx="473.56848"
+       fy="362.53357"
+       r="76.964912"
+       gradientTransform="matrix(0.3495665,0,0,0.33081252,-21.758438,9.1206657)"
+       gradientUnits="userSpaceOnUse" />
   </defs>
   <g
      inkscape:label="Layer 1"
@@ -355,6 +385,38 @@
          cy="-31.827065"
          rx="29.745775"
          ry="28.555944" />
+      <g
+         id="g1-5"
+         transform="matrix(2.5030813,0,0,2.4931012,-247.36461,-146.80092)">
+        <ellipse
+           style="opacity:1;fill:url(#rgGlow)"
+           cx="143.78525"
+           cy="129.0513"
+           rx="26.904356"
+           ry="25.460955"
+           id="ellipse6" />
+        <ellipse
+           style="fill:url(#rgIris)"
+           cx="144.59642"
+           cy="128.97266"
+           rx="26.904356"
+           ry="25.460955"
+           id="ellipse7" />
+        <ellipse
+           style="fill:url(#rgPupil)"
+           cx="143.75414"
+           cy="128.75146"
+           rx="10.398127"
+           ry="9.4127274"
+           id="ellipse8" />
+        <ellipse
+           style="opacity:0.9;fill:#ffffff"
+           cx="138.60001"
+           cy="124.2"
+           rx="2.3"
+           ry="2"
+           id="ellipse9" />
+      </g>
     </g>
   </g>
 </svg>

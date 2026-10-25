@@ -7,9 +7,9 @@ STAGEDIR = /tmp/bigbrother-stage
 INSTALLDIR = $(STAGEDIR)/usr/local/bigbrother
 SYSTEMDDIR = $(STAGEDIR)/etc/systemd/system
 
-VERSION = 2.4 #Used for Deb only, edit the +MANIFEST for FreeBSD version pkg and the RPM/SPECS/bigbrother.spec file for rpm version
+VERSION = 2.5 #Used for Deb only, edit the +MANIFEST for FreeBSD version pkg and the RPM/SPECS/bigbrother.spec file for rpm version
 DEPENDS = --depends ffmpeg --depends python3 \
-          --depends "python3-opencv >= 4.10" --depends python3-zeep --depends python3-py7zr
+          --depends "python3-opencv >= 4.10" --depends python3-zeep --depends python3-py7zr --depends python3-onnxruntime
 
 FPMOPTIONS = --name org.bigbrothercctv.bigbrother \
              --version $(VERSION) \
@@ -37,8 +37,8 @@ installbinary:
 	cp ./bigbrotherd.service $(SYSTEMDDIR)
 	cp ./LICENSE*  $(INSTALLDIR)
 	cp ./README.txt  $(INSTALLDIR)
-	cp ./markup_y5onnx.py $(INSTALLDIR)
-	cp ./bbeventmonitor_ffy5onnx $(INSTALLDIR)
+	cp ./markup_rtdt2onnx.py $(INSTALLDIR)
+	cp ./bbeventmonitor_ffrtdt2onnx $(INSTALLDIR)
 	cp ./bbcameracontrolshell $(INSTALLDIR)
 	cp ./bbptzcameracontrollerd_onvif $(INSTALLDIR)
 	cp -R ./onnx $(INSTALLDIR)
@@ -82,7 +82,7 @@ deb: installbinary
 	fi
 rpm:
 
-	tar cf ./bigbrother.tar  ./*.sh ./bigbrotherd ./mirrorwebroot ./bblogger ./bigbrother.conf ./bigbrother_camera.conf ./bigbrother_control.conf ./bigbrotherd.service ./LICENSE ./LICENSE-AIMODEL ./README.txt ./bigbrother_event.conf ./markup_y5onnx.py ./markup_y5onnx.py ./bbeventmonitor_ffy5onnx ./bbcameracontrolshell ./bbptzcameracontrollerd_onvif ./onnx ./octaquad
+	tar cf ./bigbrother.tar  ./*.sh ./bigbrotherd ./mirrorwebroot ./bblogger ./bigbrother.conf ./bigbrother_camera.conf ./bigbrother_control.conf ./bigbrotherd.service ./LICENSE ./LICENSE-AIMODEL ./README.txt ./bigbrother_event.conf ./markup_rtdt2onnx.py ./bbeventmonitor_ffrtdt2onnx ./bbcameracontrolshell ./bbptzcameracontrollerd_onvif ./onnx ./octaquad
 	gzip ./bigbrother.tar
 	mv ./bigbrother.tar.gz ./RPM/SOURCES/org.bigbrothercctv.bigbrother.tar.gz	
 	rpmbuild -v -bb --clean ./RPM/SPECS/bigbrother.spec
@@ -104,8 +104,8 @@ pkgng:
 	cp ./README.txt  ./pkgng-tmp$(INSTALLDIR)
 	cp ./bigbrother_event.conf ./pkgng-tmp$(INSTALLDIR)
 	cp ./bigbrother_control.conf ./pkgng-tmp$(INSTALLDIR)
-	cp ./markup_y5onnx.py ./pkgng-tmp$(INSTALLDIR)
-	cp ./bbeventmonitor_ffy5onnx ./pkgng-tmp$(INSTALLDIR)
+	cp ./markup_rtdt2onnx.py ./pkgng-tmp$(INSTALLDIR)
+	cp ./bbeventmonitor_ffrtdt2onnx ./pkgng-tmp$(INSTALLDIR)
 	cp ./bbcameracontrolshell ./pkgng-tmp$(INSTALLDIR)
 	cp ./bbptzcameracontrollerd_onvif ./pkgng-tmp$(INSTALLDIR)
 	cp -R ./onnx ./pkgng-tmp$(INSTALLDIR)

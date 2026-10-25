@@ -2,7 +2,7 @@
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #		      
 # Copyright 2016-2026 Andrew Wood                                  #
 #                                                                  #
-# This copy of the README file relates to version 2.4		       #
+# This copy of the README file relates to version 2.5		       #
 #                                                                  #
 # www.bigbrothercctv.org			                               #
 #                           					                   #

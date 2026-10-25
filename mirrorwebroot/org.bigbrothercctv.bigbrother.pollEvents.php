@@ -1,4 +1,25 @@
 <?php
+/**
+ * ***********************************************************************
+ * BigBrother  CCTV Recording & Live Viewing (mirroring) software       *
+ * www.bigbrothercctv.org                                               *
+ *                                                                      *
+ * pollEvents.php Copyright Andrew Wood 2025-2026	                	*
+ *																		*
+ * Licensed under the GNU Public License v 3                            *
+ * The full license can be read at www.gnu.org/licenses/gpl-3.0.txt     *
+ * and is included in the License.txt file included with this           *
+ * software.                                                            *
+ *                                                                      *
+ * BigBrother is free open source software but if you find it           *
+ * useful please consider making a donation to the Communications       *
+ * Museum Trust at www.comms.org.uk/donate                              *
+ *                                                                      *
+ *                                                                      *
+ ************************************************************************
+ */
+
+
 ob_start();
 //CONVENTION: Any variable name in $CAPITALS is declared in the mirror control file (org.bigbrothercctv.bigbrother.bigbrotherd.php)
 	
@@ -122,10 +143,9 @@ foreach ($lines as $lineno => $line)
 
 
 
-	foreach ($allEvents as $event)
-	{
-		usort($allEvents, 'eventCompare'); //sort events in to most recent first
-	}
+	
+	usort($allEvents, 'eventCompare'); //sort events in to most recent first
+	
 
 	error_log('allEvents='.sizeof($allEvents));
 

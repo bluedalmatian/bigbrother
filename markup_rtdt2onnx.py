@@ -13,7 +13,9 @@
 #detections and should be set to the same as currently set	      #
 #in bbeventmonitor_y5onnx		                                   #
 #		                                                           #
-#Requires OpenCV 4.10 or later                                     #
+#RT-DETRv2 version: runs the model with onnxruntime                #
+#(Debian: apt install python3-onnxruntime). No NMS is needed,      #
+#detections are simply filtered by score.                          #
 #		                                                           #
 ####################################################################
 
@@ -21,6 +23,7 @@
 import numpy as np
 import cv2, os, sys
 import py7zr
+import onnxruntime as ort
 
 
 mydir=os.path.abspath(os.path.dirname(__file__)) #gives dir without trailing /
@@ -35,12 +38,11 @@ modeldir=mydir+"/onnx"
 # Do not use this password to extract it for use in non BigBrother software unless you         #
 # have purchased a commercial license. See www.bigbrothercctv.org/BB-AIMODEL-LICENSE-1.1.txt   #
 #                                                                    DO NOT STEAL   READ ^^^   # 
-with py7zr.SevenZipFile(modeldir + "/bbrelease-100-640x640.7z",mode="r",password="vR7!qL2#xN9@kT4$mP8&zW6^cH3*Ys5") as archive:
+with py7zr.SevenZipFile(modeldir + "/bbrelease.7z",mode="r",password="vR8!qL2#xN6@kT4$mP8&zW6^cH1*Ys5") as archive:
     print("Files inside the 7z archive:")
     print(archive.getnames())
-    data = archive.read(["bbrelease-100-640x640.onnx"])
-    model_bytes = data["bbrelease-100-640x640.onnx"].read()
-    model_buffer = np.frombuffer(model_bytes, dtype=np.uint8)
+    data = archive.read(["bbrelease-640x640Q.onnx"])
+    model_bytes = data["bbrelease-640x640Q.onnx"].read()
 
 
 
@@ -60,8 +62,6 @@ if outputpath=="auto":
     outputpath=inputpath+"-out.jpg"
 
 confidencemin=float(sys.argv[3])
-scoremin=0.5#To filter low probability class scores where one object has been ID'd as > 1 class
-nmsmin=0.45
 
 
 BLUE   = (255,178,50)
@@ -71,18 +71,20 @@ FONT_FACE = cv2.FONT_HERSHEY_SIMPLEX
 FONT_SCALE = 0.7
 THICKNESS = 1
 
-cvversion=cv2.__version__
-cvversionelements=cvversion.split(".")
+print("Using OpenCV "+cv2.__version__+", onnxruntime "+ort.__version__)
 
+# load the network model
+sess = ort.InferenceSession(model_bytes, providers=["CPUExecutionProvider"])
+in_names = [i.name for i in sess.get_inputs()]
+out_names = [o.name for o in sess.get_outputs()]
 
-if (int(cvversionelements[0])<5) and (int(cvversionelements[1])<10):
-    print("This program requires OpenCV version 4.10 or later, you are using "+cvversionelements[0]+"."+cvversionelements[1])
-    exit(1)
-else:
-    print("Using OpenCV "+cvversionelements[0]+"."+cvversionelements[1])
-
-# read a network model 
-net = cv2.dnn.readNetFromONNX(model_buffer)
+# Supported RT-DETR export formats:
+#  - Official RT-DETRv2 export: inputs "images" + "orig_target_sizes" (int64 [w,h]),
+#    outputs "labels", "boxes" (xyxy in original image pixels), "scores"
+#  - Raw export: outputs "pred_logits" + "pred_boxes" (cx,cy,w,h normalised 0-1)
+#  - Single output: (1, num_queries, 4 + num_classes), boxes cx,cy,w,h
+OFFICIAL_EXPORT = {"labels", "boxes", "scores"}.issubset(set(out_names))
+RAW_EXPORT = (not OFFICIAL_EXPORT) and len(out_names) == 2
 
 # dictionary with the object class id and names on which the model is trained
 classNames = { 0: 'person',1: 'car', 2: 'truck', 3: 'motorcycle', 4: 'van',5: 'bus',6: 'bicycle', 7: 'selftest'}
@@ -91,55 +93,69 @@ classNames = { 0: 'person',1: 'car', 2: 'truck', 3: 'motorcycle', 4: 'van',5: 'b
     
 # Load the image
 frame = cv2.imread(inputpath)
+if frame is None:
+    print("ERROR: could not read image "+inputpath)
+    exit(1)
 width = frame.shape[1] 
 height = frame.shape[0]
 
 
 
 
+# Plain resize to 640x640, RGB, scaled 0-1 (no letterbox, no mean/std)
 blob = cv2.dnn.blobFromImage(frame, 1/255.0, (640, 640), swapRB=True,crop=False)
-net.setInput(blob)
-outputs = net.forward(net.getUnconnectedOutLayersNames())
-    
-class_ids = []
-confidences = []
-boxes = []
 
-rows = outputs[0].shape[1]
-image_height, image_width = frame.shape[:2]   
-x_factor = width / 640
-y_factor =  height / 640
+if OFFICIAL_EXPORT:
+    feeds = {}
+    for name in in_names:
+        if "size" in name:
+            feeds[name] = np.array([[width, height]], dtype=np.int64)
+        else:
+            feeds[name] = blob
+    outs = dict(zip(out_names, sess.run(out_names, feeds)))
+    det_labels = outs["labels"].reshape(-1).astype(int)
+    det_boxes = outs["boxes"].reshape(-1, 4).astype(np.float32)  # already xyxy in image pixels
+    det_scores = outs["scores"].reshape(-1).astype(np.float32)
+else:
+    if RAW_EXPORT:
+        a, b = sess.run(out_names, {in_names[0]: blob})
+        if a.shape[-1] == 4:
+            raw_boxes, logits = a, b
+        else:
+            logits, raw_boxes = a, b
+        raw_boxes = raw_boxes.reshape(-1, 4)
+        probs = 1.0 / (1.0 + np.exp(-logits.reshape(raw_boxes.shape[0], -1)))   # sigmoid
+        sx, sy = width, height
+    else:
+        pred = sess.run(None, {in_names[0]: blob})[0]
+        pred = pred.reshape(-1, pred.shape[-1])
+        raw_boxes, probs = pred[:, :4], pred[:, 4:]
+        # Boxes are normally normalised 0-1; if they look like pixels, rescale from 640
+        if raw_boxes.max() > 2.0:
+            sx, sy = width / 640, height / 640
+        else:
+            sx, sy = width, height
+    det_labels = probs.argmax(axis=1).astype(int)
+    det_scores = probs.max(axis=1).astype(np.float32)
+    cx, cy, w, h = raw_boxes[:, 0], raw_boxes[:, 1], raw_boxes[:, 2], raw_boxes[:, 3]
+    det_boxes = np.stack([(cx - w/2) * sx, (cy - h/2) * sy, (cx + w/2) * sx, (cy + h/2) * sy], axis=1)
 
-for r in range(rows):
-    row = outputs[0][0][r]
-    confidence = row[4]
-    if confidence >= confidencemin:
-        classes_scores = row[5:]
-        class_id = np.argmax(classes_scores)
-        if (classes_scores[class_id] > scoremin):
-            confidences.append(confidence)
-            class_ids.append(class_id)
-            cx, cy, w, h = row[0], row[1], row[2], row[3]
-            left = int((cx - w/2) * x_factor)
-            top = int((cy - h/2) * y_factor)
-            bwidth = int(w * x_factor)
-            bheight = int(h * y_factor)
-            box = np.array([left, top, bwidth, bheight])
-            boxes.append(box)            
+# RT-DETR needs no NMS - just keep detections at or above the confidence threshold
+keep = det_scores >= confidencemin
 
-indices = cv2.dnn.NMSBoxes(boxes, confidences, confidencemin, nmsmin)
-for i in indices:           
-    box = boxes[i]
-    left = box[0]
-    top = box[1]
-    bwidth = box[2]
-    bheight = box[3]             
+for (x1, y1, x2, y2), class_id, confidence in zip(det_boxes[keep], det_labels[keep], det_scores[keep]):
+    left = int(max(0, min(width - 1, x1)))
+    top = int(max(0, min(height - 1, y1)))
+    right = int(max(0, min(width - 1, x2)))
+    bottom = int(max(0, min(height - 1, y2)))
+    bwidth = right - left
+    bheight = bottom - top
     
     
     cv2.rectangle(frame, (left, top), (left + bwidth, top + bheight), BLUE, 2)
         
         
-    label = "{}:{:.2f}".format(classNames[class_ids[i]], confidences[i])
+    label = "{}:{:.2f}".format(classNames.get(int(class_id), 'unknown'), float(confidence))
     
     # Get text size
     (text_width, text_height), baseline = cv2.getTextSize(label,cv2.FONT_HERSHEY_SIMPLEX,0.5,2)
@@ -152,8 +168,6 @@ for i in indices:
     text_x = center_x - text_width // 2
     text_y = center_y + text_height // 2
 
-
-	
     
     cv2.putText(frame,label,(text_x, text_y),cv2.FONT_HERSHEY_SIMPLEX,0.5,BLUE,2)
     

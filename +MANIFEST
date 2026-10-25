@@ -1,5 +1,5 @@
 name: "org.bigbrothercctv.bigbrother";
-version: "2.4";
+version: "2.5";
 origin: "multimedia/bigbrother";
 comment: "BigBrother CCTV recording & mirroring system";
 abi = "FreeBSD:*:*";
@@ -73,6 +73,7 @@ deps: {
   opencv: {origin: "graphics/opencv", version: ">=4.10"};
   py312-zeep: {origin: "net/py-zeep", version: ">=4.3.3"};
   py312-py7zr: {origin: "archivers/py-py7zr"};
+  py312-onnxruntime: {origin: "misc/py-onnxruntime"};
 }
 files: {
  /usr/local/bigbrother/README.txt: {uname: 'bigbrother', gname: 'cctvwriters',perm: 644};
@@ -89,9 +90,9 @@ files: {
  /usr/local/bigbrother/bbptzcameracontrollerd_onvif: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/bbptzcameracontrollerd_onvif.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/bbcameracontrolshell: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
- /usr/local/bigbrother/bbeventmonitor_ffy5onnx.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
- /usr/local/bigbrother/bbeventmonitor_ffy5onnx: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
- /usr/local/bigbrother/markup_y5onnx.py: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/bbeventmonitor_ffrtdt2onnx.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/bbeventmonitor_ffrtdt2onnx: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
+ /usr/local/bigbrother/markup_rtdt2onnx.py: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/rc.bigbrotherd: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/record_bycamera.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
  /usr/local/bigbrother/record_byday.sh: {uname: 'bigbrother', gname: 'cctvwriters',perm: 750};
@@ -158,7 +159,7 @@ files: {
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.Event.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.pollEvents.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
  /usr/local/bigbrother/mirrorwebroot/org.bigbrothercctv.bigbrother.cameraControlONVIFPTZ.php: {uname: 'bigbrother', gname: 'cctvviewers',perm: 640};
- /usr/local/bigbrother/onnx/bbrelease-100-640x640.7z: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
+ /usr/local/bigbrother/onnx/bbrelease.7z: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
  /usr/local/bigbrother/onnx/LICENSE-AIMODEL: {uname: 'bigbrother', gname: 'cctvwriters',perm: 640};
  /usr/local/bigbrother/octaquad/onvif/cli.py: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};
  /usr/local/bigbrother/octaquad/onvif/version.txt: {uname: 'bigbrother', gname: 'cctvwriters', perm: 640};

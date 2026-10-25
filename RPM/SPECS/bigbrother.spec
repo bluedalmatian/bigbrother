@@ -1,6 +1,6 @@
 %define _topdir		%(pwd)/RPM
 %define name            org.bigbrothercctv.bigbrother
-%define version		2.4
+%define version		2.5
 
 
 Summary:        bigbrothercctv.org BigBrother
@@ -12,7 +12,7 @@ Source:         %{name}.tar.gz
 Prefix:         /usr
 Group:          System Environment/Daemons
 BuildArch: 	noarch
-Requires:	ffmpeg,python,bash,python3-opencv >= 4.10,python3-zeep,python3-py7zr
+Requires:	ffmpeg,python,bash,python3-opencv >= 4.10,python3-zeep,python3-py7zr,python3-onnxruntime
 
 %description
 BigBrother wrapper daemon for FFMPEG to provide CCTV recording & mirroring
@@ -61,11 +61,11 @@ systemctl daemon-reload
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/record_bycamera.sh
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/record_byday.sh
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/extract.sh
-%attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bbeventmonitor_y5onnx.sh
-%attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bbeventmonitor_y5onnx
+%attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bbeventmonitor_rtdt2onnx.sh
+%attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bbeventmonitor_rtdt2onnx
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bbptzcameracontrollerd_onvif
 %attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/bbptzcameracontrollerd_onvif.sh
-%attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/markup_y5onnx.py
+%attr (750,bigbrother,cctvwriters) /usr/local/bigbrother/markup_rtdt2onnx.py
 %attr (750,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot
 %attr (640,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot/*
 %attr (770,bigbrother,cctvviewers) /usr/local/bigbrother/mirrorwebroot/snapshots

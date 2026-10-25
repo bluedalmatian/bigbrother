@@ -1,5 +1,8 @@
 MAJOR CHANGES FOR EACH VERSION
 ======================================================================================================================================================================
+2.5 Improvements to event detection, hardware accelleration, eventlog in mirroring view now shows 7 days of events, better recovery from playback stalls in 
+    mirroring live view.
+
 2.4	Improvements to event detection performance, experimental PTZ support, NVENC for HLS mirroring where available, CUDA GPU for AI event detection where
         available. Bug fixes for event ignore time parsing. 
 

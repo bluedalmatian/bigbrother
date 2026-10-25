@@ -27,7 +27,7 @@
 
 
 
-import sys, os, time, signal, tempfile, re, datetime, pwd, subprocess, shutil, threading, calendar
+import sys, os, time, signal, tempfile, re, datetime, pwd, subprocess, shutil, threading, calendar, platform
 
 
 #######################################
@@ -39,7 +39,7 @@ class ParseException(Exception):
 #######################################
 #System wide knobs
 
-bbversion=2.4 ##only change version no here and in no other file
+bbversion=2.5 ##only change version no here and in no other file
 exedir=os.path.dirname(os.path.realpath(__file__)) ##gives dir with no trailing /
 globalconffile=exedir+"/bigbrother.conf"
 dashfspecified=False
@@ -72,11 +72,91 @@ exit_event = threading.Event()
 
 eventlogtrimmer=0
 
+
+distrostr=""
+if platform.system() == "Linux":
+    os_release = platform.freedesktop_os_release()
+    distro = os_release.get("ID")
+    version = os_release.get("VERSION_ID")
+    distrostr=distro+" "+version
+    
+platformstring=platform.system()+" "+distrostr+" "+platform.machine()
+
+
 #######################################
 
 
 ##############################################################################
+def eventlogtrimmerbydate():
+    #thread routine executed by eventlogtrimmer thread only
+    #trim mirrorwebroot/org.bigbrothercctv.bigbrother.aieventlog.txt to max 1000 entries    
+    Log("eventlogtrimmer thread starting")
+    keepgoing=True
+    while (keepgoing):
+        now=datetime.datetime.now()
+        #schedule next run at 15 min past next hour
+        next_run = now.replace(minute=15,second=0,microsecond=0)
+        if next_run <= now:
+            next_run += datetime.timedelta(hours=1)
+        sleepsecs = (next_run - now).total_seconds()
+        Log("eventlogtrimmer sleeping for "+str(sleepsecs)+" seconds")
+        exit_event.wait(sleepsecs) #wait until condition or time expires
+        Log("eventlogtrimmer woke")
+        if exit_event.is_set():
+            keepgoing=False
+
+        start=time.time()
+        lines=[]
+        try:
+            elogfile=open(mirrorwebroot+"/org.bigbrothercctv.bigbrother.aieventlog.txt",'r+')
+            lines=elogfile.readlines()
+            lines=lines[1:] #remove comment line at top of file
+            numlines=len(lines) #ign comment line at top
+			
+            cutoffidx=numlines-1 #line no from which we keep entries from there to bottom
+            maxage=60*60*24*7 #7 days
+            while cutoffidx >= 0 and (start - float((lines[cutoffidx].split()[5])) < maxage):
+                cutoffidx=cutoffidx-1
+			
+             
+            if cutoffidx>0:
+                keep=lines[cutoffidx:]
+                discard=lines[:cutoffidx]
+                elogfile.truncate(0)
+                elogfile.seek(0)
+                elogfile.write("#THIS FILE IS GENERATED AUTOMATICALLY BY BIGBROTHER WHEN AI EVENT MONITORING IS ENABLED\n")
+                for keepline in keep:
+                    elogfile.write(keepline)
+                snapshotTrimmer(discard)
+                end=time.time()
+                duration=end-start
+                duration=round(duration,3)
+                count=numlines-len(keep)
+                elogfile.close()
+                Log("eventlogtrimmer took "+str(duration)+" secs (trimmed "+str(count)+" entries)")
+            else:
+                elogfile.close()
+                end=time.time()
+                duration=end-start
+                duration=round(duration,3)
+                Log("eventlogtrimmer took "+str(duration)+" secs (nothing to trim)")
+                continue
+            
+        except IOError:
+            Log("ERROR: eventlogtrimmer could not trim event log down to 7 days\n")
+        
+        
+    Log("eventlogtrimmer thread exiting")
+##############################################################################
+
+
+
+
+
+##############################################################################
 def eventlogtrimmer():
+    #this function is now not used it has been replaced by eventlogtrimmerbydate
+    #this code is kept for reference only and may be removed
     #thread routine executed by eventlogtrimmer thread only
     #trim mirrorwebroot/org.bigbrothercctv.bigbrother.aieventlog.txt to max 1000 entries    
     Log("eventlogtrimmer thread starting")
@@ -1001,7 +1081,7 @@ def work():
                 idx=idx+1
  
             Log("Found an event conf: "+str(L))
-            cpid = os.spawnv(os.P_NOWAIT, exedir+'/bbeventmonitor_ffy5onnx.sh', L)
+            cpid = os.spawnv(os.P_NOWAIT, exedir+'/bbeventmonitor_ffrtdt2onnx.sh', L)
             pids.append(cpid)
             Log("P3 started camera event monitoring process OS PID:"+str(cpid))
             
@@ -1256,6 +1336,7 @@ def mirroringInit():
         mirrorcontrolfile.write("$ALLOWNEWFILEFROMWEB="+str(allownewfilefromweb)+";\n")
         mirrorcontrolfile.write("$STARTTIMESTAMP="+str(int(time.time()))+";\n")
         mirrorcontrolfile.write("$PTZCONFFILEPATH='"+ptzconffilepath+"';\n")
+        mirrorcontrolfile.write("$PLATFORM='"+platformstring+"';\n")
         mirrorcontrolfile.write("?>\n") 
         mirrorcontrolfile.close()
     except:
@@ -1440,7 +1521,7 @@ if (pid==0):
         Log("P3 initialising "+mirrorwebroot)
         mirroringInit()
         Log("P3 setting up eventlogtrimmer & eventlogcleaner")
-        eventlogtrimmer = threading.Thread(target=eventlogtrimmer, args=())
+        eventlogtrimmer = threading.Thread(target=eventlogtrimmerbydate, args=())
         eventlogtrimmer.start()
         #remove duplicates from eventlogdirstrings
         eventlogdirstrings=list(set(eventlogdirstrings))

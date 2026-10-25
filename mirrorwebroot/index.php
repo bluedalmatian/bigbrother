@@ -1,13 +1,33 @@
-
-
 <?php
+/**
+ * ***********************************************************************
+ * BigBrother  CCTV Recording & Live Viewing (mirroring) software       *
+ * www.bigbrothercctv.org                                               *
+ *                                                                      *
+ * index.php Copyright Andrew Wood 2025-2026	                	*
+ *																		*
+ * Licensed under the GNU Public License v 3                            *
+ * The full license can be read at www.gnu.org/licenses/gpl-3.0.txt     *
+ * and is included in the License.txt file included with this           *
+ * software.                                                            *
+ *                                                                      *
+ * BigBrother is free open source software but if you find it           *
+ * useful please consider making a donation to the Communications       *
+ * Museum Trust at www.comms.org.uk/donate                              *
+ *                                                                      *
+ *                                                                      *
+ ************************************************************************
+ */
+
+
+
 	//CONVENTION: Any variable name in $CAPITALS is declared in the mirror control file (org.bigbrothercctv.bigbrother.bigbrotherd.php)
 	
 
 	function controlFileIncludeFail($errno, $errstr, $errfile, $errline)
 	{
 		$nodaemonerrmsg="<body bgcolor=#000000><center><table cellspacing=0 cellpadding=0 border=0 height=100%><tr height=*><td colspan=2>&nbsp;</td></tr>";
-		$nodaemonerrmsg=$nodaemonerrmsg."<tr><td><img src=bb.png width=100 valign=middle></td>";
+		$nodaemonerrmsg=$nodaemonerrmsg."<tr><td><img src=bb.png width=64 valign=middle></td>";
 		$nodaemonerrmsg=$nodaemonerrmsg."<td valign=middle><img src=transparent.png width=100% height=2><p class=statusmsg><h2><font color=#FFFFFF face='Arial'>CCTV not available, BigBrother is not running</font></h2></p></td></tr>";
 		$nodaemonerrmsg=$nodaemonerrmsg."<tr height=*><td colspan=2>&nbsp;</td></tr></table></center>";
 		$nodaemonerrmsg=$nodaemonerrmsg."<meta http-equiv='refresh' content='1'><script>setTimeout(() => window.location.reload(), 1000);</script>";
@@ -488,6 +508,9 @@ var cameraNotFound = false;
 		echo("var aieventmonitoring=false;");
 	}
 
+    $formattedversion=number_format($BBVERSION,1);
+	echo("var formattedversion=".$formattedversion.";");
+	echo("var bbplatform='".$PLATFORM."';");
 		
 ?>
 
@@ -496,6 +519,7 @@ var cameraNotFound = false;
 
 var hup_xhr = new XMLHttpRequest();
 var aipoll_xhr = new XMLHttpRequest();
+var updatecheck_xhr = new XMLHttpRequest();
 
 var aieventsdetected=true;  //are there any events in log - determines if button enabled (updated by ajax call)
 var aieventsviewed=true;  //has user viewed all events that have occured - determines if button orange (updated by ajax call)
@@ -593,6 +617,30 @@ function detectBrowser()
 }	
 
 
+
+function showConfirm(msg, onOk, onCancel)
+{
+	//This replaces Javascripts built in alert() function as alert() kicks browser out of full screen
+	var host = document.fullscreenElement || document.body;
+	var back = document.createElement("div");
+	back.style.cssText = "position:fixed;left:0;top:0;right:0;bottom:0;z-index:5000;display:flex;align-items:center;justify-content:center;background:rgba(10,12,18,0.65);font-family:Segoe UI,Helvetica,Arial,sans-serif;";
+	back.innerHTML =
+	"<div style='width:90%;max-width:420px;background:#1f2430;border:1px solid #3a4150;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,0.55);padding:20px;color:#d6dbe4;font-size:14px;line-height:1.5;'>" +
+	msg +
+	"<div style='text-align:right;margin-top:18px;'>" +
+	"<button type='button' style='min-width:80px;height:34px;margin-right:8px;border:0;border-radius:6px;background:#343b4a;color:#fff;font-size:14px;cursor:pointer;'>Cancel</button>" +
+	"<button type='button' style='min-width:80px;height:34px;border:0;border-radius:6px;background:#3d7bd9;color:#fff;font-size:14px;cursor:pointer;'>OK</button>" +
+	"</div></div>";
+	var btns = back.getElementsByTagName("button");
+	btns[0].onclick = function () { back.parentNode.removeChild(back); if (onCancel) onCancel(); };
+	btns[1].onclick = function () { back.parentNode.removeChild(back); if (onOk) onOk(); };
+	host.appendChild(back);
+	btns[1].focus();
+}
+
+
+
+
 function clearMsg()
 {
 	msgareastring="";
@@ -661,7 +709,7 @@ function clobberMsg(msg)
 		return;
 	}
 	
-	eventmsgareastring="<td>"+msg+"</td>";
+	msgareastring="<td>"+msg+"</td>";
 	displayPendingMessages();
 }
 
@@ -899,33 +947,19 @@ function mouseOutButton(obj)
 	}
 }
 
-function mouseOverXButton(obj)
-{
-        var td=document.getElementById(obj.id);
-        td.style.backgroundColor="#ff0000";
-}
-
-function mouseOutXButton(obj)
-{
-        var td=document.getElementById(obj.id);
-        td.style.backgroundColor="#5e4868";
-}
 
 
 function handleHUPRequest()
 {
-	var hupok=confirm("This will terminate all current recording for all cameras and start new ones")
-
-	if (hupok==true)
+	showConfirm("This will terminate all current recording for all cameras and start new ones", function ()
 	{
 		//OK button pressed
 		clobberMsg("<p class=statusmsg><img src=i-orange.png width=32 height=32 align=middle valign=middle class=statusicon>Processing please wait...</p>");
 		var url = "org.bigbrothercctv.bigbrother.hup.php";
-    		hup_xhr.open('GET',url,true);
-    		hup_xhr.onreadystatechange=processHUPResponse; //callback when response comes
-    		hup_xhr.send(null);
-	}
-	
+		hup_xhr.open('GET',url,true);
+		hup_xhr.onreadystatechange=processHUPResponse; //callback when response comes
+		hup_xhr.send(null);
+	});
 }
 
 function processHUPResponse()
@@ -948,6 +982,32 @@ function processHUPResponse()
 	clobberMsg("<p class=statusmsg><img src=i-red.png width=32 height=32 align=middle valign=middle class=statusicon>Error creating new recordings, error was: "+hup_xhr.responseText+"</p>");       
     }
 
+}
+
+
+
+function checkUpdates()
+{
+
+			var url = "https://www.bigbrothercctv.org/checkUpdates.php?version="+encodeURIComponent(formattedversion)+"&platform="+encodeURIComponent(bbplatform);
+    		updatecheck_xhr.open('GET',url,true);
+    		updatecheck_xhr.onreadystatechange=processUpdateCheckResponse; //callback when response comes
+    		updatecheck_xhr.send(null);
+}
+
+
+
+
+function processUpdateCheckResponse()
+{
+    
+	updatecheck_xhr.responseText=updatecheck_xhr.responseText.replace(/\n/g, '');
+	
+    if (updatecheck_xhr.status==204)
+    {
+       //PHP script will only return 204 if update available
+	 appendMsg("<p class=statusmsg><img src=i-orange.png width=32 height=32 align=middle valign=middle class=statusicon>A new version of BigBrother is available. Ask your system administrator to upgrade</p>");
+    }
 }
 
 
@@ -1023,20 +1083,31 @@ function processAIEventResponse()
 	   var events=JSON.parse(aipoll_xhr.responseText); //array of Event objects [0] is most recent
 	   var foundindexes=[]; //indexes of events array (newly sent events) which are already in eventsnotified
 	   
-	   for (var x = 0; x < events.length; x++) 
-	   {
-			for (var y=0; y < eventsnotified.length; y++)
+	   
+	   
+	   
+	   
+	   
+	
+	   
+	   
+	   var notifiedKeys = new Set(eventsnotified.map(function (e) {return JSON.stringify(e);}));
+
+		var foundindexes = [];
+		for (var x = 0; x < events.length; x++) 
+		{
+			if (notifiedKeys.has(JSON.stringify(events[x]))) 
 			{
-				if (JSON.stringify(events[x])==JSON.stringify(eventsnotified[y]))
-				{
-                //found
-                //record its index so we can ignore it later
-				console.log("Event on server result list index "+x+" already exists in cache, ignoring");
-                foundindexes.push(x);
-  
-				}
+				console.log("Event on server result list index " + x + " already exists in cache, ignoring");
+				foundindexes.push(x);
 			}
-	   }
+		}
+	   
+	   
+	   
+	   
+	   
+	   
 	   
 	   for (var x=events.length-1; x >=0; x--) //go through loop in reverse so we deal with newest event last
 	   {
@@ -1121,7 +1192,13 @@ function processAIEventResponse()
 				}
 				
 			}
-	   }  
+	   }
+
+		// Server only returns events from the last 15s, so older entries can never
+		// be duplicates. Keep a generous margin in case client/server clocks differ.
+		var cutoff = getTimestampNow() - 300;
+		eventsnotified = eventsnotified.filter(function (e) {return Number(e.unixtimestamp) >= cutoff;});
+	   
     }
 	else if (aipoll_xhr.status==0)
     {
@@ -1196,19 +1273,53 @@ function showAIEventLog()
 
 	if (miniStatus)
 	{
-		var overlay=document.getElementById("eventlogoverlay");
-		overlay.innerHTML="<table bgcolor=#677383 width=100% cellspacing=0 cellpadding=0 border=0><tr><td width=* height=40>&nbsp;</td><td bgcolor=#5e4868 id=eventlogXbutton width=40 height=40 onmouseover='mouseOverXButton(this);' onmouseout='mouseOutXButton(this);'><img src=X.png onclick='hideEventLogOverlay();' style='cursor:pointer;' width=40></td></tr>";
-		overlay.innerHTML=overlay.innerHTML+"<tr><td colspan=2><iframe id=eventoverlayiframe src='org.bigbrothercctv.bigbrother.showEvents.php' width=100% height=95%></iframe></td></tr>";
-        overlay.innerHTML=overlay.innerHTML+"</table>";
-        overlay.style.display="block";
-        overlay.style.position="absolute";
-        overlay.style.zIndex=3000;
-        overlay.style.left="10px";
-        overlay.style.top="10px";
-        overlay.style.width=(window.innerWidth-50)+"px";
-        overlay.style.height=(window.innerHeight-50)+"px";
-		document.getElementById("eventoverlayiframe").style.width=(window.innerWidth-54)+"px";
-		
+		var overlay = document.getElementById("eventlogoverlay");
+
+		overlay.innerHTML =
+		"<div onclick='event.stopPropagation();' style='display:flex;flex-direction:column;width:100%;height:100%;max-width:1800px;margin:0 auto;background:#1f2430;border:1px solid #3a4150;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,0.55);overflow:hidden;font-family:Segoe UI,Helvetica,Arial,sans-serif;'>" +
+
+		// Header bar
+		"<div style='display:flex;align-items:center;justify-content:space-between;height:48px;padding:0 8px 0 18px;background:linear-gradient(#2c3342,#252b38);border-bottom:1px solid #3a4150;flex-shrink:0;'>" +
+		"<div style='color:#e6e9ef;font-size:15px;font-weight:600;letter-spacing:0.3px;'>Event Log</div>" +
+		"<button type='button' id='eventlogXbutton' title='Close (Esc)'" +
+		" style='width:34px;height:34px;border:0;border-radius:6px;background:transparent;color:#aab2c0;font-size:22px;line-height:34px;cursor:pointer;transition:background 0.15s,color 0.15s;'>&times;</button>" +
+		"</div>" +
+
+		// Content
+		"<iframe id='eventoverlayiframe' src='org.bigbrothercctv.bigbrother.showEvents.php' style='flex:1;width:100%;border:0;background:#fff;display:block;'></iframe>" +
+
+		"</div>";
+
+		// Close button hover and click
+		var xb = document.getElementById("eventlogXbutton");
+		xb.onmouseenter = function () { xb.style.background = "#e5534b"; xb.style.color = "#fff"; };
+		xb.onmouseleave = function () { xb.style.background = "transparent"; xb.style.color = "#aab2c0"; };
+		xb.onclick = function (e) { e.stopPropagation(); hideEventLogOverlay(); };
+
+		// Full-screen dimmed backdrop
+		var s = overlay.style;
+		s.position = "fixed";
+		s.left = s.top = s.right = s.bottom = "0";
+		s.width = s.height = "";
+		s.padding = "24px";
+		s.boxSizing = "border-box";
+		s.background = "rgba(10,12,18,0.65)";
+		s.backdropFilter = "blur(3px)";
+		s.zIndex = 3000;
+		s.display = "block";
+
+		// Fade in
+		s.opacity = "0";
+		s.transition = "opacity 0.18s ease";
+		requestAnimationFrame(function () { s.opacity = "1"; });
+
+		// Click outside the panel or press Escape to close
+		overlay.onclick = hideEventLogOverlay;
+		if (!overlay.escBound)
+		{
+			document.addEventListener("keydown", function (e) { if (e.key === "Escape" && overlay.style.display !== "none") hideEventLogOverlay(); });
+			overlay.escBound = true;
+		}
 	}
 	else
 	{
@@ -1288,26 +1399,64 @@ function doLicenseOverlay(gpl)
 		var msg="<p><b><img src=i-blue.png width=32 height=32 align=middle valign=middle>AI Model License.</b></p>";
 		msg=msg+"<iframe src=LICENSE-AIMODEL id=licenseframe></iframe>";
 	}
-	var overlay=document.getElementById("helpoverlay");
-			
-			overlay.innerHTML="<table bgcolor=#677383 width=100% cellspacing=0 cellpadding=0 border=0><tr><td width=* height=40>&nbsp;</td><td bgcolor=#5e4868 id=helpXbutton width=40 height=40 onmouseover='mouseOverXButton(this);' onmouseout='mouseOutXButton(this);'><img src=X.png onclick='hideHelpOverlay();' style='cursor:pointer;' width=40></td></tr>";
-			overlay.innerHTML=overlay.innerHTML+"<tr><td colspan=2>"+msg+"</td></tr>";
-			
-			
-			
-			overlay.innerHTML=overlay.innerHTML+"</table>";
-			overlay.style.display="block";
-			overlay.style.position="absolute";
-			overlay.style.zIndex=3000;
-			overlay.style.left="10px";
-			overlay.style.top="10px";
-			overlay.style.width=(window.innerWidth-40)+"px";
-			overlay.style.height=(window.innerHeight-40)+"px";
-			
-			var license=document.getElementById("licenseframe");
-			license.style.width=(window.innerWidth-40)+"px";
-			license.style.height=(window.innerHeight-200)+"px";
-			return;
+
+	var overlay = document.getElementById("helpoverlay");
+
+	overlay.innerHTML =
+	"<div onclick='event.stopPropagation();' style='display:flex;flex-direction:column;width:100%;height:100%;margin:0 auto;background:#1f2430;border:1px solid #3a4150;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,0.55);overflow:hidden;font-family:Segoe UI,Helvetica,Arial,sans-serif;'>" +
+
+	// Header bar
+	"<div style='display:flex;align-items:center;justify-content:space-between;height:48px;padding:0 8px 0 18px;background:linear-gradient(#2c3342,#252b38);border-bottom:1px solid #3a4150;flex-shrink:0;'>" +
+	"<div style='color:#e6e9ef;font-size:15px;font-weight:600;letter-spacing:0.3px;'>Help</div>" +
+	"<button type='button' id='helpXbutton' title='Close (Esc)'" +
+	" style='width:34px;height:34px;border:0;border-radius:6px;background:transparent;color:#aab2c0;font-size:22px;line-height:34px;cursor:pointer;transition:background 0.15s,color 0.15s;'>&times;</button>" +
+	"</div>" +
+
+	// Content (scrolls if it's taller than the window)
+	"<div style='flex:1;overflow:auto;padding:16px 20px;background:#1f2430;color:#d6dbe4;font-size:14px;line-height:1.5;'>" + msg + "</div>" +
+	"</div>";
+
+	// Close button hover and click
+	var hb = document.getElementById("helpXbutton");
+	hb.onmouseenter = function () { hb.style.background = "#e5534b"; hb.style.color = "#fff"; };
+	hb.onmouseleave = function () { hb.style.background = "transparent"; hb.style.color = "#aab2c0"; };
+	hb.onclick = function (e) { e.stopPropagation(); hideHelpOverlay(); };
+
+	// Full-screen dimmed backdrop
+	var s = overlay.style;
+	s.position = "fixed";
+	s.left = s.top = s.right = s.bottom = "0";
+	s.width = s.height = "";
+	s.padding = "10px";
+	s.boxSizing = "border-box";
+	s.background = "rgba(10,12,18,0.65)";
+	s.backdropFilter = "blur(3px)";
+	s.zIndex = 3000;
+	s.display = "block";
+
+	// Fade in
+	s.opacity = "0";
+	s.transition = "opacity 0.18s ease";
+	requestAnimationFrame(function () { s.opacity = "1"; });
+
+	// License frame (if the help message contains one)
+	var license = document.getElementById("licenseframe");
+	if (license)
+	{
+		license.style.width = "100%";
+		license.style.height = (window.innerHeight - 140) + "px";
+		license.style.border = "1px solid #d8dce2";
+		license.style.borderRadius = "6px";
+	}
+
+	// Click outside the panel or press Escape to close
+	overlay.onclick = hideHelpOverlay;
+	if (!overlay.escBound)
+	{
+		document.addEventListener("keydown", function (e) { if (e.key === "Escape" && overlay.style.display !== "none") hideHelpOverlay(); });
+		overlay.escBound = true;
+	}
+	return;
 }
 
 function showParamHelp()
@@ -1331,19 +1480,53 @@ function showParamHelp()
 			
 			
 			
-			var overlay=document.getElementById("helpoverlay");
-			
-			overlay.innerHTML="<table bgcolor=#677383 width=100% cellspacing=0 cellpadding=0 border=0><tr><td width=* height=40>&nbsp;</td><td bgcolor=#5e4868 id=helpXbutton width=40 height=40 onmouseover='mouseOverXButton(this);' onmouseout='mouseOutXButton(this);'><img src=X.png onclick='hideHelpOverlay();' style='cursor:pointer;' width=40></td></tr>";
-			overlay.innerHTML=overlay.innerHTML+"<tr><td colspan=2>"+msg+"</td></tr>";
-			overlay.innerHTML=overlay.innerHTML+"</table>";
-			overlay.style.display="block";
-			overlay.style.position="absolute";
-			overlay.style.zIndex=3000;
-			overlay.style.left="10px";
-			overlay.style.top="10px";
-			overlay.style.width=(window.innerWidth-40)+"px";
-			overlay.style.height=(window.innerHeight-40)+"px";
-			
+			var overlay = document.getElementById("helpoverlay");
+
+			overlay.innerHTML =
+			"<div onclick='event.stopPropagation();' style='display:flex;flex-direction:column;width:100%;height:100%;margin:0 auto;background:#1f2430;border:1px solid #3a4150;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,0.55);overflow:hidden;font-family:Segoe UI,Helvetica,Arial,sans-serif;'>" +
+
+			// Header bar
+			"<div style='display:flex;align-items:center;justify-content:space-between;height:48px;padding:0 8px 0 18px;background:linear-gradient(#2c3342,#252b38);border-bottom:1px solid #3a4150;flex-shrink:0;'>" +
+			"<div style='color:#e6e9ef;font-size:15px;font-weight:600;letter-spacing:0.3px;'>Help</div>" +
+			"<button type='button' id='helpXbutton' title='Close (Esc)'" +
+			" style='width:34px;height:34px;border:0;border-radius:6px;background:transparent;color:#aab2c0;font-size:22px;line-height:34px;cursor:pointer;transition:background 0.15s,color 0.15s;'>&times;</button>" +
+			"</div>" +
+
+			// Content (scrolls if it's taller than the window)
+
+			"<div style='flex:1;overflow:auto;padding:16px 20px;background:#1f2430;color:#d6dbe4;font-size:14px;line-height:1.5;'>" + msg + "</div>" +
+			"</div>";
+
+			// Close button hover and click
+			var hb = document.getElementById("helpXbutton");
+			hb.onmouseenter = function () { hb.style.background = "#e5534b"; hb.style.color = "#fff"; };
+			hb.onmouseleave = function () { hb.style.background = "transparent"; hb.style.color = "#aab2c0"; };
+			hb.onclick = function (e) { e.stopPropagation(); hideHelpOverlay(); };
+
+			// Full-screen dimmed backdrop
+			var s = overlay.style;
+			s.position = "fixed";
+			s.left = s.top = s.right = s.bottom = "0";
+			s.width = s.height = "";
+			s.padding = "10px";
+			s.boxSizing = "border-box";
+			s.background = "rgba(10,12,18,0.65)";
+			s.backdropFilter = "blur(3px)";
+			s.zIndex = 3000;
+			s.display = "block";
+
+			// Fade in
+			s.opacity = "0";
+			s.transition = "opacity 0.18s ease";
+			requestAnimationFrame(function () { s.opacity = "1"; });
+
+			// Click outside the panel or press Escape to close
+			overlay.onclick = hideHelpOverlay;
+			if (!overlay.escBound)
+			{
+				document.addEventListener("keydown", function (e) { if (e.key === "Escape" && overlay.style.display !== "none") hideHelpOverlay(); });
+				overlay.escBound = true;
+			}
 			return;
 		}
 	
@@ -1403,7 +1586,8 @@ function onLoad()
 			appendMsg("<p class=statusmsg><b><img src=i-orange.png width=32 height=32 align=middle valign=middle class=statusicon>Event notifications disabled</b></p>"); 
 		}
 
-
+		checkUpdates();
+		setInterval(checkUpdates,60*60*24*7);
 }
 
 
@@ -1587,7 +1771,7 @@ function goMinimalUI()
 		<table cellspacing=0 cellpadding=0 border=0 width=100%>
 		 <tr>
                         <td>
-				<p><font size=-1><img src=bb.png width=100 style="margin: 2px;" align=middle valign=middle>
+				<p><font size=-1><img src=bb.png width=64 style="margin: 2px;" align=middle valign=middle>
 				<?php  echo " BigBrother ".$formattedversion; $date = date('Y-m-d H:i:s'); echo " Page loaded: ".$date." (server time)";?> 
 				</p></font>
 				
@@ -1705,7 +1889,7 @@ function goMinimalUI()
 	<td valign=center><p>FFMPEG</p></td>
 	<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
 
-	<td><img src=bb.png width=100></td>
+	<td><img src=bb.png width=64></td>
         <td valign=center><p>BigBrother</p></td>
 	<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
 
@@ -1730,7 +1914,7 @@ is a trademark of Fabrice Bellard</p></font></td>
 <div id=ministatusbar style="display:none;">
 	<table cellspacing=0 cellpadding=0 border=0 width=100% height=24 background=minimalUIstatusbar.png>
 		<tr width=100% height=100%>
-			<td width=48><img src=bb.png height=20 width=40></td>
+			<td width=28><img src=bb.png height=20 width=20></td>
 			<td align=left width=230><p class=small><?php echo " BigBrother ".$formattedversion;?> &copy; Copyright 2016-<?php printCurrentYear();?> </td>
 			
 			
