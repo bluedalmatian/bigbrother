@@ -14,9 +14,10 @@
  * useful please consider making a donation to the Communications       *
  * Museum Trust at www.comms.org.uk/donate                              *
  *                                                                      *
- *                                                                      *
+ * 20261107                                                                     *
  ************************************************************************
  */
+
 
 //stallSeconds contains ele for each cam giving indication of how many seconds it has been stalled for
 var stallSeconds = new Array();

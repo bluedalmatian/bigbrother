@@ -1,26 +1,6 @@
+
+
 <?php
-/**
- * ***********************************************************************
- * BigBrother  CCTV Recording & Live Viewing (mirroring) software       *
- * www.bigbrothercctv.org                                               *
- *                                                                      *
- * index.php Copyright Andrew Wood 2025-2026	                	*
- *																		*
- * Licensed under the GNU Public License v 3                            *
- * The full license can be read at www.gnu.org/licenses/gpl-3.0.txt     *
- * and is included in the License.txt file included with this           *
- * software.                                                            *
- *                                                                      *
- * BigBrother is free open source software but if you find it           *
- * useful please consider making a donation to the Communications       *
- * Museum Trust at www.comms.org.uk/donate                              *
- *                                                                      *
- *                                                                      *
- ************************************************************************
- */
-
-
-
 	//CONVENTION: Any variable name in $CAPITALS is declared in the mirror control file (org.bigbrothercctv.bigbrother.bigbrotherd.php)
 	
 
@@ -946,6 +926,8 @@ function mouseOutButton(obj)
         td.style.backgroundColor="#000000";
 	}
 }
+
+
 
 
 
