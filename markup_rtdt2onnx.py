@@ -24,12 +24,58 @@ import numpy as np
 import cv2, os, sys
 import py7zr
 import onnxruntime as ort
+import io
+
+
+#=======================================================
+#Stupid API change in Py7zr forces us to do it this way now
+class MemIO:
+    def __init__(self, filename):
+        self.filename = filename
+        self._buf = io.BytesIO()
+
+    def write(self, s):
+        return self._buf.write(s)
+
+    def read(self, size=None):
+        return self._buf.read() if size is None else self._buf.read(size)
+
+    def seek(self, offset, whence=0):
+        return self._buf.seek(offset, whence)
+
+    def tell(self):
+        return self._buf.tell()
+
+    def flush(self):
+        pass
+
+    def close(self):
+        pass  # keep the buffer alive so getvalue() works afterwards
+
+    def size(self):
+        return len(self._buf.getbuffer())
+
+    def getvalue(self):
+        return self._buf.getvalue()
+#=======================================================
+
+#=======================================================
+#Stupid API change in Py7zr forces us to do it this way now
+class MemFactory:
+    def __init__(self):
+        self.files = {}
+
+    def create(self, filename):
+        f = MemIO(filename)
+        self.files[filename] = f
+        return f
+#=======================================================
 
 
 mydir=os.path.abspath(os.path.dirname(__file__)) #gives dir without trailing /
 modeldir=mydir+"/onnx"
+target = "bbrelease-640x640Q.onnx"
 
-                                                     
 #Embedding the 7z password in the code like this is not meant to be secure its meant to force
 #anyone stealing it to read the notice below so they do not inadvertently steal it without knowing
 #what they are doing
@@ -39,11 +85,20 @@ modeldir=mydir+"/onnx"
 # have purchased a commercial license. See www.bigbrothercctv.org/BB-AIMODEL-LICENSE-1.1.txt   #
 #                                                                    DO NOT STEAL   READ ^^^   # 
 with py7zr.SevenZipFile(modeldir + "/bbrelease.7z",mode="r",password="vR8!qL2#xN6@kT4$mP8&zW6^cH1*Ys5") as archive:
+
     print("Files inside the 7z archive:")
     print(archive.getnames())
-    data = archive.read(["bbrelease-640x640Q.onnx"])
-    model_bytes = data["bbrelease-640x640Q.onnx"].read()
+    
+    if hasattr(archive, "read"):
+        # 0.22 and other older versions
+        model_bytes = archive.read([target])[target].read()
+    else:
+        # 1.0+, where read() was removed
+        factory = MemFactory()
+        archive.extract(targets=[target], factory=factory)
+        model_bytes = factory.files[target].getvalue()
 
+    model_buffer = np.frombuffer(model_bytes, dtype=np.uint8)
 
 
 

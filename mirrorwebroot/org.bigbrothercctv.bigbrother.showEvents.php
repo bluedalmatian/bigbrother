@@ -20,9 +20,6 @@
  */
 ob_start();
 
-
-
-
 //ini_set('display_errors', 1); ini_set('display_startup_errors', 1); error_reporting(E_ALL);
 
 
@@ -1125,13 +1122,33 @@ function eraseLog()
 		}
 
 		erase_xhr.open('GET',url,true);
-		erase_xhr.onreadystatechange=doReload; //callback when response comes
+		erase_xhr.onreadystatechange=function()
+		{
+			//only act once the erase request has fully completed
+			if (erase_xhr.readyState!=4)
+			{
+				return;
+			}
+			if (erase_xhr.status==200)
+			{
+				doReload();
+			}
+			else
+			{
+				showConfirm("Error erasing events (server returned "+erase_xhr.status+")", doReload, null);
+			}
+		};
 		erase_xhr.send(null);
 	});
 }
 function doReload()
 {
-	location.reload();
+	//reload back to page 1, keeping any filter params in the URL
+	var params=new URLSearchParams(window.location.search);
+	params.delete("page");
+	params.delete("erase");
+	var qs=params.toString();
+	window.location.replace(window.location.pathname+(qs!="" ? "?"+qs : ""));
 }
 
 
@@ -1416,7 +1433,6 @@ function getOS()
 
 
 <body style="margin: 0px;" onload='onLoad();'>
-
 
 
 <table cellspacing=0 cellpadding=0 border=0 id=toolbar width=100%>
