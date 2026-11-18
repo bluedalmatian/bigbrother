@@ -2,24 +2,24 @@
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #		      
 # Copyright 2016-2026 Andrew Wood                                  #
 #                                                                  #
-# This copy of the README file relates to version 2.5		       #
+# This copy of the README file relates to version 2.6		   #
 #                                                                  #
-# www.bigbrothercctv.org			                               #
-#                           					                   #
+# www.bigbrothercctv.org			                   #
+#                           					   #
 #                                                                  #
 #                                                                  #
 # SOFTWARE LICENSE                                                 #
 #                                                                  #
 # The BigBrother CCTV software is licensed under the GNU General   #
 # Public License Version 3 (GPLv3). A copy of the GPLv3 is         #
-# included in the file LICENSE and is available at:	               #
+# included in the file LICENSE and is available at:	           #
 # www.gnu.org/licenses/gpl-3.0.txt                                 #
 #                                                                  #
 #                                                                  #
 # AI MODEL LICENSE                                                 #
 #                                                                  #
 # The BigBrother CCTV AI model files are NOT licensed under the    #
-# GPL. Such AI models are licensed      		                   #
+# GPL. Such AI models are licensed      		           #
 # separately under the BigBrother CCTV AI Model License and are    #
 # subject to their own terms, conditions, restrictions.            #
 # A copy of the BigBrother CCTV AI Model License is included in    #
@@ -34,7 +34,7 @@
 # License.                                                         #
 #                                                                  #
 #                                                                  #
-#	                                                               #
+#	                                                           #
 # BigBrother is free open source software but if you find it       #
 # useful please consider making a donation to the Communications   #
 # Museum Trust at www.communicationsmuseum.org.uk/donate           #

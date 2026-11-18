@@ -7,7 +7,7 @@ STAGEDIR = /tmp/bigbrother-stage
 INSTALLDIR = $(STAGEDIR)/usr/local/bigbrother
 SYSTEMDDIR = $(STAGEDIR)/etc/systemd/system
 
-VERSION = 2.5 #Used for Deb only, edit the +MANIFEST for FreeBSD version pkg and the RPM/SPECS/bigbrother.spec file for rpm version
+VERSION = 2.6 #Used for Deb only, edit the +MANIFEST for FreeBSD version pkg and the RPM/SPECS/bigbrother.spec file for rpm version
 DEPENDS = --depends ffmpeg --depends python3 \
           --depends "python3-opencv >= 4.10" --depends python3-zeep --depends python3-py7zr --depends python3-onnxruntime
 

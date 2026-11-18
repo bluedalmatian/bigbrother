@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 
 ####################################################################
-#markup_y5onnx.py					                               #
-#				                                                   #
-#This is a test / debugging program to take a logged snapshot	      #
+#markup_y5onnx.py					           #
+#				                                   #
+#This is a test / debugging program to take a logged snapshot	   #
 #as output by bbeventmonitor_mssd and re-run detection on it       #
 #using same AI model, marking up the image with what it finds      #
 #and the confidence and saving it as a new file                    #
-#				                                                   #
+#				                                   #
 #Usage: markup_y5onnx.py /inputimage.jpg /outputimage.jpg X.X      #
 #where X.X is the minimum confidence threshold to apply to         #
-#detections and should be set to the same as currently set	      #
-#in bbeventmonitor_y5onnx		                                   #
-#		                                                           #
+#detections and should be set to the same as currently set	   #
+#in bbeventmonitor_y5onnx		                           #
+#		                                                   #
 #RT-DETRv2 version: runs the model with onnxruntime                #
 #(Debian: apt install python3-onnxruntime). No NMS is needed,      #
 #detections are simply filtered by score.                          #
-#		                                                           #
+#		                                                   #
 ####################################################################
 
 # import libraries

@@ -1,5 +1,7 @@
 MAJOR CHANGES FOR EACH VERSION
 ======================================================================================================================================================================
+2.6 Improvements to event detection, hardware accelleration bug fix, speech synth  bug fix
+
 2.5 Improvements to event detection, hardware accelleration, eventlog in mirroring view now shows 7 days of events, better recovery from playback stalls in 
     mirroring live view.
 

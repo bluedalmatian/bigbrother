@@ -234,6 +234,15 @@ do
 		videocodec="libx264"
 		
 	fi
+	
+	if [ $nvencprobe_rc -eq 0 ]
+	then
+		videocodec="h264_nvenc"
+		codecopts="-preset p1 -tune ll"
+	else
+		videocodec="libx264"
+		codecopts="-preset ultrafast -tune zerolatency"
+	fi
 	#End Probe NVENC encoder for outputing H264
 	
 	hwdecode_args="" #default if using CPU
@@ -254,7 +263,7 @@ do
 	fi
 
 
-	$ffmpegcommand $hwdecode_args -timeout 10000000 -y -loglevel fatal -i $sourceurl -vcodec $videocodec -preset ultrafast -tune zerolatency -acodec aac -strict -2 -b:a 16k -framerate $framerate -s $resolution -b:v $bitrate -bufsize $bitrate -g 4 -force_key_frames "expr:gte(t,n_forced*2)"  -hls_list_size 3 -hls_init_time 0.5 -hls_flags delete_segments+program_date_time+temp_file+independent_segments -hls_time 0.5 -hls_allow_cache 0 -f hls -hls_segment_filename "${webroot}/${camname}%05d.ts" -metadata title="$camname" $webroot/$camname.m3u8  &
+	$ffmpegcommand $hwdecode_args -timeout 10000000 -y -loglevel fatal -i $sourceurl -vcodec $videocodec $codecopts -acodec aac -strict -2 -b:a 16k -framerate $framerate -s $resolution -b:v $bitrate -bufsize $bitrate -g 4 -force_key_frames "expr:gte(t,n_forced*2)"  -hls_list_size 3 -hls_init_time 0.5 -hls_flags delete_segments+program_date_time+temp_file+independent_segments -hls_time 0.5 -hls_allow_cache 0 -f hls -hls_segment_filename "${webroot}/${camname}%05d.ts" -metadata title="$camname" $webroot/$camname.m3u8  &
 	
 
 	pid=$!

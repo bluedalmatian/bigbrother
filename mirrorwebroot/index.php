@@ -511,6 +511,7 @@ var eventMsgsShown=0; //used to scroll display
 var eventAudio = new Audio('event.mp3');
 
 var speechSynth = window.speechSynthesis;
+var liveSpeech=[]; //array will hold speech in progress 
 
 var pageLoadedTimestamp=Math.round(Date.now() / 1000); //convert timestamp now from ms to sec
 
@@ -1167,6 +1168,8 @@ function processAIEventResponse()
 							const chosenVoice = pickVoice(voicesAvailable,priorities);
 							var newUtter =new SpeechSynthesisUtterance(txttospeak);
 							newUtter.voice = chosenVoice;
+							liveSpeech.push(newUtter); //stops garbage collection
+							newUtter.onend = newUtter.onerror = () => liveSpeech.splice(liveSpeech.indexOf(newUtter), 1); //remove from liveSpeech when done
 							speechSynth.speak(newUtter);
 						}
 					}

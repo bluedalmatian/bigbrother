@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-#Requires Python 3.3 or later
 
 ####################################################################
 # BigBrother  CCTV Recording & Live Viewing (mirroring) software   #
@@ -39,7 +38,7 @@ class ParseException(Exception):
 #######################################
 #System wide knobs
 
-bbversion=2.5 ##only change version no here and in no other file
+bbversion=2.6 ##only change version no here and in no other file
 exedir=os.path.dirname(os.path.realpath(__file__)) ##gives dir with no trailing /
 globalconffile=exedir+"/bigbrother.conf"
 dashfspecified=False
